@@ -10,7 +10,6 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_PREFIX: ${{ github.repository_owner }}/linkedin-ai
   DEPLOY_PATH: /home/deploy/I2F/PROJETS/LINKEDIN_COMMENTER/linkedin_commenter-v3
 
 jobs:
@@ -24,6 +23,10 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+
+      - name: Set image prefix (lowercase)
+        run: |
+          echo "IMAGE_PREFIX=$(echo '${{ github.repository_owner }}' | tr '[:upper:]' '[:lower:]')/linkedin-ai" >> $GITHUB_ENV
 
       - name: Set environment variables
         run: |
