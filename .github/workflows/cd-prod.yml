@@ -148,9 +148,9 @@ jobs:
             CORS_CREDENTIALS=true
 
             # === Traefik Hosts ===
-            AI_API_HOST=ai.api.ai-linkedin.i2f-entreprise.fr
-            USERS_API_HOST=users.api.ai-linkedin.i2f-entreprise.fr
-            SITE_HOST=ai-linkedin.i2f-entreprise.fr
+            AI_API_HOST=ai.api.linkedinaicommenter.com
+            USERS_API_HOST=users.api.linkedinaicommenter.com
+            SITE_HOST=linkedinaicommenter.com
 
             # === PostHog (disabled) ===
             POSTHOG_ENABLED=false
