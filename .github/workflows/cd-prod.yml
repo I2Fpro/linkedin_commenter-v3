@@ -27,7 +27,9 @@ jobs:
 
       - name: Set image prefix (lowercase)
         run: |
-          echo "IMAGE_PREFIX=$(echo '${{ github.repository_owner }}' | tr '[:upper:]' '[:lower:]')/linkedin-ai" >> $GITHUB_ENV
+          OWNER_LOWER=$(echo '${{ github.repository_owner }}' | tr '[:upper:]' '[:lower:]')
+          echo "IMAGE_PREFIX=${OWNER_LOWER}/linkedin-ai" >> $GITHUB_ENV
+          echo "GITHUB_OWNER_LOWER=${OWNER_LOWER}" >> $GITHUB_ENV
 
       - name: Set environment variables
         run: |
@@ -89,6 +91,18 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
+      - name: Build and push postgres
+        uses: docker/build-push-action@v5
+        with:
+          context: ./BACK-END/database
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-postgres:prod
+            ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-postgres:${{ steps.version.outputs.VERSION }}
+            ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-postgres:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
       - name: Create .env and Deploy to Prod VPS
         uses: appleboy/ssh-action@v1.0.3
         with:
@@ -101,7 +115,7 @@ jobs:
             # Create/update .env file with all secrets
             cat > .env << 'ENVEOF'
             # === Registry ===
-            GITHUB_OWNER=${{ github.repository_owner }}
+            GITHUB_OWNER=${{ env.GITHUB_OWNER_LOWER }}
             TAG=prod
 
             # === Database ===

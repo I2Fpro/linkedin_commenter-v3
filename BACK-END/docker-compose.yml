@@ -1,5 +1,3 @@
-version: '3.8'
-
 # =============================================================================
 # LinkedIn AI Commenter - Docker Compose (GHCR Production)
 # =============================================================================
@@ -15,7 +13,7 @@ version: '3.8'
 
 services:
   postgres:
-    build: ./database
+    image: ghcr.io/${GITHUB_OWNER}/linkedin-ai-postgres:${TAG:-preprod}
     container_name: linkedin_ai_postgres
     environment:
       POSTGRES_DB: linkedin_ai_db
@@ -23,8 +21,6 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./database/init.sql:/docker-entrypoint-initdb.d/000_init.sql
-      - ./database/migrations/001_add_pgvector_news.sql:/docker-entrypoint-initdb.d/001_add_pgvector_news.sql
     networks:
       - linkedin_ai_network
     restart: unless-stopped
