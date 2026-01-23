@@ -192,6 +192,8 @@ jobs:
           zip -r ../extension-preprod.zip . -x "*.git*" -x "*.DS_Store" -x "*.env*"
 
       - name: Upload to Chrome Web Store
+        id: chrome-upload
+        continue-on-error: true
         uses: mnao305/chrome-extension-upload@v5.0.0
         with:
           file-path: extension-preprod.zip
@@ -199,6 +201,14 @@ jobs:
           client-id: ${{ secrets.CHROME_CLIENT_ID }}
           client-secret: ${{ secrets.CHROME_CLIENT_SECRET }}
           refresh-token: ${{ secrets.CHROME_REFRESH_TOKEN }}
+
+      - name: Chrome Web Store Upload Status
+        run: |
+          if [ "${{ steps.chrome-upload.outcome }}" == "failure" ]; then
+            echo "::warning::Chrome Web Store upload failed (expected for preprod - publish not enabled)"
+          else
+            echo "Chrome Web Store upload successful"
+          fi
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
@@ -220,4 +230,4 @@ jobs:
           echo "- **Commit**: ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
           echo "- **Branch**: ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
           echo "- **Backend**: ${{ needs.build-backend.result == 'success' && 'Deployed' || 'Failed' }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Extension**: ${{ needs.build-extension.result == 'success' && 'Uploaded' || 'Failed' }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Extension**: ${{ needs.build-extension.result == 'success' && 'Uploaded (not published)' || 'Failed' }}" >> $GITHUB_STEP_SUMMARY
