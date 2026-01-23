@@ -1,0 +1,94 @@
+{
+  "manifest_version": 3,
+  "name": "LinkedIn Commenter",
+  "version": "3.0.0",
+  "description": "Générez des commentaires intelligents pour LinkedIn avec l'IA",
+  "permissions": [
+    "storage",
+    "activeTab",
+    "identity",
+    "scripting",
+    "tabs"
+  ],
+  "host_permissions": [
+    "*://*.linkedin.com/*",
+    "__USERS_API_URL__/*",
+    "__AI_API_URL__/*",
+    "https://accounts.google.com/*",
+    "https://www.googleapis.com/*",
+    "https://oauth2.googleapis.com/*",
+    "https://us.posthog.com/*",
+    "https://eu.posthog.com/*",
+    "https://eu.i.posthog.com/*"
+  ],
+  "oauth2": {
+    "client_id": "__GOOGLE_CLIENT_ID__",
+    "scopes": [
+      "openid",
+      "email",
+      "profile"
+    ]
+  },
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'self'"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "images/icon16.png",
+      "48": "images/icon48.png",
+      "128": "images/icon128.png"
+    }
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "*://*.linkedin.com/*"
+      ],
+      "js": [
+        "api-config.js",
+        "shared_env.js",
+        "config.js",
+        "user-id-utils.js",
+        "auth.js",
+        "posthog.min.js",
+        "posthog-client.js",
+        "toast.js",
+        "content.js"
+      ],
+      "css": [
+        "content.css"
+      ]
+    },
+    {
+      "matches": [
+        "*://*.linkedin.com/*"
+      ],
+      "js": [
+        "posthog-bridge.js"
+      ],
+      "world": "MAIN"
+    }
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "api-config.js",
+        "shared_env.js",
+        "config.js",
+        "user-id-utils.js",
+        "auth.js",
+        "posthog.min.js",
+        "posthog-client.js",
+        "posthog-bridge.js",
+        "toast.js"
+      ],
+      "matches": [
+        "*://*.linkedin.com/*"
+      ]
+    }
+  ]
+}

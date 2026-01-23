@@ -1,0 +1,183 @@
+version: '3.8'
+
+# =============================================================================
+# LinkedIn AI Commenter - Docker Compose (GHCR Production)
+# =============================================================================
+# This docker-compose pulls images from GitHub Container Registry (GHCR)
+# instead of building locally. Used on VPS servers for deployment.
+#
+# Required environment variables in .env:
+#   - GITHUB_OWNER: GitHub username/org for GHCR
+#   - TAG: Image tag (preprod, prod, or version like 1.2.3)
+#   - *_HOST: Traefik hostnames for each service
+#   - Other secrets (see .env.example)
+# =============================================================================
+
+services:
+  postgres:
+    build: ./database
+    container_name: linkedin_ai_postgres
+    environment:
+      POSTGRES_DB: linkedin_ai_db
+      POSTGRES_USER: linkedin_user
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./database/init.sql:/docker-entrypoint-initdb.d/000_init.sql
+      - ./database/migrations/001_add_pgvector_news.sql:/docker-entrypoint-initdb.d/001_add_pgvector_news.sql
+    networks:
+      - linkedin_ai_network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U linkedin_user -d linkedin_ai_db"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  redis:
+    image: redis:7-alpine
+    container_name: linkedin_ai_redis
+    networks:
+      - linkedin_ai_network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  user-service:
+    image: ghcr.io/${GITHUB_OWNER}/linkedin-ai-user-service:${TAG:-preprod}
+    container_name: linkedin_ai_user_service
+    environment:
+      DATABASE_URL: postgresql://linkedin_user:${POSTGRES_PASSWORD}@postgres:5432/linkedin_ai_db
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_ALGORITHM: ${JWT_ALGORITHM:-HS256}
+      JWT_EXPIRATION_HOURS: ${JWT_EXPIRATION_HOURS:-24}
+      REDIS_URL: redis://redis:6379
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY}
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS}
+      CORS_CREDENTIALS: ${CORS_CREDENTIALS:-true}
+      POSTHOG_API_KEY: ${POSTHOG_API_KEY}
+      POSTHOG_HOST: ${POSTHOG_HOST:-https://eu.i.posthog.com}
+      POSTHOG_ENABLED: ${POSTHOG_ENABLED:-false}
+      ENVIRONMENT: ${ENVIRONMENT:-production}
+      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY}
+      STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET}
+      STRIPE_PRICE_MEDIUM_MONTHLY: ${STRIPE_PRICE_MEDIUM_MONTHLY}
+      STRIPE_PRICE_PREMIUM_MONTHLY: ${STRIPE_PRICE_PREMIUM_MONTHLY}
+      STRIPE_SUCCESS_URL: ${STRIPE_SUCCESS_URL}
+      STRIPE_CANCEL_URL: ${STRIPE_CANCEL_URL}
+      STRIPE_PORTAL_RETURN_URL: ${STRIPE_PORTAL_RETURN_URL}
+    expose:
+      - "8444"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - linkedin_ai_network
+      - proxy
+    restart: unless-stopped
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.user-service-secure.rule=Host(`${USERS_API_HOST}`)"
+      - "traefik.http.routers.user-service-secure.tls=true"
+      - "traefik.http.routers.user-service-secure.tls.certresolver=le"
+      - "traefik.http.routers.user-service-secure.entrypoints=websecure"
+      - "traefik.http.routers.user-service-secure.middlewares=user-service-cors"
+      - "traefik.http.middlewares.user-service-cors.headers.accesscontrolallowmethods=GET,POST,PUT,DELETE,OPTIONS,PATCH"
+      - "traefik.http.middlewares.user-service-cors.headers.accesscontrolalloworiginlist=${ALLOWED_ORIGINS}"
+      - "traefik.http.middlewares.user-service-cors.headers.accesscontrolallowheaders=Content-Type,Authorization,X-Requested-With,Accept,Origin,Access-Control-Request-Method,Access-Control-Request-Headers"
+      - "traefik.http.middlewares.user-service-cors.headers.accesscontrolmaxage=100"
+      - "traefik.http.middlewares.user-service-cors.headers.addvaryheader=true"
+      - "traefik.http.services.user-service.loadbalancer.server.port=8444"
+      - "traefik.docker.network=proxy"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8444/health'); print('healthy')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  ai-service:
+    image: ghcr.io/${GITHUB_OWNER}/linkedin-ai-ai-service:${TAG:-preprod}
+    container_name: linkedin_ai_service
+    environment:
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
+      GOOGLE_CLIENT_ID_WEB: ${GOOGLE_CLIENT_ID_WEB}
+      USER_SERVICE_URL: http://user-service:8444
+      DATABASE_URL: postgresql://linkedin_user:${POSTGRES_PASSWORD}@postgres:5432/linkedin_ai_db
+      REDIS_URL: redis://redis:6379
+      HOST: "0.0.0.0"
+      PORT: "8443"
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY}
+      NEWS_TTL_HOURS: ${NEWS_TTL_HOURS:-48}
+      DEBUG_NEWS: ${DEBUG_NEWS:-false}
+      MAX_NEWS_CONCURRENCY: ${MAX_NEWS_CONCURRENCY:-5}
+      POSTHOG_API_KEY: ${POSTHOG_API_KEY}
+      POSTHOG_HOST: ${POSTHOG_HOST:-https://eu.i.posthog.com}
+      POSTHOG_ENABLED: ${POSTHOG_ENABLED:-false}
+      ENVIRONMENT: ${ENVIRONMENT:-production}
+    volumes:
+      - ai_service_logs:/app/logs
+    expose:
+      - "8443"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      user-service:
+        condition: service_healthy
+    networks:
+      - linkedin_ai_network
+      - proxy
+    restart: unless-stopped
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.ai-service-secure.rule=Host(`${AI_API_HOST}`)"
+      - "traefik.http.routers.ai-service-secure.tls=true"
+      - "traefik.http.routers.ai-service-secure.tls.certresolver=le"
+      - "traefik.http.routers.ai-service-secure.entrypoints=websecure"
+      - "traefik.http.services.ai-service.loadbalancer.server.port=8443"
+      - "traefik.docker.network=proxy"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8443/health'); print('healthy')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  site-internet:
+    image: ghcr.io/${GITHUB_OWNER}/linkedin-ai-website:${TAG:-preprod}
+    container_name: linkedin_ai_website
+    networks:
+      - proxy
+    restart: unless-stopped
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.website-secure.rule=Host(`${SITE_HOST}`)"
+      - "traefik.http.routers.website-secure.tls=true"
+      - "traefik.http.routers.website-secure.tls.certresolver=le"
+      - "traefik.http.routers.website-secure.entrypoints=websecure"
+      - "traefik.http.services.website.loadbalancer.server.port=80"
+      - "traefik.docker.network=proxy"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+networks:
+  linkedin_ai_network:
+    driver: bridge
+  proxy:
+    external: true
+
+volumes:
+  postgres_data:
+    driver: local
+  ai_service_logs:
+    driver: local

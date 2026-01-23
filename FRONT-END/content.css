@@ -1,0 +1,1205 @@
+/* ========== TOAST NOTIFICATIONS ========== */
+
+/* Container pour tous les toasts */
+.ai-toast-container {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  z-index: 2147483647; /* Maximum z-index pour être au-dessus de tout */
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  pointer-events: none; /* Permet les clics à travers le container */
+}
+
+/* Toast individuel */
+.ai-toast {
+  pointer-events: auto; /* Réactive les événements sur le toast lui-même */
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: #ffffff;
+  color: #333333;
+  padding: 14px 18px;
+  border-radius: 8px;
+  border-left: 4px solid #0077b5;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15), 0 2px 4px rgba(0, 0, 0, 0.1);
+  min-width: 300px;
+  max-width: 400px;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-size: 14px;
+  line-height: 1.4;
+  opacity: 0;
+  transform: translateY(20px);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Animation d'entrée */
+.ai-toast.ai-toast-show {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Animation de sortie */
+.ai-toast.ai-toast-hide {
+  opacity: 0;
+  transform: translateY(20px) scale(0.95);
+}
+
+/* Icône du toast */
+.ai-toast-icon {
+  font-size: 20px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+}
+
+/* Message du toast */
+.ai-toast-message {
+  flex: 1;
+  color: #333333;
+  font-weight: 400;
+  word-break: break-word;
+}
+
+/* Bouton de fermeture */
+.ai-toast-close {
+  flex-shrink: 0;
+  background: none;
+  border: none;
+  color: #666666;
+  font-size: 24px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0;
+  margin: 0;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.2s ease;
+  opacity: 0.6;
+}
+
+.ai-toast-close:hover {
+  color: #333333;
+  opacity: 1;
+}
+
+/* Variantes de couleurs selon le type */
+.ai-toast-success {
+  border-left-color: #2ecc71;
+}
+
+.ai-toast-error {
+  border-left-color: #e74c3c;
+}
+
+.ai-toast-warning {
+  border-left-color: #f39c12;
+}
+
+.ai-toast-info {
+  border-left-color: #0077b5;
+}
+
+/* Animation au survol */
+.ai-toast:hover {
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2), 0 3px 6px rgba(0, 0, 0, 0.15);
+  transform: translateY(-2px);
+}
+
+/* ========== FIN TOAST NOTIFICATIONS ========== */
+
+/* Styles pour les éléments ajoutés à LinkedIn */
+
+/* Conteneur pour les boutons */
+.ai-buttons-wrapper {
+  display: flex !important;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+  margin-bottom: 8px;
+  align-items: center;
+  position: relative;
+  z-index: 1000;
+}
+
+/* Conteneur pour les boutons d'action dans les options */
+.ai-action-buttons-container {
+  margin-top: 8px;
+  display: flex;
+  gap: 4px;
+}
+
+.checkbox-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.checkbox-option input[type="checkbox"] {
+  width: auto;
+}
+
+/* Message d'authentification requise */
+.auth-required-message {
+  background: #fff3cd;
+  color: #856404;
+  padding: 8px 12px;
+  border-radius: 6px;
+  border: 1px solid #ffeaa7;
+  font-size: 12px;
+  text-align: center;
+  margin-top: 8px;
+  animation: slideIn 0.3s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Style commun pour les boutons */
+.ai-generate-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: linear-gradient(135deg, #0077b5 0%, #0a66c2 100%);
+  color: white;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 6px; /* Légèrement plus arrondi */
+  cursor: pointer;
+  font-size: 13px; /* Légèrement plus grand */
+  transition: all 0.3s ease;
+  position: relative;
+  z-index: 2147483647; /* Valeur maximale pour garantir la visibilité */
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* Ajouter une légère ombre */
+}
+
+/* Style pour les boutons désactivés (non authentifié) */
+.ai-generate-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background: #6c757d;
+  transform: none;
+}
+
+.ai-generate-button:disabled:hover {
+  transform: none;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Style pour les boutons en chargement (avec animation de bordure) */
+.ai-generate-button.loading {
+  cursor: wait;
+  opacity: 1;
+  animation: rotating-border 1.5s linear infinite;
+  position: relative;
+}
+
+/* Variante pour mode négatif */
+.ai-generate-button.loading.negative {
+  animation: rotating-border 1.5s linear infinite;
+}
+
+@keyframes rotating-border-negative {
+  0% {
+    box-shadow:
+      0 0 0 2px rgba(255, 255, 255, 0.1),
+      2px 0 8px rgba(255, 255, 255, 0.8),
+      0 0 8px rgba(231, 76, 60, 0.3);
+  }
+  25% {
+    box-shadow:
+      0 0 0 2px rgba(255, 255, 255, 0.1),
+      0 2px 8px rgba(255, 255, 255, 0.8),
+      0 0 8px rgba(231, 76, 60, 0.3);
+  }
+  50% {
+    box-shadow:
+      0 0 0 2px rgba(255, 255, 255, 0.1),
+      -2px 0 8px rgba(255, 255, 255, 0.8),
+      0 0 8px rgba(231, 76, 60, 0.3);
+  }
+  75% {
+    box-shadow:
+      0 0 0 2px rgba(255, 255, 255, 0.1),
+      0 -2px 8px rgba(255, 255, 255, 0.8),
+      0 0 8px rgba(231, 76, 60, 0.3);
+  }
+  100% {
+    box-shadow:
+      0 0 0 2px rgba(255, 255, 255, 0.1),
+      2px 0 8px rgba(255, 255, 255, 0.8),
+      0 0 8px rgba(231, 76, 60, 0.3);
+  }
+}
+
+.ai-generate-button.loading.negative {
+  animation: rotating-border-negative 1.5s linear infinite;
+}
+
+/* Style pour les boutons en mode réponse à un commentaire */
+.ai-generate-button.reply-mode {
+  background: linear-gradient(135deg, #13a5fa 0%, #0e88c9 100%);
+}
+
+.ai-generate-button.with-prompt.reply-mode {
+  background: linear-gradient(135deg, #0e88c9 0%, #0c6d9e 100%);
+}
+
+.ai-generate-button.reply-mode:hover:not(:disabled) {
+  box-shadow: 0 4px 8px rgba(19, 165, 250, 0.3);
+}
+
+/* Style spécifique pour le bouton "Générer avec prompt" */
+.ai-generate-button.with-prompt {
+  background: linear-gradient(135deg, #0a66c2 0%, #004182 100%);
+}
+
+.ai-generate-button:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(10, 102, 194, 0.3);
+}
+
+.ai-generate-button:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+/* Style pour les boutons en mode réponse + négatif */
+.ai-generate-button.reply-mode.negative {
+  background: linear-gradient(135deg, #c0392b 0%, #962d22 100%);
+}
+
+/* Style spécial pour le mode négatif */
+.ai-generate-button.negative {
+  background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+}
+
+.ai-generate-button.with-prompt.negative {
+  background: linear-gradient(135deg, #c0392b 0%, #962d22 100%);
+}
+
+.ai-generate-button.negative:hover:not(:disabled) {
+  box-shadow: 0 4px 8px rgba(231, 76, 60, 0.3);
+}
+
+/* Animation de chargement */
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Animation de bordure lumineuse rotative */
+@keyframes rotating-border {
+  0% {
+    box-shadow:
+      0 0 0 2px rgba(255, 255, 255, 0.1),
+      2px 0 8px rgba(255, 255, 255, 0.8),
+      0 0 8px rgba(10, 102, 194, 0.3);
+  }
+  25% {
+    box-shadow:
+      0 0 0 2px rgba(255, 255, 255, 0.1),
+      0 2px 8px rgba(255, 255, 255, 0.8),
+      0 0 8px rgba(10, 102, 194, 0.3);
+  }
+  50% {
+    box-shadow:
+      0 0 0 2px rgba(255, 255, 255, 0.1),
+      -2px 0 8px rgba(255, 255, 255, 0.8),
+      0 0 8px rgba(10, 102, 194, 0.3);
+  }
+  75% {
+    box-shadow:
+      0 0 0 2px rgba(255, 255, 255, 0.1),
+      0 -2px 8px rgba(255, 255, 255, 0.8),
+      0 0 8px rgba(10, 102, 194, 0.3);
+  }
+  100% {
+    box-shadow:
+      0 0 0 2px rgba(255, 255, 255, 0.1),
+      2px 0 8px rgba(255, 255, 255, 0.8),
+      0 0 8px rgba(10, 102, 194, 0.3);
+  }
+}
+
+.ai-spinner {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  border-top-color: #ffffff;
+  animation: spin 1s linear infinite;
+}
+
+/* Animation de pulse pour attirer l'attention sur le bouton */
+@keyframes pulse {
+  0% { box-shadow: 0 0 0 0 rgba(10, 102, 194, 0.4); }
+  70% { box-shadow: 0 0 0 10px rgba(10, 102, 194, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(10, 102, 194, 0); }
+}
+
+/* Ajouter l'animation pulse au chargement de la page */
+.ai-generate-button.pulse {
+  animation: pulse 2s infinite;
+}
+
+/* Style pour le bouton en mode chargement */
+.ai-generate-button.loading span::after {
+  content: '';
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  margin-left: 5px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  border-top-color: #ffffff;
+  animation: spin 1s linear infinite;
+}
+
+/* Styles pour le popup avec options de commentaires */
+.ai-options-popup {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  padding: 20px;
+  z-index: 2147483647;
+  min-width: 600px;
+  max-width: 800px;
+  max-height: 85vh;
+  overflow-y: auto;
+  animation: slideIn 0.3s ease;
+}
+
+/* Styles pour le popup de prompt */
+.ai-prompt-popup {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  padding: 16px;
+  z-index: 2147483647;
+  width: 350px;
+  max-height: 80vh;
+  overflow-y: auto;
+  animation: slideIn 0.3s ease;
+}
+
+.ai-prompt-textarea {
+  width: 100%;
+  height: 100px;
+  padding: 10px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  margin: 10px 0;
+  resize: vertical;
+  font-family: inherit;
+  font-size: 14px;
+}
+
+.ai-prompt-textarea:focus {
+  outline: none;
+  border-color: #0077b5;
+  box-shadow: 0 0 0 2px rgba(0, 119, 181, 0.2);
+}
+
+.ai-prompt-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.ai-prompt-cancel {
+  padding: 8px 12px;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  background: #ffffff;
+  cursor: pointer;
+  font-size: 13px;
+  transition: all 0.2s ease;
+}
+
+/* Styles pour les popups en mode réponse */
+.ai-prompt-submit.reply-mode {
+  background: linear-gradient(135deg, #13a5fa 0%, #0e88c9 100%);
+}
+
+.ai-prompt-submit.reply-mode:hover {
+  box-shadow: 0 2px 4px rgba(19, 165, 250, 0.3);
+}
+
+.ai-prompt-cancel:hover {
+  background: #f9fafb;
+}
+
+.ai-prompt-submit {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 6px;
+  background: linear-gradient(135deg, #0077b5 0%, #0a66c2 100%);
+  color: white;
+  cursor: pointer;
+  font-size: 13px;
+  transition: all 0.2s ease;
+}
+
+.ai-prompt-submit:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(10, 102, 194, 0.3);
+}
+
+.ai-prompt-submit.negative {
+  background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+}
+
+.ai-prompt-submit.negative:hover {
+  box-shadow: 0 2px 4px rgba(231, 76, 60, 0.3);
+}
+
+.ai-popup-title {
+  font-size: 14px;
+  color: #6b7280;
+  margin-bottom: 12px;
+  text-align: center;
+}
+
+.ai-option {
+  padding: 16px;
+  cursor: pointer;
+  border-radius: 8px;
+  margin-bottom: 12px;
+  border: 1px solid #e5e7eb;
+  background: #ffffff;
+  transition: all 0.2s ease;
+}
+
+.ai-option:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  border-color: #0077b5;
+}
+
+/* Style pour les options verrouillées (FREE plan) */
+.ai-option.locked {
+  opacity: 0.7;
+  background: #f9fafb;
+  cursor: not-allowed;
+  position: relative;
+}
+
+.ai-option.locked:hover {
+  transform: none;
+  box-shadow: none;
+  border-color: #e5e7eb;
+}
+
+.ai-option.locked .ai-option-text {
+  filter: blur(0.5px);
+  user-select: none;
+}
+
+.ai-option.locked .ai-action-buttons-container button {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Icône de verrouillage */
+.ai-lock-icon {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 32px;
+  z-index: 10;
+  pointer-events: none;
+  opacity: 0.3;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+/* Style spécial pour les options négatives */
+.ai-option.negative {
+  border-left: 3px solid #e74c3c;
+}
+
+.ai-option-number {
+  display: inline-block;
+  background: rgba(0, 119, 181, 0.1);
+  color: #0077b5;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 12px;
+  margin-bottom: 6px;
+}
+
+/* MODIFICATION: Changer "Option" en "Génération" */
+.ai-option-number::before {
+  content: "Génération ";
+}
+
+.ai-option-number.negative {
+  background: rgba(231, 76, 60, 0.1);
+  color: #e74c3c;
+}
+
+.ai-option-text {
+  margin-top: 8px;
+  line-height: 1.6;
+  color: #000000;
+  font-size: 14px;
+}
+
+.ai-close-button {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 20px;
+  color: #6b7280;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: all 0.2s ease;
+}
+
+.ai-close-button:hover {
+  background-color: #f3f4f6;
+  color: #374151;
+}
+
+/* Overlay pour les popups */
+.ai-popup-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 2147483646;
+  animation: fadeIn 0.2s ease;
+}
+
+/* Animation d'apparition de l'overlay */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Animation d'apparition du popup */
+@keyframes slideIn {
+  from {
+    transform: translate(-50%, -50%) scale(0.95);
+    opacity: 0;
+  }
+  to {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 1;
+  }
+}
+
+/* Style pour le bouton Affiner */
+.ai-refine-button {
+  background: transparent;
+  color: #0077b5;
+  border: 1px solid #0077b5;
+  border-radius: 4px;
+  padding: 4px 8px;
+  font-size: 12px;
+  cursor: pointer;
+  margin-top: 8px;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.ai-refine-button:hover {
+  background: rgba(0, 119, 181, 0.1);
+  transform: translateY(-1px);
+}
+
+.ai-refine-button.negative {
+  color: #e74c3c;
+  border-color: #e74c3c;
+}
+
+.ai-refine-button.negative:hover {
+  background: rgba(231, 76, 60, 0.1);
+}
+
+/* Style pour le bouton Plus (+) */
+.ai-plus-button {
+  background: transparent;
+  color: #0077b5;
+  border: 1px solid #0077b5;
+  border-radius: 4px;
+  padding: 4px 8px;
+  font-size: 12px;
+  cursor: pointer;
+  margin-top: 8px;
+  margin-left: 4px;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+}
+
+.ai-plus-button:hover {
+  background: rgba(0, 119, 181, 0.1);
+  transform: translateY(-1px);
+}
+
+.ai-plus-button.negative {
+  color: #e74c3c;
+  border-color: #e74c3c;
+}
+
+.ai-plus-button.negative:hover {
+  background: rgba(231, 76, 60, 0.1);
+}
+
+/* Style pour le bouton Moins (-) */
+.ai-minus-button {
+  background: transparent;
+  color: #0077b5;
+  border: 1px solid #0077b5;
+  border-radius: 4px;
+  padding: 4px 8px;
+  font-size: 12px;
+  cursor: pointer;
+  margin-top: 8px;
+  margin-right: 4px;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+}
+
+.ai-minus-button:hover {
+  background: rgba(0, 119, 181, 0.1);
+  transform: translateY(-1px);
+}
+
+.ai-minus-button.negative {
+  color: #e74c3c;
+  border-color: #e74c3c;
+}
+
+.ai-minus-button.negative:hover {
+  background: rgba(231, 76, 60, 0.1);
+}
+
+/* Style pour la boîte de dialogue de raffinement */
+.ai-refine-popup {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  padding: 16px;
+  z-index: 2147483647;
+  width: 350px;
+  max-height: 80vh;
+  overflow-y: auto;
+  animation: slideIn 0.3s ease;
+}
+
+.ai-refine-textarea {
+  width: 100%;
+  height: 100px;
+  padding: 10px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  margin: 10px 0;
+  resize: vertical;
+  font-family: inherit;
+  font-size: 14px;
+}
+
+.ai-refine-textarea:focus {
+  outline: none;
+  border-color: #0077b5;
+  box-shadow: 0 0 0 2px rgba(0, 119, 181, 0.2);
+}
+
+.ai-refine-context {
+  font-size: 12px;
+  background: #f9fafb;
+  padding: 8px;
+  border-radius: 8px;
+  margin-bottom: 10px;
+  color: #6b7280;
+  max-height: 100px;
+  overflow-y: auto;
+}
+
+.ai-refine-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.ai-refine-cancel {
+  padding: 8px 12px;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  background: #ffffff;
+  cursor: pointer;
+  font-size: 13px;
+  transition: all 0.2s ease;
+}
+
+.ai-refine-cancel:hover {
+  background: #f9fafb;
+}
+
+.ai-refine-submit {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 6px;
+  background: linear-gradient(135deg, #0077b5 0%, #0a66c2 100%);
+  color: white;
+  cursor: pointer;
+  font-size: 13px;
+  transition: all 0.2s ease;
+}
+
+.ai-refine-submit:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(10, 102, 194, 0.3);
+}
+
+/* Styles pour le bouton d'affinage en mode réponse */
+.ai-refine-submit.reply-mode {
+  background: linear-gradient(135deg, #13a5fa 0%, #0e88c9 100%);
+}
+
+.ai-refine-submit.reply-mode:hover {
+  box-shadow: 0 2px 4px rgba(19, 165, 250, 0.3);
+}
+
+.ai-refine-submit.negative {
+  background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+}
+
+.ai-refine-submit.negative:hover {
+  box-shadow: 0 2px 4px rgba(231, 76, 60, 0.3);
+}
+
+/* Styles pour le conteneur de la matrice d'émotions */
+.ai-emotions-container {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  z-index: 2147483647;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  padding: 16px;
+  background: #ffffff;
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+  width: max-content;
+  min-width: 420px;
+  max-width: 600px;
+  margin-top: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+  opacity: 0;
+  transform: translateY(-10px);
+  animation: emotionsPanelAppear 0.3s ease forwards;
+  pointer-events: none;
+}
+
+.ai-emotions-container.visible {
+  pointer-events: auto;
+}
+
+/* Animation d'apparition du panneau émotions */
+@keyframes emotionsPanelAppear {
+  0% {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Animation de disparition du panneau émotions */
+@keyframes emotionsPanelDisappear {
+  0% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+}
+
+/* État de chargement du panneau */
+.ai-emotions-container.loading {
+  min-height: 200px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 1;
+}
+
+/* Spinner de chargement pour le panneau émotions */
+.ai-emotions-loading-spinner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.ai-emotions-loading-spinner::before {
+  content: '';
+  width: 32px;
+  height: 32px;
+  border: 3px solid #e5e7eb;
+  border-top-color: #0077b5;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+.ai-emotions-loading-text {
+  font-size: 13px;
+  color: #6b7280;
+  font-weight: 500;
+}
+
+/* En-tête de la matrice */
+.ai-emotion-matrix-header {
+  display: grid;
+  grid-template-columns: 120px repeat(3, 1fr);
+  gap: 4px;
+  margin-bottom: 4px;
+}
+
+/* Ligne de la matrice */
+.ai-emotion-matrix-row {
+  display: grid;
+  grid-template-columns: 120px repeat(3, 1fr);
+  gap: 4px;
+  margin-bottom: 4px;
+}
+
+/* Cellule générique de la matrice */
+.ai-emotion-matrix-cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px;
+  border-radius: 6px;
+  font-size: 20px;
+  transition: all 0.2s ease;
+}
+
+/* Cellule d'en-tête */
+.ai-emotion-matrix-cell.header-cell {
+  background: #f3f4f6;
+  font-size: 18px;
+  font-weight: 600;
+  color: #374151;
+  border: 1px solid #e5e7eb;
+}
+
+.ai-emotion-matrix-cell.header-cell.empty {
+  background: transparent;
+  border: none;
+}
+
+/* Cellule de label (première colonne) */
+.ai-emotion-matrix-cell.label-cell {
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  justify-content: flex-start;
+  padding: 8px 12px;
+  font-size: 14px;
+}
+
+.ai-emotion-matrix-cell.label-cell .emotion-icon {
+  font-size: 20px;
+}
+
+.ai-emotion-matrix-cell.label-cell .emotion-label {
+  font-size: 11px;
+  color: #374151;
+  font-weight: 500;
+  line-height: 1.2;
+  text-align: left;
+}
+
+/* Cellules d'intensité */
+.ai-emotion-matrix-cell.intensity-cell {
+  cursor: pointer;
+  border: 2px solid transparent;
+  background: #f9fafb;
+  position: relative;
+}
+
+/* Intensité faible (vert) */
+.ai-emotion-matrix-cell.intensity-low {
+  background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+}
+
+.ai-emotion-matrix-cell.intensity-low:hover {
+  background: linear-gradient(135deg, #a7f3d0 0%, #6ee7b7 100%);
+  transform: scale(1.05);
+  box-shadow: 0 4px 8px rgba(16, 185, 129, 0.3);
+}
+
+/* Intensité moyenne (jaune) */
+.ai-emotion-matrix-cell.intensity-medium {
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+}
+
+.ai-emotion-matrix-cell.intensity-medium:hover {
+  background: linear-gradient(135deg, #fde68a 0%, #fcd34d 100%);
+  transform: scale(1.05);
+  box-shadow: 0 4px 8px rgba(245, 158, 11, 0.3);
+}
+
+/* Intensité forte (rouge) */
+.ai-emotion-matrix-cell.intensity-high {
+  background: linear-gradient(135deg, #fecaca 0%, #fca5a5 100%);
+}
+
+.ai-emotion-matrix-cell.intensity-high:hover {
+  background: linear-gradient(135deg, #fca5a5 0%, #f87171 100%);
+  transform: scale(1.05);
+  box-shadow: 0 4px 8px rgba(239, 68, 68, 0.3);
+}
+
+/* Cellule sélectionnée */
+.ai-emotion-matrix-cell.intensity-cell.selected {
+  border-color: #0077b5;
+  box-shadow: 0 0 0 2px rgba(0, 119, 181, 0.3), 0 4px 8px rgba(0, 119, 181, 0.2);
+  transform: scale(1.05);
+}
+
+.ai-emotion-matrix-cell.intensity-low.selected {
+  border-color: #10b981;
+  box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.5), 0 4px 8px rgba(16, 185, 129, 0.3);
+}
+
+.ai-emotion-matrix-cell.intensity-medium.selected {
+  border-color: #f59e0b;
+  box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.5), 0 4px 8px rgba(245, 158, 11, 0.3);
+}
+
+.ai-emotion-matrix-cell.intensity-high.selected {
+  border-color: #ef4444;
+  box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.5), 0 4px 8px rgba(239, 68, 68, 0.3);
+}
+
+/* Séparateur et titre pour les styles de langage */
+.ai-styles-separator {
+  width: 100%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(59, 130, 246, 0.3), transparent);
+  margin: 16px 0 12px 0;
+}
+
+.ai-styles-title {
+  text-align: center;
+  font-size: 13px;
+  font-weight: 600;
+  color: #1e3a8a;
+  margin-bottom: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Conteneur des styles de langage */
+.ai-styles-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+  padding: 0 8px 8px 8px;
+}
+
+/* Boutons de style */
+.ai-style-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  background: linear-gradient(135deg, #ffffff, #f0f9ff);
+  border: 1.5px solid #e0e7ff;
+  border-radius: 20px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 12px;
+  color: #1e3a8a;
+  font-weight: 500;
+  white-space: nowrap;
+  box-shadow: 0 2px 4px rgba(59, 130, 246, 0.1);
+}
+
+.ai-style-button:hover {
+  background: linear-gradient(135deg, #dbeafe, #bfdbfe);
+  border-color: #60a5fa;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(59, 130, 246, 0.2);
+}
+
+.ai-style-button.selected {
+  background: linear-gradient(135deg, #3b82f6, #2563eb);
+  border-color: #1d4ed8;
+  color: white;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.5), 0 4px 12px rgba(59, 130, 246, 0.4);
+  transform: scale(1.05);
+}
+
+.ai-style-button .style-emoji {
+  font-size: 16px;
+  line-height: 1;
+}
+
+.ai-style-button .style-label {
+  line-height: 1.2;
+  text-align: left;
+}
+
+/* ========== MÉTADONNÉES DES GÉNÉRATIONS (Option 3) ========== */
+
+/* Conteneur de la ligne de métadonnées */
+.ai-generation-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: 6px;
+  margin-bottom: 4px;
+  font-size: 11px;
+}
+
+/* Item de métadonnée individuel */
+.ai-meta-item {
+  background: #f0f0f0;
+  padding: 4px 10px;
+  border-radius: 4px;
+  color: #555;
+  border: 1px solid #d0d0d0;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+  font-size: 11px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-weight: 500;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+/* Effet hover sur les métadonnées */
+.ai-meta-item:hover {
+  background: #0077b5;
+  color: white;
+  border-color: #0077b5;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 119, 181, 0.3);
+}
+
+/* Séparateur entre les métadonnées */
+.ai-meta-separator {
+  color: #ccc;
+  font-weight: bold;
+  font-size: 10px;
+  margin: 0 2px;
+}
+
+/* Variantes de couleurs pour différents types de métadonnées */
+.ai-meta-item.meta-language {
+  border-color: #ffb74d;
+  color: #e65100;
+}
+
+.ai-meta-item.meta-language:hover {
+  background: #ff9800;
+  border-color: #ff9800;
+  color: white;
+}
+
+.ai-meta-item.meta-length {
+  border-color: #64b5f6;
+  color: #0d47a1;
+}
+
+.ai-meta-item.meta-length:hover {
+  background: #2196f3;
+  border-color: #2196f3;
+  color: white;
+}
+
+.ai-meta-item.meta-emotion {
+  border-color: #ba68c8;
+  color: #6a1b9a;
+}
+
+.ai-meta-item.meta-emotion:hover {
+  background: #9c27b0;
+  border-color: #9c27b0;
+  color: white;
+}
+
+.ai-meta-item.meta-style {
+  border-color: #81c784;
+  color: #2e7d32;
+}
+
+.ai-meta-item.meta-style:hover {
+  background: #4caf50;
+  border-color: #4caf50;
+  color: white;
+}
+
+.ai-meta-item.meta-intensity {
+  border-color: #ef5350;
+  color: #c62828;
+}
+
+.ai-meta-item.meta-intensity:hover {
+  background: #f44336;
+  border-color: #f44336;
+  color: white;
+}
+
+/* ========== FIN MÉTADONNÉES DES GÉNÉRATIONS ========== */

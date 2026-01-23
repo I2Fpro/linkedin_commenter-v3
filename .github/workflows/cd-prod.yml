@@ -1,0 +1,246 @@
+name: CD Prod
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_PREFIX: ${{ github.repository_owner }}/linkedin-ai
+  DEPLOY_PATH: /home/deploy/I2F/PROJETS/LINKEDIN_COMMENTER/linkedin_commenter-v3
+
+jobs:
+  build-backend:
+    runs-on: ubuntu-latest
+    environment: production
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Get version from tag
+        id: version
+        run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+
+      - name: Set environment variables
+        run: |
+          echo "AI_API_URL=${{ secrets.AI_API_URL_PROD }}" >> $GITHUB_ENV
+          echo "USERS_API_URL=${{ secrets.USERS_API_URL_PROD }}" >> $GITHUB_ENV
+          echo "SITE_URL=${{ secrets.SITE_URL_PROD }}" >> $GITHUB_ENV
+          echo "GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID_PROD }}" >> $GITHUB_ENV
+          echo "GOOGLE_CLIENT_ID_WEB=${{ secrets.GOOGLE_CLIENT_ID_WEB_PROD }}" >> $GITHUB_ENV
+          echo "STRIPE_WEBHOOK_SECRET=${{ secrets.STRIPE_WEBHOOK_SECRET_PROD }}" >> $GITHUB_ENV
+
+      - name: Apply environment config
+        run: |
+          chmod +x scripts/apply-env.sh
+          ./scripts/apply-env.sh .
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push ai-service
+        uses: docker/build-push-action@v5
+        with:
+          context: ./BACK-END/ai-service
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-ai-service:prod
+            ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-ai-service:${{ steps.version.outputs.VERSION }}
+            ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-ai-service:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Build and push user-service
+        uses: docker/build-push-action@v5
+        with:
+          context: ./BACK-END/user-service
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-user-service:prod
+            ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-user-service:${{ steps.version.outputs.VERSION }}
+            ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-user-service:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Build and push website
+        uses: docker/build-push-action@v5
+        with:
+          context: ./SITE-INTERNET
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-website:prod
+            ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-website:${{ steps.version.outputs.VERSION }}
+            ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-website:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Create .env and Deploy to Prod VPS
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SSH_HOST_PROD }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY_PROD }}
+          script: |
+            cd ${{ env.DEPLOY_PATH }}
+
+            # Create/update .env file with all secrets
+            cat > .env << 'ENVEOF'
+            # === Registry ===
+            GITHUB_OWNER=${{ github.repository_owner }}
+            TAG=prod
+
+            # === Database ===
+            POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }}
+
+            # === Auth ===
+            JWT_SECRET=${{ secrets.JWT_SECRET }}
+            JWT_ALGORITHM=HS256
+            JWT_EXPIRATION_HOURS=24
+            ENCRYPTION_KEY=${{ secrets.ENCRYPTION_KEY }}
+
+            # === Google OAuth ===
+            GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID_PROD }}
+            GOOGLE_CLIENT_ID_WEB=${{ secrets.GOOGLE_CLIENT_ID_WEB_PROD }}
+
+            # === OpenAI ===
+            OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}
+
+            # === Stripe ===
+            STRIPE_SECRET_KEY=${{ secrets.STRIPE_SECRET_KEY_PROD }}
+            STRIPE_WEBHOOK_SECRET=${{ secrets.STRIPE_WEBHOOK_SECRET_PROD }}
+            STRIPE_PRICE_MEDIUM_MONTHLY=${{ secrets.STRIPE_PRICE_MEDIUM_MONTHLY }}
+            STRIPE_PRICE_PREMIUM_MONTHLY=${{ secrets.STRIPE_PRICE_PREMIUM_MONTHLY }}
+            STRIPE_SUCCESS_URL=${{ secrets.SITE_URL_PROD }}/success?session_id={CHECKOUT_SESSION_ID}
+            STRIPE_CANCEL_URL=${{ secrets.SITE_URL_PROD }}/cancel
+            STRIPE_PORTAL_RETURN_URL=${{ secrets.SITE_URL_PROD }}/account/subscription
+
+            # === CORS ===
+            ALLOWED_ORIGINS=${{ secrets.AI_API_URL_PROD }},${{ secrets.USERS_API_URL_PROD }},${{ secrets.SITE_URL_PROD }},chrome-extension://*
+            CORS_CREDENTIALS=true
+
+            # === Traefik Hosts ===
+            AI_API_HOST=ai.api.ai-linkedin.i2f-entreprise.fr
+            USERS_API_HOST=users.api.ai-linkedin.i2f-entreprise.fr
+            SITE_HOST=ai-linkedin.i2f-entreprise.fr
+
+            # === PostHog (disabled) ===
+            POSTHOG_ENABLED=false
+            POSTHOG_API_KEY=
+            POSTHOG_HOST=https://eu.i.posthog.com
+
+            # === Environment ===
+            ENVIRONMENT=production
+            ENVEOF
+
+            echo ".env file created successfully"
+
+            echo ${{ secrets.GHCR_PAT }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+
+            docker compose pull
+            docker compose up -d --remove-orphans
+            docker system prune -f
+
+            echo "Production deployed: v${{ steps.version.outputs.VERSION }} - $(date)"
+
+    outputs:
+      version: ${{ steps.version.outputs.VERSION }}
+
+  build-extension:
+    runs-on: ubuntu-latest
+    environment: production
+    outputs:
+      version: ${{ steps.version.outputs.VERSION }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Get version from tag
+        id: version
+        run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+
+      - name: Set environment variables
+        run: |
+          echo "AI_API_URL=${{ secrets.AI_API_URL_PROD }}" >> $GITHUB_ENV
+          echo "USERS_API_URL=${{ secrets.USERS_API_URL_PROD }}" >> $GITHUB_ENV
+          echo "SITE_URL=${{ secrets.SITE_URL_PROD }}" >> $GITHUB_ENV
+          echo "GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID_PROD }}" >> $GITHUB_ENV
+
+      - name: Apply environment config
+        run: |
+          chmod +x scripts/apply-env.sh
+          ./scripts/apply-env.sh ./FRONT-END
+
+      - name: Update manifest version
+        run: |
+          cd FRONT-END
+          # Update version in manifest.json
+          jq --arg v "${{ steps.version.outputs.VERSION }}" '.version = $v' manifest.json > tmp.json
+          mv tmp.json manifest.json
+          echo "Updated manifest.json version to ${{ steps.version.outputs.VERSION }}"
+
+      - name: Package Chrome Extension
+        run: |
+          cd FRONT-END
+          zip -r ../extension-prod.zip . -x "*.git*" -x "*.DS_Store" -x "*.env*"
+
+      - name: Upload to Chrome Web Store
+        uses: mnao305/chrome-extension-upload@v5.0.0
+        with:
+          file-path: extension-prod.zip
+          extension-id: ${{ secrets.CHROME_EXTENSION_ID_PROD }}
+          client-id: ${{ secrets.CHROME_CLIENT_ID }}
+          client-secret: ${{ secrets.CHROME_CLIENT_SECRET }}
+          refresh-token: ${{ secrets.CHROME_REFRESH_TOKEN }}
+          publish: true
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: extension-prod-${{ steps.version.outputs.VERSION }}
+          path: extension-prod.zip
+          retention-days: 90
+
+  create-release:
+    needs: [build-backend, build-extension]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Download extension artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: extension-prod-${{ needs.build-extension.outputs.version }}
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: extension-prod.zip
+          generate_release_notes: true
+          name: Release v${{ needs.build-extension.outputs.version }}
+          body: |
+            ## LinkedIn AI Commenter v${{ needs.build-extension.outputs.version }}
+
+            ### Deployment Status
+            - Backend: Deployed to production
+            - Chrome Extension: Published to Chrome Web Store
+
+            ### Installation
+            - [Chrome Web Store](https://chrome.google.com/webstore/detail/${{ secrets.CHROME_EXTENSION_ID_PROD }})
+            - Or download the extension zip from this release

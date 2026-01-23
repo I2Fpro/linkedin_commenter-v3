@@ -1,0 +1,1333 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="LinkedIn AI Commenter - Extension Chrome d'IA pour générer des commentaires LinkedIn professionnels et pertinents en quelques secondes">
+    <title>LinkedIn AI Commenter - Extension Chrome IA pour LinkedIn</title>
+
+    <!-- Google Fonts - Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <!-- Tailwind CSS CDN - jsdelivr (fonctionne mieux que cdn.tailwindcss.com) -->
+    <script src="https://cdn.jsdelivr.net/npm/tailwindcss-cdn@3.4.1/tailwindcss.js"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        'linkedin-blue': '#0A66C2',
+                        'linkedin-blue-dark': '#004182',
+                        'linkedin-blue-soft': '#EDF5FD',
+                        'linkedin-bg': '#F3F2EF',
+                        'linkedin-stroke': '#E0DFDC',
+                        'linkedin-text': '#1D1D1B',
+                        'linkedin-text-secondary': '#666666',
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        html {
+            scroll-behavior: smooth;
+        }
+
+        /* Masquer la barre de défilement pour tous les navigateurs */
+        * {
+            scrollbar-width: none; /* Firefox */
+            -ms-overflow-style: none; /* IE et Edge */
+        }
+
+        /* Masquer la barre de défilement pour Chrome, Safari et Opera */
+        *::-webkit-scrollbar {
+            display: none;
+        }
+
+        /* Transition douce pour le changement de thème */
+        body, header, main, aside, article, div, a, button, input, h1, h2, h3, p, span, nav {
+            transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease;
+        }
+
+        /* Variables CSS pour le thème light (par défaut) */
+        :root {
+            --bg-primary: #F3F2EF;
+            --bg-secondary: #FFFFFF;
+            --border-color: #E0DFDC;
+            --text-primary: #1D1D1B;
+            --text-secondary: #666666;
+            --linkedin-blue: #0A66C2;
+            --linkedin-blue-dark: #004182;
+            --linkedin-blue-soft: #EDF5FD;
+            --gradient-start: #0A66C2;
+            --gradient-end: #004182;
+        }
+
+        /* Variables CSS pour le thème dark */
+        [data-theme="dark"] {
+            --bg-primary: #1A1A1A;
+            --bg-secondary: #2D2D2D;
+            --border-color: #404040;
+            --text-primary: #E4E4E4;
+            --text-secondary: #B0B0B0;
+            --linkedin-blue: #4A9FE8;
+            --linkedin-blue-dark: #3A8FD8;
+            --linkedin-blue-soft: #1E3A52;
+            --gradient-start: #4A9FE8;
+            --gradient-end: #3A8FD8;
+        }
+
+        /* Application des variables CSS aux éléments - AVEC !important pour écraser Tailwind */
+        body {
+            background-color: var(--bg-primary) !important;
+            color: var(--text-primary) !important;
+        }
+
+        .bg-linkedin-bg {
+            background-color: var(--bg-primary) !important;
+        }
+
+        .bg-white {
+            background-color: var(--bg-secondary) !important;
+        }
+
+        .border-linkedin-stroke {
+            border-color: var(--border-color) !important;
+        }
+
+        .text-linkedin-text {
+            color: var(--text-primary) !important;
+        }
+
+        .text-linkedin-text-secondary {
+            color: var(--text-secondary) !important;
+        }
+
+        .bg-linkedin-blue {
+            background-color: var(--linkedin-blue) !important;
+        }
+
+        .bg-linkedin-blue-dark {
+            background-color: var(--linkedin-blue-dark) !important;
+        }
+
+        .bg-linkedin-blue-soft {
+            background-color: var(--linkedin-blue-soft) !important;
+        }
+
+        .text-linkedin-blue {
+            color: var(--linkedin-blue) !important;
+        }
+
+        .hover\:bg-linkedin-blue:hover {
+            background-color: var(--linkedin-blue) !important;
+        }
+
+        .hover\:bg-linkedin-blue-dark:hover {
+            background-color: var(--linkedin-blue-dark) !important;
+        }
+
+        .hover\:bg-linkedin-blue-soft:hover {
+            background-color: var(--linkedin-blue-soft) !important;
+        }
+
+        .hover\:text-linkedin-blue:hover {
+            color: var(--linkedin-blue) !important;
+        }
+
+        .hover\:text-linkedin-text:hover {
+            color: var(--text-primary) !important;
+        }
+
+        /* Gradient avec variables */
+        .bg-gradient-to-r {
+            background: linear-gradient(to right, var(--gradient-start), var(--gradient-end)) !important;
+        }
+
+        /* Input avec thème */
+        input[type="text"] {
+            background-color: var(--linkedin-blue-soft) !important;
+            color: var(--text-primary) !important;
+        }
+
+        input[type="text"]::placeholder {
+            color: var(--text-secondary) !important;
+        }
+
+        /* Badge de plan pour la sidebar */
+        .plan-badge-inline {
+            display: inline-flex;
+            align-items: center;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 700;
+            color: white;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.1);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .plan-badge-inline.FREE {
+            background: linear-gradient(135deg, #6c757d 0%, #5a6268 100%);
+        }
+
+        .plan-badge-inline.MEDIUM {
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+        }
+
+        .plan-badge-inline.PREMIUM {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        }
+    </style>
+</head>
+<body class="font-sans antialiased bg-linkedin-bg text-linkedin-text">
+
+    <!-- TOP BAR -->
+    <header class="fixed top-0 left-0 right-0 z-50 bg-white border-b border-linkedin-stroke shadow-sm">
+        <div class="max-w-[1128px] mx-auto px-4">
+            <div class="flex items-center justify-between h-[52px]">
+                <!-- Left: Logo + Theme + Search -->
+                <div class="flex items-center gap-3">
+                    <a href="#" class="flex items-center">
+                        <span class="text-lg font-bold text-linkedin-blue" data-translate="header-logo">LinkedIn AI Commenter</span>
+                    </a>
+
+                    <!-- Theme Toggle Button -->
+                    <button id="themeToggle" class="flex flex-col items-center text-linkedin-text-secondary hover:text-linkedin-text transition-colors cursor-pointer" aria-label="Toggle theme">
+                        <svg id="sunIcon" class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path>
+                        </svg>
+                        <svg id="moonIcon" class="w-6 h-6 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path>
+                        </svg>
+                        <span class="text-xs hidden sm:block" data-translate="theme-btn">Thème</span>
+                    </button>
+
+                    <!-- Language Toggle Button -->
+                    <button id="languageToggle" class="flex flex-col items-center text-linkedin-text-secondary hover:text-linkedin-text transition-colors cursor-pointer" aria-label="Toggle language">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129"></path>
+                        </svg>
+                        <span class="text-xs hidden sm:block" data-translate="lang-btn">FR/EN</span>
+                    </button>
+
+                    <div class="relative hidden md:block">
+                        <input type="text" placeholder="Rechercher" data-translate-placeholder="search-input" class="w-64 px-3 py-1.5 text-sm bg-linkedin-blue-soft rounded border-0 focus:outline-none">
+                    </div>
+                </div>
+
+                <!-- Right: Nav Icons -->
+                <nav class="flex items-center gap-6">
+                    <a href="#" class="flex flex-col items-center text-linkedin-text-secondary hover:text-linkedin-text transition-colors">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>
+                        </svg>
+                        <span class="text-xs hidden sm:block" data-translate="nav-home">Accueil</span>
+                    </a>
+                    <a href="#fonctionnalites" class="flex flex-col items-center text-linkedin-text-secondary hover:text-linkedin-text transition-colors">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+                        </svg>
+                        <span class="text-xs hidden sm:block" data-translate="nav-features">Fonctionnalités</span>
+                    </a>
+                    <a href="#tarifs" class="flex flex-col items-center text-linkedin-text-secondary hover:text-linkedin-text transition-colors">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                        <span class="text-xs hidden sm:block" data-translate="nav-pricing">Tarifs</span>
+                    </a>
+
+                    <a href="#tarifs" class="px-4 py-1.5 bg-linkedin-blue hover:bg-linkedin-blue-dark text-white text-sm font-semibold rounded transition-colors hidden md:block" data-translate="nav-install">
+                        Installer
+                    </a>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <!-- MAIN LAYOUT (3 colonnes) -->
+    <div class="pt-[52px] max-w-[1128px] mx-auto px-4 py-6">
+        <div class="grid grid-cols-12 gap-6">
+
+            <!-- LEFT SIDEBAR -->
+            <aside class="col-span-12 lg:col-span-3 lg:sticky lg:top-[68px] lg:self-start lg:max-h-[calc(100vh-84px)] lg:overflow-y-auto">
+                <!-- Profile Card -->
+                <div class="bg-white border border-linkedin-stroke rounded-lg overflow-hidden mb-4">
+                    <div class="h-14 bg-gradient-to-r from-linkedin-blue to-linkedin-blue-dark"></div>
+                    <div class="px-4 pb-4 -mt-8">
+                        <div class="w-16 h-16 rounded-full bg-linkedin-blue-soft border-4 border-white"></div>
+                        <h3 class="mt-2 font-bold text-sm text-linkedin-text" data-translate="sidebar-title">LinkedIn AI Commenter</h3>
+                        <p class="text-xs text-linkedin-text-secondary mt-1" data-translate="sidebar-subtitle">Extension Chrome IA pour commentaires professionnels</p>
+
+                        <!-- User Plan Badge (visible only when logged in) -->
+                        <div id="userPlanBadge" class="mt-3 hidden">
+                            <div class="flex items-center justify-between">
+                                <span class="text-xs text-linkedin-text-secondary font-medium">Plan actuel :</span>
+                                <span id="userPlanValue" class="plan-badge-inline FREE">FREE</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="border-t border-linkedin-stroke px-4 py-3">
+                        <a href="#tarifs" id="sidebarActionLink" class="text-xs font-semibold text-linkedin-blue hover:underline" data-translate="sidebar-install">Installer l'extension</a>
+                    </div>
+                </div>
+
+                <!-- Quick Links -->
+                <div class="bg-white border border-linkedin-stroke rounded-lg p-4 mb-4">
+                    <nav class="space-y-3">
+                        <a href="#fonctionnalites" class="flex items-center gap-3 text-sm font-semibold text-linkedin-text-secondary hover:text-linkedin-blue transition-colors">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                            </svg>
+                            <span data-translate="sidebar-link-features">Fonctionnalités</span>
+                        </a>
+                        <a href="#demo" class="flex items-center gap-3 text-sm font-semibold text-linkedin-text-secondary hover:text-linkedin-blue transition-colors">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
+                            </svg>
+                            <span data-translate="sidebar-link-demo">Démo</span>
+                        </a>
+                        <a href="#tarifs" class="flex items-center gap-3 text-sm font-semibold text-linkedin-text-secondary hover:text-linkedin-blue transition-colors">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                            <span data-translate="sidebar-link-pricing">Tarifs</span>
+                        </a>
+                        <a href="#faq" class="flex items-center gap-3 text-sm font-semibold text-linkedin-text-secondary hover:text-linkedin-blue transition-colors">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                            <span data-translate="sidebar-link-faq">FAQ</span>
+                        </a>
+                    </nav>
+                </div>
+            </aside>
+
+            <!-- CENTER COLUMN (Main Content) -->
+            <main class="col-span-12 lg:col-span-6 space-y-4">
+
+                <!-- HERO CARD -->
+                <article class="bg-white border border-linkedin-stroke rounded-lg p-6">
+                    <h1 class="text-3xl font-bold text-linkedin-text mb-3" data-translate="hero-title">
+                        Générez des commentaires LinkedIn intelligents en quelques secondes
+                    </h1>
+                    <p class="text-linkedin-text-secondary mb-6" data-translate="hero-subtitle">
+                        Extension Chrome d'IA qui analyse le contexte et génère des commentaires professionnels et pertinents directement sur LinkedIn
+                    </p>
+                    <div class="flex flex-wrap gap-3">
+                        <a href="#tarifs" class="px-6 py-2.5 bg-linkedin-blue hover:bg-linkedin-blue-dark text-white font-semibold rounded-md transition-colors" data-translate="hero-btn-install">
+                            Installer l'extension
+                        </a>
+                        <a href="#demo" class="px-6 py-2.5 border border-linkedin-stroke hover:bg-linkedin-blue-soft text-linkedin-text font-semibold rounded-md transition-colors" data-translate="hero-btn-demo">
+                            Voir la démo
+                        </a>
+                    </div>
+                </article>
+
+                <!-- DEMO MOCKUP CARD -->
+                <article class="bg-white border border-linkedin-stroke rounded-lg overflow-hidden">
+                    <div class="bg-linkedin-bg px-4 py-3 border-b border-linkedin-stroke">
+                        <div class="flex items-center justify-between">
+                            <span class="text-sm font-semibold text-linkedin-text" data-translate="demo-title">LinkedIn AI Commenter en action</span>
+                            <span class="text-xs text-linkedin-text-secondary" data-translate="demo-subtitle">Extension Chrome</span>
+                        </div>
+                    </div>
+                    <div class="p-6 space-y-4">
+                        <!-- Simulated LinkedIn Post -->
+                        <div class="border border-linkedin-stroke rounded-lg p-4">
+                            <div class="flex items-start gap-3 mb-3">
+                                <div class="w-12 h-12 rounded-full bg-linkedin-blue-soft"></div>
+                                <div class="flex-1 space-y-2">
+                                    <div class="h-3 bg-linkedin-bg rounded w-32"></div>
+                                    <div class="h-2 bg-linkedin-bg rounded w-24"></div>
+                                </div>
+                            </div>
+                            <div class="space-y-2">
+                                <div class="h-2 bg-linkedin-bg rounded w-full"></div>
+                                <div class="h-2 bg-linkedin-bg rounded w-11/12"></div>
+                                <div class="h-2 bg-linkedin-bg rounded w-4/5"></div>
+                            </div>
+                        </div>
+
+                        <!-- Generate Button -->
+                        <button class="w-full px-5 py-3 bg-linkedin-blue hover:bg-linkedin-blue-dark text-white font-semibold rounded-md transition-colors flex items-center justify-center gap-2">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                            </svg>
+                            <span data-translate="demo-btn-generate">Générer un commentaire</span>
+                        </button>
+
+                        <!-- Generated Comments -->
+                        <div class="space-y-3">
+                            <div class="p-4 bg-linkedin-blue-soft border-2 border-linkedin-blue rounded-lg">
+                                <div class="flex items-center justify-between mb-2">
+                                    <span class="text-xs font-semibold text-linkedin-blue" data-translate="demo-suggestion-1">Suggestion 1</span>
+                                    <span class="text-xs text-linkedin-text-secondary" data-translate="demo-tone-professional">Professionnel</span>
+                                </div>
+                                <div class="space-y-2">
+                                    <div class="h-2 bg-white rounded w-full"></div>
+                                    <div class="h-2 bg-white rounded w-5/6"></div>
+                                </div>
+                            </div>
+                            <div class="p-4 bg-white border border-linkedin-stroke rounded-lg">
+                                <div class="flex items-center justify-between mb-2">
+                                    <span class="text-xs font-semibold text-linkedin-text-secondary" data-translate="demo-suggestion-2">Suggestion 2</span>
+                                    <span class="text-xs text-linkedin-text-secondary" data-translate="demo-tone-friendly">Amical</span>
+                                </div>
+                                <div class="space-y-2">
+                                    <div class="h-2 bg-linkedin-bg rounded w-full"></div>
+                                    <div class="h-2 bg-linkedin-bg rounded w-3/4"></div>
+                                </div>
+                            </div>
+                            <div class="p-4 bg-white border border-linkedin-stroke rounded-lg">
+                                <div class="flex items-center justify-between mb-2">
+                                    <span class="text-xs font-semibold text-linkedin-text-secondary" data-translate="demo-suggestion-3">Suggestion 3</span>
+                                    <span class="text-xs text-linkedin-text-secondary" data-translate="demo-tone-enthusiastic">Enthousiaste</span>
+                                </div>
+                                <div class="space-y-2">
+                                    <div class="h-2 bg-linkedin-bg rounded w-full"></div>
+                                    <div class="h-2 bg-linkedin-bg rounded w-4/5"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </article>
+
+                <!-- HOW IT WORKS -->
+                <article class="bg-white border border-linkedin-stroke rounded-lg p-6">
+                    <h2 class="text-2xl font-bold text-linkedin-text mb-6" data-translate="how-title">Comment ça marche</h2>
+                    <div class="space-y-6">
+                        <div class="flex gap-4">
+                            <div class="flex-shrink-0 w-10 h-10 bg-linkedin-blue text-white rounded-full flex items-center justify-center font-bold">1</div>
+                            <div>
+                                <h3 class="font-bold text-linkedin-text mb-1" data-translate="how-step1-title">Installez l'extension</h3>
+                                <p class="text-sm text-linkedin-text-secondary" data-translate="how-step1-text">Ajoutez LinkedIn AI Commenter à Chrome depuis le Chrome Web Store en un clic</p>
+                            </div>
+                        </div>
+                        <div class="flex gap-4">
+                            <div class="flex-shrink-0 w-10 h-10 bg-linkedin-blue text-white rounded-full flex items-center justify-center font-bold">2</div>
+                            <div>
+                                <h3 class="font-bold text-linkedin-text mb-1" data-translate="how-step2-title">Cliquez sur l'icône</h3>
+                                <p class="text-sm text-linkedin-text-secondary" data-translate="how-step2-text">Sur LinkedIn, cliquez sur l'icône de l'extension dans une zone de commentaire</p>
+                            </div>
+                        </div>
+                        <div class="flex gap-4">
+                            <div class="flex-shrink-0 w-10 h-10 bg-linkedin-blue text-white rounded-full flex items-center justify-center font-bold">3</div>
+                            <div>
+                                <h3 class="font-bold text-linkedin-text mb-1" data-translate="how-step3-title">Choisissez et publiez</h3>
+                                <p class="text-sm text-linkedin-text-secondary" data-translate="how-step3-text">Sélectionnez parmi 3 suggestions générées et insérez votre commentaire</p>
+                            </div>
+                        </div>
+                    </div>
+                </article>
+
+                <!-- FEATURES -->
+                <article id="fonctionnalites" class="bg-white border border-linkedin-stroke rounded-lg p-6">
+                    <h2 class="text-2xl font-bold text-linkedin-text mb-6" data-translate="features-title">Fonctionnalités principales</h2>
+                    <div class="grid md:grid-cols-2 gap-4">
+                        <div class="flex gap-3">
+                            <div class="flex-shrink-0 w-10 h-10 bg-linkedin-blue-soft rounded-lg flex items-center justify-center">
+                                <svg class="w-5 h-5 text-linkedin-blue" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path>
+                                </svg>
+                            </div>
+                            <div>
+                                <h3 class="font-bold text-sm text-linkedin-text mb-1" data-translate="features-1-title">Génération intelligente</h3>
+                                <p class="text-xs text-linkedin-text-secondary" data-translate="features-1-text">Analyse automatique du contexte du post</p>
+                            </div>
+                        </div>
+                        <div class="flex gap-3">
+                            <div class="flex-shrink-0 w-10 h-10 bg-linkedin-blue-soft rounded-lg flex items-center justify-center">
+                                <svg class="w-5 h-5 text-linkedin-blue" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path>
+                                </svg>
+                            </div>
+                            <div>
+                                <h3 class="font-bold text-sm text-linkedin-text mb-1" data-translate="features-2-title">Ton personnalisable</h3>
+                                <p class="text-xs text-linkedin-text-secondary" data-translate="features-2-text">Professionnel, amical, expert</p>
+                            </div>
+                        </div>
+                        <div class="flex gap-3">
+                            <div class="flex-shrink-0 w-10 h-10 bg-linkedin-blue-soft rounded-lg flex items-center justify-center">
+                                <svg class="w-5 h-5 text-linkedin-blue" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                                </svg>
+                            </div>
+                            <div>
+                                <h3 class="font-bold text-sm text-linkedin-text mb-1" data-translate="features-3-title">Analyse du post</h3>
+                                <p class="text-xs text-linkedin-text-secondary" data-translate="features-3-text">Compréhension approfondie du contenu</p>
+                            </div>
+                        </div>
+                        <div class="flex gap-3">
+                            <div class="flex-shrink-0 w-10 h-10 bg-linkedin-blue-soft rounded-lg flex items-center justify-center">
+                                <svg class="w-5 h-5 text-linkedin-blue" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                                </svg>
+                            </div>
+                            <div>
+                                <h3 class="font-bold text-sm text-linkedin-text mb-1" data-translate="features-4-title">Intégration native</h3>
+                                <p class="text-xs text-linkedin-text-secondary" data-translate="features-4-text">Interface fluide dans LinkedIn</p>
+                            </div>
+                        </div>
+                        <div class="flex gap-3">
+                            <div class="flex-shrink-0 w-10 h-10 bg-linkedin-blue-soft rounded-lg flex items-center justify-center">
+                                <svg class="w-5 h-5 text-linkedin-blue" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
+                                </svg>
+                            </div>
+                            <div>
+                                <h3 class="font-bold text-sm text-linkedin-text mb-1" data-translate="features-5-title">Optimisé performance</h3>
+                                <p class="text-xs text-linkedin-text-secondary" data-translate="features-5-text">Génération rapide et efficace</p>
+                            </div>
+                        </div>
+                        <div class="flex gap-3">
+                            <div class="flex-shrink-0 w-10 h-10 bg-linkedin-blue-soft rounded-lg flex items-center justify-center">
+                                <svg class="w-5 h-5 text-linkedin-blue" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                </svg>
+                            </div>
+                            <div>
+                                <h3 class="font-bold text-sm text-linkedin-text mb-1" data-translate="features-6-title">Styles variés</h3>
+                                <p class="text-xs text-linkedin-text-secondary" data-translate="features-6-text">Plusieurs options de ton disponibles</p>
+                            </div>
+                        </div>
+                    </div>
+                </article>
+
+                <!-- PRICING -->
+                <article id="tarifs" class="bg-white border border-linkedin-stroke rounded-lg p-6">
+                    <h2 class="text-2xl font-bold text-linkedin-text mb-6" data-translate="pricing-title">Plans et tarifs</h2>
+                    <div class="space-y-4">
+                        <!-- Free Plan -->
+                        <div class="border-2 border-linkedin-blue rounded-lg p-6">
+                            <div class="flex items-start justify-between mb-4">
+                                <div>
+                                    <h3 class="text-xl font-bold text-linkedin-text" data-translate="pricing-free-title">Free</h3>
+                                    <p class="text-2xl font-bold text-linkedin-text mt-2">0€<span class="text-sm font-normal text-linkedin-text-secondary" data-translate="pricing-per-month">/mois</span></p>
+                                </div>
+                                <span class="px-3 py-1 bg-linkedin-blue text-white text-xs font-bold rounded" data-translate="pricing-active">Actif</span>
+                            </div>
+                            <ul class="space-y-2 mb-4">
+                                <li class="flex items-center gap-2 text-sm text-linkedin-text-secondary">
+                                    <svg class="w-4 h-4 text-linkedin-blue" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path>
+                                    </svg>
+                                    <span data-translate="pricing-free-feat1">5 générations par jour</span>
+                                </li>
+                                <li class="flex items-center gap-2 text-sm text-linkedin-text-secondary">
+                                    <svg class="w-4 h-4 text-linkedin-blue" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path>
+                                    </svg>
+                                    <span data-translate="pricing-free-feat2">3 suggestions par génération</span>
+                                </li>
+                                <li class="flex items-center gap-2 text-sm text-linkedin-text-secondary">
+                                    <svg class="w-4 h-4 text-linkedin-blue" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path>
+                                    </svg>
+                                    <span data-translate="pricing-free-feat3">Tons de base</span>
+                                </li>
+                            </ul>
+                            <a href="#" class="block w-full px-4 py-2 bg-linkedin-blue hover:bg-linkedin-blue-dark text-white text-center font-semibold rounded-md transition-colors" data-translate="pricing-free-btn">
+                                Commencer gratuitement
+                            </a>
+                        </div>
+
+                        <!-- Medium Plan -->
+                        <div class="border border-linkedin-stroke rounded-lg p-6">
+                            <h3 class="text-xl font-bold text-linkedin-text" data-translate="pricing-medium-title">Medium</h3>
+                            <p class="text-2xl font-bold text-linkedin-text mt-2">9€<span class="text-sm font-normal text-linkedin-text-secondary" data-translate="pricing-per-month">/mois</span></p>
+                            <ul class="space-y-2 my-4">
+                                <li class="flex items-center gap-2 text-sm text-linkedin-text-secondary">
+                                    <svg class="w-4 h-4 text-linkedin-blue" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path>
+                                    </svg>
+                                    <span data-translate="pricing-medium-feat1">100 générations par jour</span>
+                                </li>
+                                <li class="flex items-center gap-2 text-sm text-linkedin-text-secondary">
+                                    <svg class="w-4 h-4 text-linkedin-blue" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path>
+                                    </svg>
+                                    <span data-translate="pricing-medium-feat2">5 suggestions par génération</span>
+                                </li>
+                                <li class="flex items-center gap-2 text-sm text-linkedin-text-secondary">
+                                    <svg class="w-4 h-4 text-linkedin-blue" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path>
+                                    </svg>
+                                    <span data-translate="pricing-medium-feat3">Tous les tons disponibles</span>
+                                </li>
+                            </ul>
+                            <button onclick="startCheckout('medium')" class="block w-full px-4 py-2 bg-linkedin-blue hover:bg-linkedin-blue-dark text-white text-center font-semibold rounded-md transition-colors" data-translate="pricing-medium-btn">
+                                S'abonner - Medium
+                            </button>
+                        </div>
+
+                        <!-- Premium Plan -->
+                        <div class="border border-linkedin-stroke rounded-lg p-6">
+                            <h3 class="text-xl font-bold text-linkedin-text" data-translate="pricing-premium-title">Premium</h3>
+                            <p class="text-2xl font-bold text-linkedin-text mt-2">29€<span class="text-sm font-normal text-linkedin-text-secondary" data-translate="pricing-per-month">/mois</span></p>
+                            <ul class="space-y-2 my-4">
+                                <li class="flex items-center gap-2 text-sm text-linkedin-text-secondary">
+                                    <svg class="w-4 h-4 text-linkedin-blue" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path>
+                                    </svg>
+                                    <span data-translate="pricing-premium-feat1">Générations illimitées</span>
+                                </li>
+                                <li class="flex items-center gap-2 text-sm text-linkedin-text-secondary">
+                                    <svg class="w-4 h-4 text-linkedin-blue" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path>
+                                    </svg>
+                                    <span data-translate="pricing-premium-feat2">10 suggestions par génération</span>
+                                </li>
+                                <li class="flex items-center gap-2 text-sm text-linkedin-text-secondary">
+                                    <svg class="w-4 h-4 text-linkedin-blue" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path>
+                                    </svg>
+                                    <span data-translate="pricing-premium-feat3">IA avancée + Support 24/7</span>
+                                </li>
+                            </ul>
+                            <button onclick="startCheckout('premium')" class="block w-full px-4 py-2 bg-linkedin-blue hover:bg-linkedin-blue-dark text-white text-center font-semibold rounded-md transition-colors" data-translate="pricing-premium-btn">
+                                S'abonner - Premium
+                            </button>
+                        </div>
+                    </div>
+                </article>
+
+                <!-- FAQ -->
+                <article id="faq" class="bg-white border border-linkedin-stroke rounded-lg p-6">
+                    <h2 class="text-2xl font-bold text-linkedin-text mb-6" data-translate="faq-title">Questions fréquentes</h2>
+                    <div class="space-y-4">
+                        <details class="group">
+                            <summary class="cursor-pointer font-semibold text-linkedin-text hover:text-linkedin-blue transition-colors py-2" data-translate="faq-q1">
+                                Comment l'extension génère-t-elle les commentaires ?
+                            </summary>
+                            <p class="text-sm text-linkedin-text-secondary mt-2 pl-4" data-translate="faq-a1">
+                                L'extension utilise des modèles d'intelligence artificielle avancés pour analyser le contenu du post LinkedIn et générer des commentaires pertinents et contextuels.
+                            </p>
+                        </details>
+                        <details class="group">
+                            <summary class="cursor-pointer font-semibold text-linkedin-text hover:text-linkedin-blue transition-colors py-2" data-translate="faq-q2">
+                                Mes données sont-elles sécurisées ?
+                            </summary>
+                            <p class="text-sm text-linkedin-text-secondary mt-2 pl-4" data-translate="faq-a2">
+                                Absolument. Nous ne stockons aucune donnée personnelle ni aucun contenu LinkedIn. L'analyse se fait en temps réel et de manière anonyme.
+                            </p>
+                        </details>
+                        <details class="group">
+                            <summary class="cursor-pointer font-semibold text-linkedin-text hover:text-linkedin-blue transition-colors py-2" data-translate="faq-q3">
+                                Puis-je modifier les commentaires générés ?
+                            </summary>
+                            <p class="text-sm text-linkedin-text-secondary mt-2 pl-4" data-translate="faq-a3">
+                                Oui, bien sûr. Les suggestions sont conçues pour vous servir de base. Vous pouvez les personnaliser avant de les publier.
+                            </p>
+                        </details>
+                    </div>
+                </article>
+
+            </main>
+
+            <!-- RIGHT SIDEBAR -->
+            <aside class="col-span-12 lg:col-span-3 space-y-4 lg:sticky lg:top-[68px] lg:self-start lg:max-h-[calc(100vh-84px)] lg:overflow-y-auto">
+
+                <!-- CTA Card -->
+                <div class="bg-white border border-linkedin-stroke rounded-lg p-4">
+                    <h3 class="font-bold text-sm text-linkedin-text mb-3" data-translate="right-cta-title">Prêt à commencer ?</h3>
+                    <p class="text-xs text-linkedin-text-secondary mb-4" data-translate="right-cta-text">
+                        Installez l'extension et générez vos premiers commentaires gratuitement
+                    </p>
+                    <a href="#tarifs" class="block w-full px-4 py-2 bg-linkedin-blue hover:bg-linkedin-blue-dark text-white text-center text-sm font-semibold rounded-md transition-colors" data-translate="right-cta-btn">
+                        Installer maintenant
+                    </a>
+                </div>
+
+                <!-- Benefits -->
+                <div class="bg-white border border-linkedin-stroke rounded-lg p-4">
+                    <h3 class="font-bold text-sm text-linkedin-text mb-4" data-translate="right-benefits-title">Avantages</h3>
+                    <ul class="space-y-3">
+                        <li class="flex items-start gap-2">
+                            <svg class="w-4 h-4 text-linkedin-blue flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path>
+                            </svg>
+                            <span class="text-xs text-linkedin-text-secondary" data-translate="right-benefit-1">Gain de temps significatif</span>
+                        </li>
+                        <li class="flex items-start gap-2">
+                            <svg class="w-4 h-4 text-linkedin-blue flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path>
+                            </svg>
+                            <span class="text-xs text-linkedin-text-secondary" data-translate="right-benefit-2">Augmente l'engagement</span>
+                        </li>
+                        <li class="flex items-start gap-2">
+                            <svg class="w-4 h-4 text-linkedin-blue flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path>
+                            </svg>
+                            <span class="text-xs text-linkedin-text-secondary" data-translate="right-benefit-3">Ton cohérent</span>
+                        </li>
+                        <li class="flex items-start gap-2">
+                            <svg class="w-4 h-4 text-linkedin-blue flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path>
+                            </svg>
+                            <span class="text-xs text-linkedin-text-secondary" data-translate="right-benefit-4">Résultats professionnels</span>
+                        </li>
+                    </ul>
+                </div>
+
+                <!-- Testimonials -->
+                <div class="bg-white border border-linkedin-stroke rounded-lg p-4">
+                    <h3 class="font-bold text-sm text-linkedin-text mb-4" data-translate="right-testimonials-title">Avis utilisateurs</h3>
+                    <div class="space-y-4">
+                        <div>
+                            <div class="flex items-center gap-2 mb-2">
+                                <div class="w-8 h-8 rounded-full bg-linkedin-blue-soft"></div>
+                                <div>
+                                    <p class="text-xs font-bold text-linkedin-text" data-translate="right-testimonial-1-name">Sophie Martin</p>
+                                    <p class="text-xs text-linkedin-text-secondary" data-translate="right-testimonial-1-job">Consultante Marketing</p>
+                                </div>
+                            </div>
+                            <p class="text-xs text-linkedin-text-secondary" data-translate="right-testimonial-1-text">
+                                "Gain de temps précieux. Je peux interagir plus souvent avec mon réseau."
+                            </p>
+                        </div>
+                        <div>
+                            <div class="flex items-center gap-2 mb-2">
+                                <div class="w-8 h-8 rounded-full bg-linkedin-blue-soft"></div>
+                                <div>
+                                    <p class="text-xs font-bold text-linkedin-text" data-translate="right-testimonial-2-name">Thomas Dubois</p>
+                                    <p class="text-xs text-linkedin-text-secondary" data-translate="right-testimonial-2-job">Développeur Full Stack</p>
+                                </div>
+                            </div>
+                            <p class="text-xs text-linkedin-text-secondary" data-translate="right-testimonial-2-text">
+                                "Excellent outil. Les suggestions sont pertinentes et faciles à personnaliser."
+                            </p>
+                        </div>
+                        <div>
+                            <div class="flex items-center gap-2 mb-2">
+                                <div class="w-8 h-8 rounded-full bg-linkedin-blue-soft"></div>
+                                <div>
+                                    <p class="text-xs font-bold text-linkedin-text" data-translate="right-testimonial-3-name">Marie Lefevre</p>
+                                    <p class="text-xs text-linkedin-text-secondary" data-translate="right-testimonial-3-job">CPO</p>
+                                </div>
+                            </div>
+                            <p class="text-xs text-linkedin-text-secondary" data-translate="right-testimonial-3-text">
+                                "La qualité des commentaires est impressionnante."
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Footer Links -->
+                <div class="bg-white border border-linkedin-stroke rounded-lg p-4">
+                    <nav class="space-y-2">
+                        <a href="#" class="block text-xs text-linkedin-text-secondary hover:text-linkedin-blue" data-translate="right-footer-contact">Contact</a>
+                        <a href="#" class="block text-xs text-linkedin-text-secondary hover:text-linkedin-blue" data-translate="right-footer-legal">Mentions légales</a>
+                        <a href="#" class="block text-xs text-linkedin-text-secondary hover:text-linkedin-blue" data-translate="right-footer-terms">CGU</a>
+                        <a href="#" class="block text-xs text-linkedin-text-secondary hover:text-linkedin-blue" data-translate="right-footer-privacy">Confidentialité</a>
+                    </nav>
+                    <p class="text-xs text-linkedin-text-secondary mt-4" data-translate="right-footer-copyright">© 2025 LinkedIn AI Commenter</p>
+                </div>
+
+            </aside>
+        </div>
+    </div>
+
+    <script>
+        // Gestion du thème Dark/Light
+        const themeToggle = document.getElementById('themeToggle');
+        const sunIcon = document.getElementById('sunIcon');
+        const moonIcon = document.getElementById('moonIcon');
+        const html = document.documentElement;
+
+        // Charger le thème sauvegardé ou détecter la préférence système
+        const savedTheme = localStorage.getItem('theme');
+        const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        const currentTheme = savedTheme || (systemPrefersDark ? 'dark' : 'light');
+
+        // Appliquer le thème au chargement
+        if (currentTheme === 'dark') {
+            html.setAttribute('data-theme', 'dark');
+            sunIcon.classList.add('hidden');
+            moonIcon.classList.remove('hidden');
+        }
+
+        // Toggle du thème au clic
+        themeToggle.addEventListener('click', () => {
+            const isDark = html.getAttribute('data-theme') === 'dark';
+
+            if (isDark) {
+                html.removeAttribute('data-theme');
+                localStorage.setItem('theme', 'light');
+                sunIcon.classList.remove('hidden');
+                moonIcon.classList.add('hidden');
+            } else {
+                html.setAttribute('data-theme', 'dark');
+                localStorage.setItem('theme', 'dark');
+                sunIcon.classList.add('hidden');
+                moonIcon.classList.remove('hidden');
+            }
+        });
+
+        // Écouter les changements de préférence système
+        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
+            if (!localStorage.getItem('theme')) {
+                if (e.matches) {
+                    html.setAttribute('data-theme', 'dark');
+                    sunIcon.classList.add('hidden');
+                    moonIcon.classList.remove('hidden');
+                } else {
+                    html.removeAttribute('data-theme');
+                    sunIcon.classList.remove('hidden');
+                    moonIcon.classList.add('hidden');
+                }
+            }
+        });
+
+        // Gestion de la traduction FR/EN
+        const languageToggle = document.getElementById('languageToggle');
+
+        // Dictionnaire de traductions
+        const translations = {
+            'header-logo': {
+                fr: 'LinkedIn AI Commenter',
+                en: 'LinkedIn AI Commenter'
+            },
+            'theme-btn': {
+                fr: 'Thème',
+                en: 'Theme'
+            },
+            'lang-btn': {
+                fr: 'FR/EN',
+                en: 'FR/EN'
+            },
+            'search-input': {
+                fr: 'Rechercher',
+                en: 'Search'
+            },
+            'nav-home': {
+                fr: 'Accueil',
+                en: 'Home'
+            },
+            'nav-features': {
+                fr: 'Fonctionnalités',
+                en: 'Features'
+            },
+            'nav-pricing': {
+                fr: 'Tarifs',
+                en: 'Pricing'
+            },
+            'nav-install': {
+                fr: 'Installer',
+                en: 'Install'
+            },
+            'sidebar-title': {
+                fr: 'LinkedIn AI Commenter',
+                en: 'LinkedIn AI Commenter'
+            },
+            'sidebar-subtitle': {
+                fr: 'Extension Chrome IA pour commentaires professionnels',
+                en: 'AI Chrome Extension for professional LinkedIn comments'
+            },
+            'sidebar-install': {
+                fr: 'Installer l\'extension',
+                en: 'Install the extension'
+            },
+            'sidebar-manage-account': {
+                fr: 'Gérer mon compte',
+                en: 'Manage my account'
+            },
+            'sidebar-link-features': {
+                fr: 'Fonctionnalités',
+                en: 'Features'
+            },
+            'sidebar-link-demo': {
+                fr: 'Démo',
+                en: 'Demo'
+            },
+            'sidebar-link-pricing': {
+                fr: 'Tarifs',
+                en: 'Pricing'
+            },
+            'sidebar-link-faq': {
+                fr: 'FAQ',
+                en: 'FAQ'
+            },
+            'right-cta-title': {
+                fr: 'Prêt à commencer ?',
+                en: 'Ready to start?'
+            },
+            'right-cta-text': {
+                fr: 'Installez l\'extension et générez vos premiers commentaires gratuitement',
+                en: 'Install the extension and generate your first comments for free'
+            },
+            'right-cta-btn': {
+                fr: 'Installer maintenant',
+                en: 'Install now'
+            },
+            'right-benefits-title': {
+                fr: 'Avantages',
+                en: 'Benefits'
+            },
+            'right-benefit-1': {
+                fr: 'Gain de temps significatif',
+                en: 'Significant time saving'
+            },
+            'right-benefit-2': {
+                fr: 'Augmente l\'engagement',
+                en: 'Increases engagement'
+            },
+            'right-benefit-3': {
+                fr: 'Ton cohérent',
+                en: 'Consistent tone'
+            },
+            'right-benefit-4': {
+                fr: 'Résultats professionnels',
+                en: 'Professional results'
+            },
+            'right-testimonials-title': {
+                fr: 'Avis utilisateurs',
+                en: 'User reviews'
+            },
+            'right-testimonial-1-name': {
+                fr: 'Sophie Martin',
+                en: 'Sophie Martin'
+            },
+            'right-testimonial-1-job': {
+                fr: 'Consultante Marketing',
+                en: 'Marketing Consultant'
+            },
+            'right-testimonial-1-text': {
+                fr: '"Gain de temps précieux. Je peux interagir plus souvent avec mon réseau."',
+                en: '"Precious time saved. I can interact more often with my network."'
+            },
+            'right-testimonial-2-name': {
+                fr: 'Thomas Dubois',
+                en: 'Thomas Dubois'
+            },
+            'right-testimonial-2-job': {
+                fr: 'Développeur Full Stack',
+                en: 'Full Stack Developer'
+            },
+            'right-testimonial-2-text': {
+                fr: '"Excellent outil. Les suggestions sont pertinentes et faciles à personnaliser."',
+                en: '"Excellent tool. Suggestions are relevant and easy to customize."'
+            },
+            'right-testimonial-3-name': {
+                fr: 'Marie Lefevre',
+                en: 'Marie Lefevre'
+            },
+            'right-testimonial-3-job': {
+                fr: 'CPO',
+                en: 'CPO'
+            },
+            'right-testimonial-3-text': {
+                fr: '"La qualité des commentaires est impressionnante."',
+                en: '"The quality of comments is impressive."'
+            },
+            'right-footer-contact': {
+                fr: 'Contact',
+                en: 'Contact'
+            },
+            'right-footer-legal': {
+                fr: 'Mentions légales',
+                en: 'Legal notice'
+            },
+            'right-footer-terms': {
+                fr: 'CGU',
+                en: 'Terms of use'
+            },
+            'right-footer-privacy': {
+                fr: 'Confidentialité',
+                en: 'Privacy'
+            },
+            'right-footer-copyright': {
+                fr: '© 2025 LinkedIn AI Commenter',
+                en: '© 2025 LinkedIn AI Commenter'
+            },
+            'hero-title': {
+                fr: 'Générez des commentaires LinkedIn intelligents en quelques secondes',
+                en: 'Generate smart LinkedIn comments in seconds'
+            },
+            'hero-subtitle': {
+                fr: 'Extension Chrome d\'IA qui analyse le contexte et génère des commentaires professionnels et pertinents directement sur LinkedIn',
+                en: 'AI Chrome Extension that analyzes context and generates professional, relevant comments directly on LinkedIn'
+            },
+            'hero-btn-install': {
+                fr: 'Installer l\'extension',
+                en: 'Install the extension'
+            },
+            'hero-btn-demo': {
+                fr: 'Voir la démo',
+                en: 'See the demo'
+            },
+            'demo-title': {
+                fr: 'LinkedIn AI Commenter en action',
+                en: 'LinkedIn AI Commenter in action'
+            },
+            'demo-subtitle': {
+                fr: 'Extension Chrome',
+                en: 'Chrome Extension'
+            },
+            'demo-btn-generate': {
+                fr: 'Générer un commentaire',
+                en: 'Generate a comment'
+            },
+            'demo-suggestion-1': {
+                fr: 'Suggestion 1',
+                en: 'Suggestion 1'
+            },
+            'demo-suggestion-2': {
+                fr: 'Suggestion 2',
+                en: 'Suggestion 2'
+            },
+            'demo-suggestion-3': {
+                fr: 'Suggestion 3',
+                en: 'Suggestion 3'
+            },
+            'demo-tone-professional': {
+                fr: 'Professionnel',
+                en: 'Professional'
+            },
+            'demo-tone-friendly': {
+                fr: 'Amical',
+                en: 'Friendly'
+            },
+            'demo-tone-enthusiastic': {
+                fr: 'Enthousiaste',
+                en: 'Enthusiastic'
+            },
+            'how-title': {
+                fr: 'Comment ça marche',
+                en: 'How it works'
+            },
+            'how-step1-title': {
+                fr: 'Installez l\'extension',
+                en: 'Install the extension'
+            },
+            'how-step1-text': {
+                fr: 'Ajoutez LinkedIn AI Commenter à Chrome depuis le Chrome Web Store en un clic',
+                en: 'Add LinkedIn AI Commenter to Chrome from the Chrome Web Store in one click'
+            },
+            'how-step2-title': {
+                fr: 'Cliquez sur l\'icône',
+                en: 'Click on the icon'
+            },
+            'how-step2-text': {
+                fr: 'Sur LinkedIn, cliquez sur l\'icône de l\'extension dans une zone de commentaire',
+                en: 'On LinkedIn, click on the extension icon in a comment area'
+            },
+            'how-step3-title': {
+                fr: 'Choisissez et publiez',
+                en: 'Choose and publish'
+            },
+            'how-step3-text': {
+                fr: 'Sélectionnez parmi 3 suggestions générées et insérez votre commentaire',
+                en: 'Select from 3 generated suggestions and insert your comment'
+            },
+            'features-title': {
+                fr: 'Fonctionnalités principales',
+                en: 'Main features'
+            },
+            'features-1-title': {
+                fr: 'Génération intelligente',
+                en: 'Smart generation'
+            },
+            'features-1-text': {
+                fr: 'Analyse automatique du contexte du post',
+                en: 'Automatic post context analysis'
+            },
+            'features-2-title': {
+                fr: 'Ton personnalisable',
+                en: 'Customizable tone'
+            },
+            'features-2-text': {
+                fr: 'Professionnel, amical, expert',
+                en: 'Professional, friendly, expert'
+            },
+            'features-3-title': {
+                fr: 'Analyse du post',
+                en: 'Post analysis'
+            },
+            'features-3-text': {
+                fr: 'Compréhension approfondie du contenu',
+                en: 'Deep content understanding'
+            },
+            'features-4-title': {
+                fr: 'Intégration native',
+                en: 'Native integration'
+            },
+            'features-4-text': {
+                fr: 'Interface fluide dans LinkedIn',
+                en: 'Seamless interface in LinkedIn'
+            },
+            'features-5-title': {
+                fr: 'Optimisé performance',
+                en: 'Performance optimized'
+            },
+            'features-5-text': {
+                fr: 'Génération rapide et efficace',
+                en: 'Fast and efficient generation'
+            },
+            'features-6-title': {
+                fr: 'Styles variés',
+                en: 'Varied styles'
+            },
+            'features-6-text': {
+                fr: 'Plusieurs options de ton disponibles',
+                en: 'Multiple tone options available'
+            },
+            'pricing-title': {
+                fr: 'Plans et tarifs',
+                en: 'Plans and pricing'
+            },
+            'pricing-per-month': {
+                fr: '/mois',
+                en: '/month'
+            },
+            'pricing-active': {
+                fr: 'Actif',
+                en: 'Active'
+            },
+            'pricing-free-title': {
+                fr: 'Free',
+                en: 'Free'
+            },
+            'pricing-free-feat1': {
+                fr: '5 générations par jour',
+                en: '5 generations per day'
+            },
+            'pricing-free-feat2': {
+                fr: '3 suggestions par génération',
+                en: '3 suggestions per generation'
+            },
+            'pricing-free-feat3': {
+                fr: 'Tons de base',
+                en: 'Basic tones'
+            },
+            'pricing-free-btn': {
+                fr: 'Commencer gratuitement',
+                en: 'Start for free'
+            },
+            'pricing-medium-title': {
+                fr: 'Medium',
+                en: 'Medium'
+            },
+            'pricing-medium-feat1': {
+                fr: '100 générations par jour',
+                en: '100 generations per day'
+            },
+            'pricing-medium-feat2': {
+                fr: '5 suggestions par génération',
+                en: '5 suggestions per generation'
+            },
+            'pricing-medium-feat3': {
+                fr: 'Tous les tons disponibles',
+                en: 'All tones available'
+            },
+            'pricing-medium-btn': {
+                fr: 'S\'abonner - Medium',
+                en: 'Subscribe - Medium'
+            },
+            'pricing-premium-title': {
+                fr: 'Premium',
+                en: 'Premium'
+            },
+            'pricing-premium-feat1': {
+                fr: 'Générations illimitées',
+                en: 'Unlimited generations'
+            },
+            'pricing-premium-feat2': {
+                fr: '10 suggestions par génération',
+                en: '10 suggestions per generation'
+            },
+            'pricing-premium-feat3': {
+                fr: 'IA avancée + Support 24/7',
+                en: 'Advanced AI + 24/7 Support'
+            },
+            'pricing-premium-btn': {
+                fr: 'S\'abonner - Premium',
+                en: 'Subscribe - Premium'
+            },
+            'faq-title': {
+                fr: 'Questions fréquentes',
+                en: 'Frequently Asked Questions'
+            },
+            'faq-q1': {
+                fr: 'Comment l\'extension génère-t-elle les commentaires ?',
+                en: 'How does the extension generate comments?'
+            },
+            'faq-a1': {
+                fr: 'L\'extension utilise des modèles d\'intelligence artificielle avancés pour analyser le contenu du post LinkedIn et générer des commentaires pertinents et contextuels.',
+                en: 'The extension uses advanced artificial intelligence models to analyze LinkedIn post content and generate relevant and contextual comments.'
+            },
+            'faq-q2': {
+                fr: 'Mes données sont-elles sécurisées ?',
+                en: 'Is my data secure?'
+            },
+            'faq-a2': {
+                fr: 'Absolument. Nous ne stockons aucune donnée personnelle ni aucun contenu LinkedIn. L\'analyse se fait en temps réel et de manière anonyme.',
+                en: 'Absolutely. We do not store any personal data or LinkedIn content. Analysis is done in real-time and anonymously.'
+            },
+            'faq-q3': {
+                fr: 'Puis-je modifier les commentaires générés ?',
+                en: 'Can I edit the generated comments?'
+            },
+            'faq-a3': {
+                fr: 'Oui, bien sûr. Les suggestions sont conçues pour vous servir de base. Vous pouvez les personnaliser avant de les publier.',
+                en: 'Yes, of course. The suggestions are designed to serve as a basis. You can customize them before publishing.'
+            }
+        };
+
+        // Fonction pour appliquer les traductions
+        function applyTranslations(lang) {
+            // Traduire les éléments avec data-translate
+            document.querySelectorAll('[data-translate]').forEach(element => {
+                const key = element.getAttribute('data-translate');
+                if (translations[key] && translations[key][lang]) {
+                    element.textContent = translations[key][lang];
+                }
+            });
+
+            // Traduire les placeholders
+            document.querySelectorAll('[data-translate-placeholder]').forEach(element => {
+                const key = element.getAttribute('data-translate-placeholder');
+                if (translations[key] && translations[key][lang]) {
+                    element.placeholder = translations[key][lang];
+                }
+            });
+
+            // Sauvegarder la langue
+            localStorage.setItem('language', lang);
+            html.setAttribute('lang', lang);
+        }
+
+        // Charger la langue sauvegardée ou utiliser 'fr' par défaut
+        const savedLanguage = localStorage.getItem('language') || 'fr';
+        applyTranslations(savedLanguage);
+
+        // Toggle de la langue au clic
+        languageToggle.addEventListener('click', () => {
+            const currentLang = html.getAttribute('lang') || 'fr';
+            const newLang = currentLang === 'fr' ? 'en' : 'fr';
+            applyTranslations(newLang);
+        });
+
+        // Fonction pour démarrer le processus d'abonnement Stripe
+        function startCheckout(plan) {
+            // Vérifier si l'utilisateur est connecté (JWT présent)
+            const token = localStorage.getItem('token');
+
+            if (!token) {
+                // Rediriger vers login avec intention de checkout
+                window.location.href = `/account/login.html?redirect=/checkout-intent.html?plan=${plan}`;
+            } else {
+                // Rediriger directement vers checkout-intent
+                window.location.href = `/checkout-intent.html?plan=${plan}`;
+            }
+        }
+
+        // Configuration de l'API
+        const API_BASE_URL = '__USERS_API_URL__';
+
+        // Fonction pour récupérer le JWT du localStorage
+        function getJwtToken() {
+            return localStorage.getItem('token');
+        }
+
+        // Fonction pour décoder le JWT
+        function decodeJWT(token) {
+            try {
+                const base64Url = token.split('.')[1];
+                const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+                const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
+                    return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+                }).join(''));
+                return JSON.parse(jsonPayload);
+            } catch (e) {
+                console.error('Erreur lors du décodage du JWT:', e);
+                return null;
+            }
+        }
+
+        // Fonction pour charger les informations utilisateur
+        async function loadUserPlan() {
+            console.log('=== loadUserPlan appelée ===');
+            try {
+                const token = getJwtToken();
+                console.log('Token présent:', !!token);
+
+                if (!token) {
+                    console.log('Pas de token, utilisateur non authentifié');
+                    return;
+                }
+
+                console.log('Appel API profile...');
+                // Récupérer les informations complètes depuis l'API
+                const response = await fetch(`${API_BASE_URL}/api/users/profile`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                console.log('Réponse API:', response.status);
+
+                if (!response.ok) {
+                    console.error('Erreur API:', response.status, response.statusText);
+                    // Si le token est expiré (401), nettoyer le localStorage
+                    if (response.status === 401) {
+                        localStorage.removeItem('token');
+                    }
+                    return;
+                }
+
+                const user = await response.json();
+                console.log('User data:', user);
+
+                // Afficher le badge du plan
+                const userPlanBadge = document.getElementById('userPlanBadge');
+                const userPlanValue = document.getElementById('userPlanValue');
+                const sidebarActionLink = document.getElementById('sidebarActionLink');
+
+                console.log('Éléments DOM:', {
+                    userPlanBadge: !!userPlanBadge,
+                    userPlanValue: !!userPlanValue,
+                    sidebarActionLink: !!sidebarActionLink
+                });
+
+                if (user.role) {
+                    console.log('Application du plan:', user.role);
+                    userPlanValue.textContent = user.role;
+                    userPlanValue.className = `plan-badge-inline ${user.role}`;
+                    userPlanBadge.classList.remove('hidden');
+
+                    // Modifier le lien d'action pour pointer vers la page de gestion d'abonnement
+                    sidebarActionLink.href = '/account/subscription.html';
+                    sidebarActionLink.setAttribute('data-translate', 'sidebar-manage-account');
+
+                    // Appliquer la traduction selon la langue actuelle
+                    const currentLang = document.documentElement.getAttribute('lang') || 'fr';
+                    console.log('Langue actuelle:', currentLang);
+                    if (translations['sidebar-manage-account'] && translations['sidebar-manage-account'][currentLang]) {
+                        sidebarActionLink.textContent = translations['sidebar-manage-account'][currentLang];
+                    }
+                    console.log('Plan utilisateur affiché avec succès');
+                }
+
+            } catch (error) {
+                console.error('Erreur lors du chargement des informations utilisateur:', error);
+            }
+        }
+
+        // Charger les informations utilisateur au chargement de la page
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('DOMContentLoaded - Chargement du plan utilisateur');
+            loadUserPlan();
+        });
+    </script>
+
+</body>
+</html>

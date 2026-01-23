@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Redirection vers Stripe...</title>
+
+    <!-- Google Fonts - Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/tailwindcss-cdn@3.4.1/tailwindcss.js"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        'linkedin-blue': '#0A66C2',
+                        'linkedin-blue-dark': '#004182',
+                        'linkedin-blue-soft': '#EDF5FD',
+                        'linkedin-bg': '#F3F2EF',
+                        'linkedin-stroke': '#E0DFDC',
+                        'linkedin-text': '#1D1D1B',
+                        'linkedin-text-secondary': '#666666',
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            background-color: #F3F2EF;
+            color: #1D1D1B;
+        }
+
+        /* Animation du spinner */
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .spinner {
+            animation: spin 1s linear infinite;
+        }
+    </style>
+</head>
+<body class="font-sans antialiased bg-linkedin-bg text-linkedin-text min-h-screen flex items-center justify-center">
+
+    <div class="max-w-md w-full mx-4">
+        <div class="bg-white border border-linkedin-stroke rounded-lg p-8 text-center">
+            <!-- Spinner -->
+            <div class="flex justify-center mb-6">
+                <svg class="spinner w-16 h-16 text-linkedin-blue" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+            </div>
+
+            <!-- Titre -->
+            <h1 class="text-2xl font-bold text-linkedin-text mb-3">Préparation du paiement...</h1>
+
+            <!-- Message -->
+            <p class="text-linkedin-text-secondary mb-6">
+                Vous allez être redirigé vers Stripe pour finaliser votre abonnement.
+            </p>
+
+            <!-- Plan info -->
+            <div id="plan-info" class="bg-linkedin-blue-soft border border-linkedin-blue rounded-lg p-4 mb-6">
+                <p class="text-sm font-semibold text-linkedin-blue">
+                    Plan sélectionné : <span id="plan-name" class="uppercase"></span>
+                </p>
+            </div>
+
+            <!-- Message d'erreur (caché par défaut) -->
+            <div id="error-message" class="hidden bg-red-50 border border-red-300 rounded-lg p-4 mb-4">
+                <p class="text-sm text-red-700" id="error-text"></p>
+            </div>
+
+            <!-- Bouton de retour (caché par défaut) -->
+            <a id="back-button" href="/#tarifs" class="hidden inline-block px-6 py-2.5 bg-linkedin-blue hover:bg-linkedin-blue-dark text-white font-semibold rounded-md transition-colors">
+                Retour aux tarifs
+            </a>
+        </div>
+    </div>
+
+    <script>
+        // Configuration
+        const API_BASE_URL = '__USERS_API_URL__';
+
+        // Fonction pour afficher une erreur
+        function showError(message) {
+            document.getElementById('error-text').textContent = message;
+            document.getElementById('error-message').classList.remove('hidden');
+            document.getElementById('back-button').classList.remove('hidden');
+            document.querySelector('.spinner').parentElement.classList.add('hidden');
+        }
+
+        // Fonction principale pour initier le checkout
+        async function initiateCheckout() {
+            try {
+                // Récupérer le plan depuis l'URL
+                const urlParams = new URLSearchParams(window.location.search);
+                const plan = urlParams.get('plan');
+
+                if (!plan || !['medium', 'premium'].includes(plan.toLowerCase())) {
+                    showError('Plan invalide. Veuillez sélectionner un plan valide.');
+                    return;
+                }
+
+                // Afficher le plan
+                document.getElementById('plan-name').textContent = plan;
+
+                // Vérifier que l'utilisateur est connecté
+                const token = localStorage.getItem('token');
+
+                if (!token) {
+                    // Rediriger vers login avec le plan en paramètre
+                    window.location.href = `/account/login.html?redirect=/checkout-intent.html?plan=${plan}`;
+                    return;
+                }
+
+                // Appeler l'API pour créer la session Stripe
+                const response = await fetch(`${API_BASE_URL}/api/stripe/create-checkout-session`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({
+                        plan: plan.toLowerCase()
+                    })
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({}));
+
+                    // Si le token est expiré ou invalide (401), rediriger vers login
+                    if (response.status === 401) {
+                        localStorage.removeItem('token'); // Nettoyer le token invalide
+                        window.location.href = `/account/login.html?redirect=/checkout-intent.html?plan=${plan}`;
+                        return;
+                    }
+
+                    throw new Error(errorData.detail || `Erreur HTTP: ${response.status}`);
+                }
+
+                const data = await response.json();
+
+                // Vérifier que nous avons bien reçu une URL de session
+                if (!data.checkout_url) {
+                    throw new Error('URL de session Stripe non reçue');
+                }
+
+                // Rediriger vers Stripe
+                window.location.href = data.checkout_url;
+
+            } catch (error) {
+                console.error('Erreur lors de la création de la session Stripe:', error);
+                showError(`Une erreur est survenue : ${error.message}`);
+            }
+        }
+
+        // Lancer le processus au chargement de la page
+        document.addEventListener('DOMContentLoaded', initiateCheckout);
+    </script>
+
+</body>
+</html>

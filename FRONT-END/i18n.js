@@ -1,0 +1,279 @@
+// Système de traduction pour l'interface du plugin
+class I18n {
+  constructor() {
+    this.currentLang = 'fr'; // Langue par défaut
+    this.translations = {
+      fr: {
+        // Titres et labels principaux
+        extensionTitle: 'LinkedIn AI Commenter',
+        authRequired: 'Authentification Google requise',
+        authMessage: 'Veuillez vous connecter avec Google pour utiliser le plugin',
+        signInWithGoogle: 'Se connecter avec Google',
+        logout: 'Déconnexion',
+        upgrade: 'Mettre à niveau',
+        manageSubscription: 'Gérer mon abonnement',
+
+        // Onglets principaux
+        tabSettings: 'Paramètres',
+        tabSupport: 'Soutien',
+
+        // Sous-onglets
+        subTabAccount: '👤 Compte',
+        subTabLanguage: '🌐 Langue',
+        subTabMore: '⚙️ Plus',
+
+        // Compte
+        authenticationStatus: 'Authentification',
+        quotaLabel: 'Quota quotidien',
+
+        // Toggles
+        toggleOn: 'ON',
+        toggleOff: 'OFF',
+
+        // Support
+        supportHelp: 'Documentation',
+        supportHelpDesc: 'Guide d\'utilisation et FAQ',
+        supportFeedback: 'Feedback',
+        supportFeedbackDesc: 'Partagez vos suggestions',
+        supportBug: 'Signaler un bug',
+        supportBugDesc: 'Aidez-nous à améliorer l\'extension',
+        supportContact: 'Contact',
+        supportContactDesc: 'Contactez le support',
+
+        // Autres
+        version: 'Version',
+        smartSummaryMode: 'Mode Smart Summary',
+        
+        // Paramètres de langue
+        interfaceLanguage: 'Langue de l\'interface',
+        generationSettings: 'Paramètres de génération',
+        commentLanguage: 'Langue des commentaires',
+        french: '\u{1F1EB}\u{1F1F7} Français',
+        english: '\u{1F1EC}\u{1F1E7} Anglais',
+        
+        // Paramètres de génération
+        tone: 'Ton',
+        professional: 'Professionnel',
+        formal: 'Soutenu',
+        friendly: 'Amical',
+        expert: 'Expert',
+        informative: 'Informatif',
+        negative: 'Négatif',
+        
+        length: 'Longueur',
+        words0to10: '0-10 mots',
+        words10to20: '10-20 mots',
+        words20to40: '20-40 mots',
+        
+        generationsCount: 'Nombre de Générations',
+        generation1: '1 Génération',
+        generation2: '2 Générations',
+        generation3: '3 Générations',
+
+        // Enrichissement actualité
+        newsEnrichment: 'Enrichissement Actualité',
+        newsMode: 'Mode d\'enrichissement',
+        newsDisabled: '❌ Désactivé',
+        newsTitleOnly: '⚡ Rapide (Titres uniquement)',
+        newsSmartSummary: '🧠 Intelligent (Résumés enrichis)',
+        newsInfoTitleOnly: 'Utilise uniquement les titres des actualités LinkedIn. Rapide et léger.',
+        newsInfoTitleOnlyMedium: 'Utilise uniquement les titres des actualités LinkedIn. Passez à PREMIUM pour des résumés enrichis encore plus pertinents.',
+        newsInfoSmartSummary: 'Résumés enrichis générés toutes les heures. Commentaires plus pertinents et contextuels.',
+        newsInfoDisabled: 'Les commentaires ne tiendront pas compte de l\'actualité LinkedIn.',
+        newsInfoDisabledFree: 'Les commentaires ne tiendront pas compte de l\'actualité LinkedIn. Fonctionnalité disponible dans les plans MEDIUM et PREMIUM.',
+        newsRequiresMedium: '🔒 Fonctionnalité réservée aux plans MEDIUM et PREMIUM',
+        smartRequiresPremium: '🔒 Fonctionnalité réservée au plan PREMIUM',
+        autoCloseEmotionsPanel: 'Fermeture auto panneau',
+
+        save: 'Enregistrer',
+        
+        // Messages content script
+        generate: 'Générer',
+        withPrompt: 'Avec prompt',
+        generating: 'Génération...',
+        customInstructions: 'Instructions personnalisées',
+        addInstructions: 'Ajoutez vos instructions...',
+        cancel: 'Annuler',
+        refine: 'Affiner',
+        refineComment: 'Affiner le commentaire',
+        refineInstructions: 'Instructions pour affiner...',
+        comment: 'Commentaire',
+        generations: 'génération(s)',
+        authRequiredContent: 'Connectez-vous via l\'extension pour utiliser cette fonctionnalité',
+        error: 'Erreur',
+        impossibleExtract: 'Impossible d\'extraire le contenu',
+
+        // Plan et quotas
+        infiniteGenerations: '∞ générations',
+        unlimitedGenerations: 'Générations illimitées',
+        generationsUnit: 'générations',
+        usedToday: 'utilisées aujourd\'hui',
+        upgradeToMedium: 'Passer à MEDIUM',
+        upgradeToPremium: 'Passez à MEDIUM ou PREMIUM pour débloquer',
+        upgradeRequired: 'Veuillez passer à un plan supérieur pour accéder à cette option'
+      },
+      en: {
+        // Main titles and labels
+        extensionTitle: 'LinkedIn AI Commenter',
+        authRequired: 'Google authentication required',
+        authMessage: 'Please sign in with Google to use the plugin',
+        signInWithGoogle: 'Sign in with Google',
+        logout: 'Sign out',
+        upgrade: 'Upgrade',
+        manageSubscription: 'Manage subscription',
+
+        // Main tabs
+        tabSettings: 'Settings',
+        tabSupport: 'Support',
+
+        // Sub-tabs
+        subTabAccount: '👤 Account',
+        subTabLanguage: '🌐 Language',
+        subTabMore: '⚙️ More',
+
+        // Account
+        authenticationStatus: 'Authentication',
+        quotaLabel: 'Daily quota',
+
+        // Toggles
+        toggleOn: 'ON',
+        toggleOff: 'OFF',
+
+        // Support
+        supportHelp: 'Documentation',
+        supportHelpDesc: 'User guide and FAQ',
+        supportFeedback: 'Feedback',
+        supportFeedbackDesc: 'Share your suggestions',
+        supportBug: 'Report a bug',
+        supportBugDesc: 'Help us improve the extension',
+        supportContact: 'Contact',
+        supportContactDesc: 'Contact support',
+
+        // Others
+        version: 'Version',
+        smartSummaryMode: 'Smart Summary Mode',
+        
+        // Language settings
+        interfaceLanguage: 'Interface language',
+        generationSettings: 'Generation settings',
+        commentLanguage: 'Comments language',
+        french: '\u{1F1EB}\u{1F1F7} French',
+        english: '\u{1F1EC}\u{1F1E7} English',
+        
+        // Generation settings
+        tone: 'Tone',
+        professional: 'Professional',
+        formal: 'Formal',
+        friendly: 'Friendly',
+        expert: 'Expert',
+        informative: 'Informative',
+        negative: 'Negative',
+        
+        length: 'Length',
+        words0to10: '0-10 words',
+        words10to20: '10-20 words',
+        words20to40: '20-40 words',
+        
+        generationsCount: 'Number of Generations',
+        generation1: '1 Generation',
+        generation2: '2 Generations',
+        generation3: '3 Generations',
+
+        // News enrichment
+        newsEnrichment: 'News Enrichment',
+        newsMode: 'Enrichment mode',
+        newsDisabled: '❌ Disabled',
+        newsTitleOnly: '⚡ Fast (Titles only)',
+        newsSmartSummary: '🧠 Smart (Enriched summaries)',
+        newsInfoTitleOnly: 'Uses only LinkedIn news titles. Fast and lightweight.',
+        newsInfoTitleOnlyMedium: 'Uses only LinkedIn news titles. Upgrade to PREMIUM for even more relevant enriched summaries.',
+        newsInfoSmartSummary: 'Enriched summaries generated hourly. More relevant and contextual comments.',
+        newsInfoDisabled: 'Comments will not take LinkedIn news into account.',
+        newsInfoDisabledFree: 'Comments will not take LinkedIn news into account. Feature available in MEDIUM and PREMIUM plans.',
+        newsRequiresMedium: '🔒 Feature reserved for MEDIUM and PREMIUM plans',
+        smartRequiresPremium: '🔒 Feature reserved for PREMIUM plan',
+        autoCloseEmotionsPanel: 'Auto-close panel',
+
+        save: 'Save',
+        
+        // Content script messages
+        generate: 'Generate',
+        withPrompt: 'With prompt',
+        generating: 'Generating...',
+        customInstructions: 'Custom instructions',
+        addInstructions: 'Add your instructions...',
+        cancel: 'Cancel',
+        refine: 'Refine',
+        refineComment: 'Refine comment',
+        refineInstructions: 'Instructions to refine...',
+        comment: 'Comment',
+        generations: 'generation(s)',
+        authRequiredContent: 'Sign in via the extension to use this feature',
+        error: 'Error',
+        impossibleExtract: 'Unable to extract content',
+
+        // Plan and quotas
+        infiniteGenerations: '∞ generations',
+        unlimitedGenerations: 'Unlimited generations',
+        generationsUnit: 'generations',
+        usedToday: 'used today',
+        upgradeToMedium: 'Upgrade to MEDIUM',
+        upgradeToPremium: 'Upgrade to MEDIUM or PREMIUM to unlock',
+        upgradeRequired: 'Please upgrade to a higher plan to access this option'
+      }
+    };
+  }
+
+  // Initialiser avec la langue sauvegardée
+  async init() {
+    return new Promise((resolve) => {
+      chrome.storage.sync.get(['interfaceLanguage'], (data) => {
+        this.currentLang = data.interfaceLanguage || 'fr';
+        this.updateInterface();
+        resolve();
+      });
+    });
+  }
+
+  // Changer la langue courante
+  setLanguage(lang) {
+    if (this.translations[lang]) {
+      this.currentLang = lang;
+      chrome.storage.sync.set({ interfaceLanguage: lang });
+      this.updateInterface();
+    }
+  }
+
+  // Obtenir une traduction
+  t(key) {
+    return this.translations[this.currentLang][key] || this.translations['fr'][key] || key;
+  }
+
+  // Mettre à jour tous les éléments avec data-i18n
+  updateInterface() {
+    document.querySelectorAll('[data-i18n]').forEach(element => {
+      const key = element.getAttribute('data-i18n');
+      const translation = this.t(key);
+      
+      if (element.tagName === 'INPUT' || element.tagName === 'TEXTAREA') {
+        element.placeholder = translation;
+      } else if (element.tagName === 'OPTION') {
+        // Pour les options, on utilise directement la traduction qui contient déjà les emojis
+        element.textContent = translation;
+      } else {
+        element.textContent = translation;
+      }
+    });
+
+    // Mettre à jour le titre de la page
+    document.title = this.t('extensionTitle');
+  }
+
+  // Obtenir la langue actuelle
+  getCurrentLanguage() {
+    return this.currentLang;
+  }
+}
+
+// Instance globale
+window.i18n = new I18n();

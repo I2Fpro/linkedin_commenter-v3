@@ -1,0 +1,673 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Gérer votre abonnement LinkedIn AI Commenter">
+    <title>Gestion de l'abonnement - LinkedIn AI Commenter</title>
+
+    <!-- Google Fonts - Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/tailwindcss-cdn@3.4.1/tailwindcss.js"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        'linkedin-blue': '#0A66C2',
+                        'linkedin-blue-dark': '#004182',
+                        'linkedin-blue-soft': '#EDF5FD',
+                        'linkedin-bg': '#F3F2EF',
+                        'linkedin-stroke': '#E0DFDC',
+                        'linkedin-text': '#1D1D1B',
+                        'linkedin-text-secondary': '#666666',
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        html {
+            scroll-behavior: smooth;
+        }
+
+        /* Variables CSS pour le thème light (par défaut) */
+        :root {
+            --bg-primary: #F3F2EF;
+            --bg-secondary: #FFFFFF;
+            --border-color: #E0DFDC;
+            --text-primary: #1D1D1B;
+            --text-secondary: #666666;
+            --linkedin-blue: #0A66C2;
+            --linkedin-blue-dark: #004182;
+            --linkedin-blue-soft: #EDF5FD;
+        }
+
+        body {
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+        }
+
+        .plan-badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 6px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 600;
+            color: white;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.1);
+        }
+
+        .plan-badge.FREE {
+            background: linear-gradient(135deg, #6c757d 0%, #5a6268 100%);
+        }
+
+        .plan-badge.MEDIUM {
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+        }
+
+        .plan-badge.PREMIUM {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        }
+
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .status-badge.active {
+            background-color: #d1fae5;
+            color: #065f46;
+        }
+
+        .status-badge.past_due {
+            background-color: #fed7d7;
+            color: #9b2c2c;
+        }
+
+        .status-badge.canceled {
+            background-color: #e5e7eb;
+            color: #374151;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--linkedin-blue) 0%, var(--linkedin-blue-dark) 100%);
+            color: white;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            border: none;
+            cursor: pointer;
+            box-shadow: 0 4px 6px rgba(10, 102, 194, 0.2);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(10, 102, 194, 0.3);
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-secondary {
+            background: white;
+            color: var(--linkedin-blue);
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            border: 2px solid var(--linkedin-blue);
+            cursor: pointer;
+        }
+
+        .btn-secondary:hover {
+            background: var(--linkedin-blue-soft);
+        }
+
+        .card {
+            background: var(--bg-secondary);
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            border: 1px solid var(--border-color);
+        }
+
+        .spinner {
+            border: 3px solid rgba(10, 102, 194, 0.1);
+            border-top-color: var(--linkedin-blue);
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .error-message {
+            background: #fed7d7;
+            color: #9b2c2c;
+            padding: 12px 16px;
+            border-radius: 8px;
+            border-left: 4px solid #f56565;
+            margin-bottom: 20px;
+        }
+
+        .success-message {
+            background: #d1fae5;
+            color: #065f46;
+            padding: 12px 16px;
+            border-radius: 8px;
+            border-left: 4px solid #10b981;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body class="min-h-screen">
+
+    <!-- Header -->
+    <header class="bg-white shadow-sm border-b border-linkedin-stroke sticky top-0 z-50">
+        <div class="max-w-4xl mx-auto px-6 py-4">
+            <div class="flex items-center justify-between">
+                <a href="/" class="flex items-center gap-3">
+                    <div class="text-3xl">🤖</div>
+                    <h1 class="text-xl font-bold text-linkedin-blue">LinkedIn AI Commenter</h1>
+                </a>
+                <a href="/" class="text-linkedin-text-secondary hover:text-linkedin-blue transition-colors">
+                    ← Retour
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="max-w-4xl mx-auto px-6 py-12">
+
+        <!-- Loading State -->
+        <div id="loadingState" class="text-center py-12">
+            <div class="spinner mx-auto mb-4"></div>
+            <p class="text-linkedin-text-secondary">Chargement de vos informations...</p>
+        </div>
+
+        <!-- Error State -->
+        <div id="errorState" class="hidden">
+            <div class="error-message">
+                <p class="font-semibold mb-1">Une erreur est survenue</p>
+                <p id="errorMessage" class="text-sm"></p>
+            </div>
+            <div class="text-center">
+                <a href="/" class="btn-secondary inline-block">Retour à l'accueil</a>
+            </div>
+        </div>
+
+        <!-- Authenticated Content -->
+        <div id="authenticatedContent" class="hidden space-y-6">
+
+            <!-- Page Title -->
+            <div>
+                <h2 class="text-3xl font-bold text-linkedin-text mb-2">Gestion de l'abonnement</h2>
+                <p class="text-linkedin-text-secondary">Gérez votre abonnement et vos informations de paiement</p>
+            </div>
+
+            <!-- Success Message (after return from Stripe) -->
+            <div id="successMessage" class="success-message hidden">
+                <p class="font-semibold mb-1">✓ Modifications enregistrées</p>
+                <p class="text-sm">Vos changements ont été pris en compte avec succès.</p>
+            </div>
+
+            <!-- User Info Card -->
+            <div class="card">
+                <h3 class="text-xl font-semibold mb-4 text-linkedin-text">Informations du compte</h3>
+                <div class="space-y-3">
+                    <div class="flex justify-between items-center py-2 border-b border-linkedin-stroke">
+                        <span class="text-linkedin-text-secondary font-medium">Email</span>
+                        <span id="userEmail" class="text-linkedin-text font-semibold">-</span>
+                    </div>
+                    <div class="flex justify-between items-center py-2 border-b border-linkedin-stroke">
+                        <span class="text-linkedin-text-secondary font-medium">Plan actuel</span>
+                        <span id="userPlan" class="plan-badge FREE">FREE</span>
+                    </div>
+                    <div class="flex justify-between items-center py-2">
+                        <span class="text-linkedin-text-secondary font-medium">Statut d'abonnement</span>
+                        <span id="subscriptionStatus" class="status-badge active">Actif</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Subscription Management Card -->
+            <div class="card">
+                <h3 class="text-xl font-semibold mb-4 text-linkedin-text">Gérer mon abonnement</h3>
+
+                <!-- For users WITH subscription -->
+                <div id="hasSubscriptionSection" class="hidden">
+                    <p class="text-linkedin-text-secondary mb-6">
+                        Accédez au portail Stripe pour gérer votre abonnement : modifier votre moyen de paiement,
+                        changer de formule ou annuler votre abonnement.
+                    </p>
+                    <button
+                        id="manageSubscriptionBtn"
+                        class="btn-primary w-full sm:w-auto"
+                        onclick="handleManageSubscription()">
+                        <span id="manageBtnText">Gérer mon abonnement</span>
+                        <div id="manageBtnSpinner" class="spinner hidden ml-2"></div>
+                    </button>
+                </div>
+
+                <!-- For users WITHOUT subscription (FREE) -->
+                <div id="noSubscriptionSection" class="hidden">
+                    <p class="text-linkedin-text-secondary mb-6">
+                        Vous n'avez pas encore d'abonnement actif. Découvrez nos offres et choisissez celle qui vous convient.
+                    </p>
+                    <a href="/#pricing" class="btn-primary inline-block">
+                        S'abonner
+                    </a>
+                </div>
+            </div>
+
+            <!-- Invoice History Card -->
+            <div id="invoiceHistorySection" class="card hidden">
+                <h3 class="text-xl font-semibold mb-4 text-linkedin-text">Historique de factures</h3>
+
+                <!-- Loading Invoices -->
+                <div id="invoicesLoading" class="flex items-center justify-center py-8">
+                    <div class="spinner mr-3"></div>
+                    <span class="text-linkedin-text-secondary">Chargement des factures...</span>
+                </div>
+
+                <!-- No Invoices -->
+                <div id="noInvoices" class="hidden text-center py-8">
+                    <div class="text-4xl mb-3">📄</div>
+                    <p class="text-linkedin-text-secondary">
+                        Aucune facture disponible pour le moment. Vous recevrez une facture mensuelle après votre premier paiement.
+                    </p>
+                </div>
+
+                <!-- Invoices Table -->
+                <div id="invoicesTable" class="hidden">
+                    <div class="overflow-x-auto">
+                        <table class="w-full">
+                            <thead>
+                                <tr class="bg-gray-50 border-b border-linkedin-stroke">
+                                    <th class="text-left py-3 px-4 text-sm font-semibold text-linkedin-text">Date</th>
+                                    <th class="text-left py-3 px-4 text-sm font-semibold text-linkedin-text">Montant</th>
+                                    <th class="text-left py-3 px-4 text-sm font-semibold text-linkedin-text">Statut</th>
+                                    <th class="text-left py-3 px-4 text-sm font-semibold text-linkedin-text">Facture</th>
+                                </tr>
+                            </thead>
+                            <tbody id="invoicesTableBody">
+                                <!-- Rows will be inserted here by JavaScript -->
+                            </tbody>
+                        </table>
+                    </div>
+                    <p class="text-xs text-linkedin-text-secondary mt-4 text-center">
+                        💡 Les factures Stripe sont émises automatiquement chaque mois
+                    </p>
+                </div>
+
+                <!-- Error Loading Invoices -->
+                <div id="invoicesError" class="hidden">
+                    <div class="error-message">
+                        <p class="font-semibold mb-1">Erreur lors du chargement des factures</p>
+                        <p id="invoicesErrorMessage" class="text-sm"></p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Info Box -->
+            <div class="bg-linkedin-blue-soft border border-linkedin-blue rounded-lg p-4">
+                <div class="flex gap-3">
+                    <div class="text-2xl">ℹ️</div>
+                    <div>
+                        <p class="text-sm text-linkedin-text">
+                            <strong>Besoin d'aide ?</strong><br>
+                            Toutes les modifications effectuées via le portail Stripe sont automatiquement synchronisées avec votre compte.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Unauthenticated Content -->
+        <div id="unauthenticatedContent" class="hidden text-center py-12">
+            <div class="card max-w-md mx-auto">
+                <div class="text-6xl mb-6">🔒</div>
+                <h3 class="text-2xl font-bold text-linkedin-text mb-4">Connexion requise</h3>
+                <p class="text-linkedin-text-secondary mb-6">
+                    Vous devez être connecté pour accéder à la gestion de votre abonnement.
+                </p>
+                <a href="/#pricing" class="btn-primary inline-block">
+                    Retour à l'accueil
+                </a>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="border-t border-linkedin-stroke mt-20">
+        <div class="max-w-4xl mx-auto px-6 py-8 text-center text-linkedin-text-secondary text-sm">
+            <p>&copy; 2025 LinkedIn AI Commenter. Tous droits réservés.</p>
+        </div>
+    </footer>
+
+    <script>
+        // Configuration de l'API
+        const API_BASE_URL = '__USERS_API_URL__';
+
+        // Récupérer le JWT du localStorage (ou de l'extension Chrome si applicable)
+        function getJwtToken() {
+            return localStorage.getItem('token');
+        }
+
+        // Décoder le JWT pour extraire les informations utilisateur
+        function decodeJWT(token) {
+            try {
+                const base64Url = token.split('.')[1];
+                const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+                const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
+                    return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+                }).join(''));
+                return JSON.parse(jsonPayload);
+            } catch (e) {
+                console.error('Erreur lors du décodage du JWT:', e);
+                return null;
+            }
+        }
+
+        // Fonction pour gérer la création de la session portail Stripe
+        async function handleManageSubscription() {
+            const btn = document.getElementById('manageSubscriptionBtn');
+            const btnText = document.getElementById('manageBtnText');
+            const btnSpinner = document.getElementById('manageBtnSpinner');
+
+            // Désactiver le bouton et afficher le spinner
+            btn.disabled = true;
+            btnText.textContent = 'Redirection...';
+            btnSpinner.classList.remove('hidden');
+
+            try {
+                const token = getJwtToken();
+                if (!token) {
+                    throw new Error('Token d\'authentification manquant');
+                }
+
+                const response = await fetch(`${API_BASE_URL}/api/stripe/create-customer-portal-session`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.detail || 'Erreur lors de la création de la session');
+                }
+
+                const data = await response.json();
+
+                // Rediriger vers le portail Stripe
+                window.location.href = data.portal_url;
+
+            } catch (error) {
+                console.error('Erreur:', error);
+
+                // Réactiver le bouton
+                btn.disabled = false;
+                btnText.textContent = 'Gérer mon abonnement';
+                btnSpinner.classList.add('hidden');
+
+                // Afficher l'erreur
+                showError(error.message);
+            }
+        }
+
+        // Afficher un message d'erreur
+        function showError(message) {
+            const errorState = document.getElementById('errorState');
+            const errorMessage = document.getElementById('errorMessage');
+
+            errorMessage.textContent = message;
+            errorState.classList.remove('hidden');
+
+            // Scroll vers l'erreur
+            errorState.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+
+        // Charger les informations utilisateur
+        async function loadUserInfo() {
+            const loadingState = document.getElementById('loadingState');
+            const errorState = document.getElementById('errorState');
+            const authenticatedContent = document.getElementById('authenticatedContent');
+            const unauthenticatedContent = document.getElementById('unauthenticatedContent');
+
+            try {
+                const token = getJwtToken();
+
+                if (!token) {
+                    // Pas de token = pas authentifié
+                    loadingState.classList.add('hidden');
+                    unauthenticatedContent.classList.remove('hidden');
+                    return;
+                }
+
+                // Décoder le JWT pour obtenir les infos utilisateur
+                const userData = decodeJWT(token);
+
+                if (!userData) {
+                    throw new Error('Token invalide');
+                }
+
+                // Récupérer les informations complètes depuis l'API
+                const response = await fetch(`${API_BASE_URL}/api/users/profile`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (!response.ok) {
+                    // Si le token est expiré (401), nettoyer et rediriger vers login
+                    if (response.status === 401) {
+                        localStorage.removeItem('token');
+                        window.location.href = '/account/login.html';
+                        return;
+                    }
+                    throw new Error('Impossible de récupérer les informations utilisateur');
+                }
+
+                const user = await response.json();
+
+                // Afficher les informations
+                document.getElementById('userEmail').textContent = user.email || '-';
+
+                // Plan
+                const planBadge = document.getElementById('userPlan');
+                planBadge.textContent = user.role || 'FREE';
+                planBadge.className = `plan-badge ${user.role || 'FREE'}`;
+
+                // Statut
+                const statusBadge = document.getElementById('subscriptionStatus');
+                const status = user.subscription_status || 'N/A';
+                const statusText = {
+                    'active': 'Actif',
+                    'past_due': 'Paiement en retard',
+                    'canceled': 'Annulé',
+                    'trialing': 'Essai',
+                    'incomplete': 'Incomplet'
+                };
+                statusBadge.textContent = statusText[status] || status;
+                statusBadge.className = `status-badge ${status}`;
+
+                // Afficher la section appropriée selon le plan
+                const hasSubscriptionSection = document.getElementById('hasSubscriptionSection');
+                const noSubscriptionSection = document.getElementById('noSubscriptionSection');
+
+                if (user.stripe_customer_id && user.role !== 'FREE') {
+                    hasSubscriptionSection.classList.remove('hidden');
+                    noSubscriptionSection.classList.add('hidden');
+                } else {
+                    hasSubscriptionSection.classList.add('hidden');
+                    noSubscriptionSection.classList.remove('hidden');
+                }
+
+                // Vérifier si on revient du portail Stripe (success)
+                const urlParams = new URLSearchParams(window.location.search);
+                if (urlParams.get('success') === 'true') {
+                    document.getElementById('successMessage').classList.remove('hidden');
+                }
+
+                // Afficher le contenu authentifié
+                loadingState.classList.add('hidden');
+                authenticatedContent.classList.remove('hidden');
+
+            } catch (error) {
+                console.error('Erreur:', error);
+                loadingState.classList.add('hidden');
+                showError(error.message);
+            }
+        }
+
+        // Fonction pour formater la date (timestamp vers DD/MM/YYYY)
+        function formatDate(timestamp) {
+            const date = new Date(timestamp * 1000);
+            const day = String(date.getDate()).padStart(2, '0');
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const year = date.getFullYear();
+            return `${day}/${month}/${year}`;
+        }
+
+        // Fonction pour formater le montant
+        function formatAmount(amount, currency) {
+            // Stripe envoie le montant en centimes
+            const amountInEuros = (amount / 100).toFixed(2);
+            const currencySymbol = currency.toUpperCase() === 'EUR' ? '€' : currency.toUpperCase();
+            return `${amountInEuros} ${currencySymbol}`;
+        }
+
+        // Fonction pour charger l'historique des factures
+        async function loadInvoices() {
+            const invoiceHistorySection = document.getElementById('invoiceHistorySection');
+            const invoicesLoading = document.getElementById('invoicesLoading');
+            const noInvoices = document.getElementById('noInvoices');
+            const invoicesTable = document.getElementById('invoicesTable');
+            const invoicesTableBody = document.getElementById('invoicesTableBody');
+            const invoicesError = document.getElementById('invoicesError');
+            const invoicesErrorMessage = document.getElementById('invoicesErrorMessage');
+
+            try {
+                const token = getJwtToken();
+                if (!token) {
+                    return; // Pas de token, on ne charge pas les factures
+                }
+
+                // Récupérer les factures depuis l'API
+                const response = await fetch(`${API_BASE_URL}/api/stripe/invoices`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (!response.ok) {
+                    // Si l'utilisateur n'a pas de customer_id ou est FREE, on ne montre pas d'erreur
+                    if (response.status === 400 || response.status === 403) {
+                        return; // On masque simplement la section
+                    }
+                    throw new Error('Erreur lors du chargement des factures');
+                }
+
+                const data = await response.json();
+                const invoices = data.invoices || [];
+
+                // Masquer le loading
+                invoicesLoading.classList.add('hidden');
+
+                if (invoices.length === 0) {
+                    // Aucune facture
+                    noInvoices.classList.remove('hidden');
+                } else {
+                    // Afficher le tableau
+                    invoicesTable.classList.remove('hidden');
+
+                    // Générer les lignes du tableau
+                    invoices.forEach(invoice => {
+                        const row = document.createElement('tr');
+                        row.className = 'border-b border-linkedin-stroke hover:bg-gray-50 transition-colors';
+                        row.innerHTML = `
+                            <td class="py-3 px-4 text-sm text-linkedin-text">${formatDate(invoice.created)}</td>
+                            <td class="py-3 px-4 text-sm text-linkedin-text font-semibold">${formatAmount(invoice.amount, invoice.currency)}</td>
+                            <td class="py-3 px-4 text-sm">
+                                <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                                    invoice.status === 'Payée' ? 'bg-green-100 text-green-800' :
+                                    invoice.status === 'En attente' ? 'bg-yellow-100 text-yellow-800' :
+                                    invoice.status === 'Annulée' ? 'bg-gray-100 text-gray-800' :
+                                    'bg-red-100 text-red-800'
+                                }">
+                                    ${invoice.status}
+                                </span>
+                            </td>
+                            <td class="py-3 px-4 text-sm">
+                                <a href="${invoice.invoice_pdf}" target="_blank" rel="noopener noreferrer"
+                                   class="text-linkedin-blue hover:text-linkedin-blue-dark font-medium underline flex items-center gap-1">
+                                    📥 Télécharger
+                                </a>
+                            </td>
+                        `;
+                        invoicesTableBody.appendChild(row);
+                    });
+                }
+
+                // Afficher la section
+                invoiceHistorySection.classList.remove('hidden');
+
+            } catch (error) {
+                console.error('Erreur lors du chargement des factures:', error);
+
+                // Masquer le loading
+                invoicesLoading.classList.add('hidden');
+
+                // Afficher l'erreur
+                invoicesErrorMessage.textContent = error.message;
+                invoicesError.classList.remove('hidden');
+
+                // Afficher la section même en cas d'erreur
+                invoiceHistorySection.classList.remove('hidden');
+            }
+        }
+
+        // Charger les informations au chargement de la page
+        document.addEventListener('DOMContentLoaded', async () => {
+            await loadUserInfo();
+
+            // Charger les factures uniquement si l'utilisateur est authentifié et a un abonnement
+            const token = getJwtToken();
+            if (token) {
+                const userData = decodeJWT(token);
+                if (userData && userData.role !== 'FREE') {
+                    await loadInvoices();
+                }
+            }
+        });
+    </script>
+
+</body>
+</html>

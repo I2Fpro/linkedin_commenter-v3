@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test de Connexion Backend</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .success { background-color: #d4edda; border-color: #c3e6cb; }
+        .error { background-color: #f8d7da; border-color: #f5c6cb; }
+        .info { background-color: #d1ecf1; border-color: #bee5eb; }
+        button {
+            padding: 10px 20px;
+            margin: 5px;
+            cursor: pointer;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+        }
+        button:hover { background-color: #0056b3; }
+        pre {
+            background-color: #f4f4f4;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>Test de Connexion Backend LinkedIn AI</h1>
+
+    <div class="test-section info">
+        <h2>Configuration actuelle</h2>
+        <p><strong>AI Service URL:</strong> <span id="ai-url">__AI_API_URL__</span></p>
+        <p><strong>User Service URL:</strong> <span id="user-url">__USERS_API_URL__</span></p>
+    </div>
+
+    <div class="test-section">
+        <h2>Tests de Connectivité</h2>
+        <button onclick="testAiServiceHealth()">Test AI Service /health</button>
+        <button onclick="testAiServiceConfig()">Test AI Service /config/complete</button>
+        <button onclick="testUserServiceHealth()">Test User Service /health</button>
+        <button onclick="testAllEndpoints()">Tester Tout</button>
+    </div>
+
+    <div class="test-section">
+        <h2>Résultats</h2>
+        <div id="results"></div>
+    </div>
+
+    <script>
+        const AI_SERVICE_URL = '__AI_API_URL__';
+        const USER_SERVICE_URL = '__USERS_API_URL__';
+
+        function addResult(title, success, data) {
+            const resultsDiv = document.getElementById('results');
+            const resultDiv = document.createElement('div');
+            resultDiv.className = `test-section ${success ? 'success' : 'error'}`;
+
+            let content = `<h3>${title}</h3>`;
+            if (success) {
+                content += '<p><strong>✅ Succès</strong></p>';
+                if (data) {
+                    content += `<pre>${JSON.stringify(data, null, 2)}</pre>`;
+                }
+            } else {
+                content += '<p><strong>❌ Échec</strong></p>';
+                content += `<p>${data}</p>`;
+            }
+
+            resultDiv.innerHTML = content;
+            resultsDiv.appendChild(resultDiv);
+        }
+
+        async function testAiServiceHealth() {
+            try {
+                const response = await fetch(`${AI_SERVICE_URL}/health`, {
+                    method: 'GET',
+                    mode: 'cors',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    addResult('AI Service /health', true, data);
+                } else {
+                    addResult('AI Service /health', false, `HTTP ${response.status}: ${response.statusText}`);
+                }
+            } catch (error) {
+                addResult('AI Service /health', false, error.message);
+            }
+        }
+
+        async function testAiServiceConfig() {
+            try {
+                const response = await fetch(`${AI_SERVICE_URL}/config/complete`, {
+                    method: 'GET',
+                    mode: 'cors',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    addResult('AI Service /config/complete', true, data);
+                } else {
+                    addResult('AI Service /config/complete', false, `HTTP ${response.status}: ${response.statusText}`);
+                }
+            } catch (error) {
+                addResult('AI Service /config/complete', false, error.message);
+            }
+        }
+
+        async function testUserServiceHealth() {
+            try {
+                const response = await fetch(`${USER_SERVICE_URL}/health`, {
+                    method: 'GET',
+                    mode: 'cors',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    addResult('User Service /health', true, data);
+                } else {
+                    addResult('User Service /health', false, `HTTP ${response.status}: ${response.statusText}`);
+                }
+            } catch (error) {
+                addResult('User Service /health', false, error.message);
+            }
+        }
+
+        async function testAllEndpoints() {
+            document.getElementById('results').innerHTML = '';
+            await testAiServiceHealth();
+            await new Promise(resolve => setTimeout(resolve, 500));
+            await testAiServiceConfig();
+            await new Promise(resolve => setTimeout(resolve, 500));
+            await testUserServiceHealth();
+        }
+
+        // Test automatique au chargement
+        window.addEventListener('load', () => {
+            console.log('Page chargée - Prêt pour les tests');
+        });
+    </script>
+</body>
+</html>

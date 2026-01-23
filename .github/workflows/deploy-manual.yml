@@ -1,0 +1,234 @@
+name: Deploy Manual
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Target environment'
+        required: true
+        type: choice
+        options:
+          - preprod
+          - prod
+      version:
+        description: 'Git ref to deploy (branch, tag, SHA). Leave empty for main'
+        required: false
+        type: string
+        default: 'main'
+      deploy_backend:
+        description: 'Deploy backend services?'
+        type: boolean
+        default: true
+      deploy_extension:
+        description: 'Deploy Chrome extension?'
+        type: boolean
+        default: true
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_PREFIX: ${{ github.repository_owner }}/linkedin-ai
+  DEPLOY_PATH: /home/deploy/I2F/PROJETS/LINKEDIN_COMMENTER/linkedin_commenter-v3
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment == 'prod' && 'production' || 'preprod' }}
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.version || 'main' }}
+
+      - name: Set environment variables (Preprod)
+        if: inputs.environment == 'preprod'
+        run: |
+          echo "AI_API_URL=${{ secrets.AI_API_URL_PREPROD }}" >> $GITHUB_ENV
+          echo "USERS_API_URL=${{ secrets.USERS_API_URL_PREPROD }}" >> $GITHUB_ENV
+          echo "SITE_URL=${{ secrets.SITE_URL_PREPROD }}" >> $GITHUB_ENV
+          echo "GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID_PREPROD }}" >> $GITHUB_ENV
+          echo "GOOGLE_CLIENT_ID_WEB=${{ secrets.GOOGLE_CLIENT_ID_WEB_PREPROD }}" >> $GITHUB_ENV
+          echo "STRIPE_WEBHOOK_SECRET=${{ secrets.STRIPE_WEBHOOK_SECRET_PREPROD }}" >> $GITHUB_ENV
+          echo "SSH_HOST=${{ secrets.SSH_HOST_PREPROD }}" >> $GITHUB_ENV
+          echo "SSH_KEY<<EOF" >> $GITHUB_ENV
+          echo "${{ secrets.SSH_PRIVATE_KEY_PREPROD }}" >> $GITHUB_ENV
+          echo "EOF" >> $GITHUB_ENV
+          echo "EXTENSION_ID=${{ secrets.CHROME_EXTENSION_ID_PREPROD }}" >> $GITHUB_ENV
+
+      - name: Set environment variables (Prod)
+        if: inputs.environment == 'prod'
+        run: |
+          echo "AI_API_URL=${{ secrets.AI_API_URL_PROD }}" >> $GITHUB_ENV
+          echo "USERS_API_URL=${{ secrets.USERS_API_URL_PROD }}" >> $GITHUB_ENV
+          echo "SITE_URL=${{ secrets.SITE_URL_PROD }}" >> $GITHUB_ENV
+          echo "GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID_PROD }}" >> $GITHUB_ENV
+          echo "GOOGLE_CLIENT_ID_WEB=${{ secrets.GOOGLE_CLIENT_ID_WEB_PROD }}" >> $GITHUB_ENV
+          echo "STRIPE_WEBHOOK_SECRET=${{ secrets.STRIPE_WEBHOOK_SECRET_PROD }}" >> $GITHUB_ENV
+          echo "SSH_HOST=${{ secrets.SSH_HOST_PROD }}" >> $GITHUB_ENV
+          echo "SSH_KEY<<EOF" >> $GITHUB_ENV
+          echo "${{ secrets.SSH_PRIVATE_KEY_PROD }}" >> $GITHUB_ENV
+          echo "EOF" >> $GITHUB_ENV
+          echo "EXTENSION_ID=${{ secrets.CHROME_EXTENSION_ID_PROD }}" >> $GITHUB_ENV
+
+      - name: Apply environment config
+        run: |
+          chmod +x scripts/apply-env.sh
+          ./scripts/apply-env.sh .
+
+      - name: Set up Docker Buildx
+        if: inputs.deploy_backend
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to GHCR
+        if: inputs.deploy_backend
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push ai-service
+        if: inputs.deploy_backend
+        uses: docker/build-push-action@v5
+        with:
+          context: ./BACK-END/ai-service
+          push: true
+          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-ai-service:${{ inputs.environment }}
+
+      - name: Build and push user-service
+        if: inputs.deploy_backend
+        uses: docker/build-push-action@v5
+        with:
+          context: ./BACK-END/user-service
+          push: true
+          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-user-service:${{ inputs.environment }}
+
+      - name: Build and push website
+        if: inputs.deploy_backend
+        uses: docker/build-push-action@v5
+        with:
+          context: ./SITE-INTERNET
+          push: true
+          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-website:${{ inputs.environment }}
+
+      - name: Deploy to VPS (Preprod)
+        if: inputs.deploy_backend && inputs.environment == 'preprod'
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SSH_HOST_PREPROD }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY_PREPROD }}
+          script: |
+            cd ${{ env.DEPLOY_PATH }}
+
+            # Create/update .env file
+            cat > .env << 'ENVEOF'
+            GITHUB_OWNER=${{ github.repository_owner }}
+            TAG=preprod
+            POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }}
+            JWT_SECRET=${{ secrets.JWT_SECRET }}
+            JWT_ALGORITHM=HS256
+            JWT_EXPIRATION_HOURS=24
+            ENCRYPTION_KEY=${{ secrets.ENCRYPTION_KEY }}
+            GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID_PREPROD }}
+            GOOGLE_CLIENT_ID_WEB=${{ secrets.GOOGLE_CLIENT_ID_WEB_PREPROD }}
+            OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}
+            STRIPE_SECRET_KEY=${{ secrets.STRIPE_SECRET_KEY_PREPROD }}
+            STRIPE_WEBHOOK_SECRET=${{ secrets.STRIPE_WEBHOOK_SECRET_PREPROD }}
+            STRIPE_PRICE_MEDIUM_MONTHLY=${{ secrets.STRIPE_PRICE_MEDIUM_MONTHLY }}
+            STRIPE_PRICE_PREMIUM_MONTHLY=${{ secrets.STRIPE_PRICE_PREMIUM_MONTHLY }}
+            STRIPE_SUCCESS_URL=${{ secrets.SITE_URL_PREPROD }}/success?session_id={CHECKOUT_SESSION_ID}
+            STRIPE_CANCEL_URL=${{ secrets.SITE_URL_PREPROD }}/cancel
+            STRIPE_PORTAL_RETURN_URL=${{ secrets.SITE_URL_PREPROD }}/account/subscription
+            ALLOWED_ORIGINS=${{ secrets.AI_API_URL_PREPROD }},${{ secrets.USERS_API_URL_PREPROD }},${{ secrets.SITE_URL_PREPROD }},chrome-extension://*
+            CORS_CREDENTIALS=true
+            AI_API_HOST=ai.api.ai-linkedin.iry-entreprise.fr
+            USERS_API_HOST=users.api.ai-linkedin.iry-entreprise.fr
+            SITE_HOST=ai-linkedin.iry-entreprise.fr
+            POSTHOG_ENABLED=false
+            POSTHOG_API_KEY=
+            POSTHOG_HOST=https://eu.i.posthog.com
+            ENVIRONMENT=preprod
+            ENVEOF
+
+            echo ${{ secrets.GHCR_PAT }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+            docker compose pull
+            docker compose up -d --remove-orphans
+            echo "Preprod backend deployed manually - $(date)"
+
+      - name: Deploy to VPS (Prod)
+        if: inputs.deploy_backend && inputs.environment == 'prod'
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SSH_HOST_PROD }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY_PROD }}
+          script: |
+            cd ${{ env.DEPLOY_PATH }}
+
+            # Create/update .env file
+            cat > .env << 'ENVEOF'
+            GITHUB_OWNER=${{ github.repository_owner }}
+            TAG=prod
+            POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }}
+            JWT_SECRET=${{ secrets.JWT_SECRET }}
+            JWT_ALGORITHM=HS256
+            JWT_EXPIRATION_HOURS=24
+            ENCRYPTION_KEY=${{ secrets.ENCRYPTION_KEY }}
+            GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID_PROD }}
+            GOOGLE_CLIENT_ID_WEB=${{ secrets.GOOGLE_CLIENT_ID_WEB_PROD }}
+            OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}
+            STRIPE_SECRET_KEY=${{ secrets.STRIPE_SECRET_KEY_PROD }}
+            STRIPE_WEBHOOK_SECRET=${{ secrets.STRIPE_WEBHOOK_SECRET_PROD }}
+            STRIPE_PRICE_MEDIUM_MONTHLY=${{ secrets.STRIPE_PRICE_MEDIUM_MONTHLY }}
+            STRIPE_PRICE_PREMIUM_MONTHLY=${{ secrets.STRIPE_PRICE_PREMIUM_MONTHLY }}
+            STRIPE_SUCCESS_URL=${{ secrets.SITE_URL_PROD }}/success?session_id={CHECKOUT_SESSION_ID}
+            STRIPE_CANCEL_URL=${{ secrets.SITE_URL_PROD }}/cancel
+            STRIPE_PORTAL_RETURN_URL=${{ secrets.SITE_URL_PROD }}/account/subscription
+            ALLOWED_ORIGINS=${{ secrets.AI_API_URL_PROD }},${{ secrets.USERS_API_URL_PROD }},${{ secrets.SITE_URL_PROD }},chrome-extension://*
+            CORS_CREDENTIALS=true
+            AI_API_HOST=ai.api.ai-linkedin.i2f-entreprise.fr
+            USERS_API_HOST=users.api.ai-linkedin.i2f-entreprise.fr
+            SITE_HOST=ai-linkedin.i2f-entreprise.fr
+            POSTHOG_ENABLED=false
+            POSTHOG_API_KEY=
+            POSTHOG_HOST=https://eu.i.posthog.com
+            ENVIRONMENT=production
+            ENVEOF
+
+            echo ${{ secrets.GHCR_PAT }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+            docker compose pull
+            docker compose up -d --remove-orphans
+            echo "Prod backend deployed manually - $(date)"
+
+      - name: Package extension
+        if: inputs.deploy_extension
+        run: |
+          cd FRONT-END
+          zip -r ../extension-manual.zip . -x "*.git*" -x "*.DS_Store" -x "*.env*"
+
+      - name: Upload to Chrome Web Store
+        if: inputs.deploy_extension
+        uses: mnao305/chrome-extension-upload@v5.0.0
+        with:
+          file-path: extension-manual.zip
+          extension-id: ${{ env.EXTENSION_ID }}
+          client-id: ${{ secrets.CHROME_CLIENT_ID }}
+          client-secret: ${{ secrets.CHROME_CLIENT_SECRET }}
+          refresh-token: ${{ secrets.CHROME_REFRESH_TOKEN }}
+
+      - name: Deployment Summary
+        run: |
+          echo "## Manual Deployment Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Setting | Value |" >> $GITHUB_STEP_SUMMARY
+          echo "|---------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Environment | **${{ inputs.environment }}** |" >> $GITHUB_STEP_SUMMARY
+          echo "| Version | ${{ inputs.version || 'main' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Backend | ${{ inputs.deploy_backend && 'Deployed' || 'Skipped' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Extension | ${{ inputs.deploy_extension && 'Uploaded' || 'Skipped' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Triggered by | @${{ github.actor }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Time | $(date -u) |" >> $GITHUB_STEP_SUMMARY

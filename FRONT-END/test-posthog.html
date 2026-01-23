@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test PostHog</title>
+</head>
+<body>
+    <h1>Test PostHog Integration</h1>
+    <button id="testBtn">Envoyer un événement test</button>
+    <div id="output"></div>
+
+    <script src="api-config.js"></script>
+    <script src="posthog-client.js"></script>
+    <script>
+        const output = document.getElementById('output');
+
+        function log(message) {
+            const p = document.createElement('p');
+            p.textContent = message;
+            output.appendChild(p);
+            console.log(message);
+        }
+
+        // Attendre l'initialisation
+        setTimeout(() => {
+            if (window.posthogClient) {
+                log('✅ PostHog client chargé');
+                log('Distinct ID: ' + window.posthogClient.distinctId);
+                log('API Key: ' + window.posthogClient.apiKey.substring(0, 10) + '...');
+                log('Enabled: ' + window.posthogClient.enabled);
+            } else {
+                log('❌ PostHog client non disponible');
+            }
+        }, 1000);
+
+        document.getElementById('testBtn').addEventListener('click', () => {
+            if (window.posthogClient) {
+                window.posthogClient.capture('test_event', {
+                    test_property: 'test_value',
+                    timestamp: new Date().toISOString()
+                });
+                log('✅ Événement test envoyé');
+                log('Queue length: ' + window.posthogClient.eventQueue.length);
+
+                // Forcer le flush
+                window.posthogClient.flush();
+                log('✅ Flush forcé');
+            } else {
+                log('❌ Impossible d\'envoyer l\'événement');
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,1100 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>LinkedIn AI Commenter</title>
+  <style>
+    /* ==================== VARIABLES CSS ==================== */
+    :root {
+      /* Couleurs principales */
+      --bg-primary: #2a2e4d;
+      --bg-secondary: #353954;
+      --bg-tertiary: #3e4361;
+
+      /* Onglets */
+      --tab-active: #5ab9ea;
+      --tab-inactive: #525577;
+      --tab-hover: #626690;
+
+      /* Toggles */
+      --toggle-on: #4caf50;
+      --toggle-off: #525577;
+      --toggle-danger: #ef5350;
+
+      /* Texte */
+      --text-primary: #ffffff;
+      --text-secondary: #9095b0;
+      --text-tertiary: #6b7091;
+
+      /* Accents */
+      --accent-blue: #5ab9ea;
+      --accent-red: #ef5350;
+      --accent-green: #4caf50;
+      --accent-yellow: #ffc107;
+
+      /* Ombres */
+      --shadow-text: 0 2px 4px rgba(0,0,0,0.4);
+      --shadow-box: 0 4px 8px rgba(0,0,0,0.2);
+      --shadow-hover: 0 6px 12px rgba(0,0,0,0.3);
+
+      /* Plans */
+      --plan-free: #6c757d;
+      --plan-medium: #3b82f6;
+      --plan-premium: #10b981;
+    }
+
+    /* ==================== TOAST NOTIFICATIONS ==================== */
+    .ai-toast-container {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      z-index: 999999;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      pointer-events: none;
+    }
+
+    .ai-toast {
+      pointer-events: auto;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      background: #ffffff;
+      color: #333333;
+      padding: 14px 18px;
+      border-radius: 8px;
+      border-left: 4px solid #0077b5;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15), 0 2px 4px rgba(0, 0, 0, 0.1);
+      min-width: 300px;
+      max-width: 380px;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      font-size: 14px;
+      line-height: 1.4;
+      opacity: 0;
+      transform: translateY(20px);
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .ai-toast.ai-toast-show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .ai-toast.ai-toast-hide {
+      opacity: 0;
+      transform: translateY(20px) scale(0.95);
+    }
+
+    .ai-toast-icon {
+      font-size: 20px;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 24px;
+      height: 24px;
+    }
+
+    .ai-toast-message {
+      flex: 1;
+      color: #333333;
+      font-weight: 400;
+      word-break: break-word;
+    }
+
+    .ai-toast-close {
+      flex-shrink: 0;
+      background: none;
+      border: none;
+      color: #666666;
+      font-size: 24px;
+      line-height: 1;
+      cursor: pointer;
+      padding: 0;
+      margin: 0;
+      width: 24px;
+      height: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: color 0.2s ease;
+      opacity: 0.6;
+    }
+
+    .ai-toast-close:hover {
+      color: #333333;
+      opacity: 1;
+    }
+
+    .ai-toast-success {
+      border-left-color: #2ecc71;
+    }
+
+    .ai-toast-error {
+      border-left-color: #e74c3c;
+    }
+
+    .ai-toast-warning {
+      border-left-color: #f39c12;
+    }
+
+    .ai-toast-info {
+      border-left-color: #0077b5;
+    }
+
+    .ai-toast:hover {
+      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2), 0 3px 6px rgba(0, 0, 0, 0.15);
+      transform: translateY(-2px);
+    }
+
+    /* ==================== RESET & BASE ==================== */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      width: 420px;
+      min-height: 500px;
+      background: var(--bg-primary);
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      color: var(--text-primary);
+      overflow-x: hidden;
+    }
+
+    /* ==================== HEADER ==================== */
+    .header {
+      background: var(--bg-secondary);
+      padding: 16px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 2px solid var(--bg-tertiary);
+      box-shadow: var(--shadow-box);
+    }
+
+    .header-title {
+      font-size: 20px;
+      font-weight: bold;
+      color: var(--text-primary);
+      text-shadow: var(--shadow-text);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .header-title .icon {
+      font-size: 24px;
+    }
+
+    .close-btn {
+      background: var(--accent-red);
+      border: none;
+      width: 32px;
+      height: 32px;
+      border-radius: 6px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      color: white;
+      font-weight: bold;
+      transition: all 0.2s;
+      box-shadow: var(--shadow-box);
+    }
+
+    .close-btn:hover {
+      background: #d32f2f;
+      transform: scale(1.05);
+      box-shadow: var(--shadow-hover);
+    }
+
+    /* ==================== ONGLETS PRINCIPAUX ==================== */
+    .main-tabs {
+      display: flex;
+      gap: 8px;
+      padding: 12px 20px;
+      background: var(--bg-secondary);
+      border-bottom: 2px solid var(--bg-tertiary);
+    }
+
+    .main-tab {
+      flex: 1;
+      padding: 12px 20px;
+      background: var(--tab-inactive);
+      border: none;
+      border-radius: 8px;
+      color: var(--text-secondary);
+      font-size: 16px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: all 0.3s;
+      text-shadow: var(--shadow-text);
+      box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    }
+
+    .main-tab:hover {
+      background: var(--tab-hover);
+      color: var(--text-primary);
+      transform: translateY(-2px);
+    }
+
+    .main-tab.active {
+      background: var(--tab-active);
+      color: white;
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-hover);
+    }
+
+    /* ==================== CONTENU DES ONGLETS ==================== */
+    .tab-content {
+      display: none;
+      animation: fadeIn 0.3s ease;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    /* ==================== SOUS-ONGLETS ==================== */
+    .sub-tabs {
+      display: flex;
+      gap: 8px;
+      padding: 16px 20px 12px 20px;
+      background: var(--bg-primary);
+    }
+
+    .sub-tab {
+      flex: 1;
+      padding: 10px 16px;
+      background: var(--tab-inactive);
+      border: none;
+      border-radius: 8px;
+      color: var(--text-secondary);
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s;
+      position: relative;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.15);
+    }
+
+    .sub-tab:hover {
+      background: var(--tab-hover);
+      color: var(--text-primary);
+      transform: translateY(-1px);
+    }
+
+    .sub-tab.active {
+      background: linear-gradient(135deg, var(--tab-active) 0%, #4a9fd4 100%);
+      color: white;
+      transform: translateY(-1px);
+      box-shadow: var(--shadow-box);
+    }
+
+    .sub-tab .badge {
+      position: absolute;
+      top: 4px;
+      right: 4px;
+      width: 8px;
+      height: 8px;
+      background: var(--accent-red);
+      border-radius: 50%;
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% {
+        opacity: 1;
+        transform: scale(1);
+      }
+      50% {
+        opacity: 0.5;
+        transform: scale(1.2);
+      }
+    }
+
+    /* ==================== CONTENU SOUS-ONGLETS ==================== */
+    .sub-content {
+      display: none;
+      padding: 16px 20px 20px 20px;
+      animation: slideIn 0.3s ease;
+    }
+
+    .sub-content.active {
+      display: block;
+    }
+
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: translateX(-20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateX(0);
+      }
+    }
+
+    /* ==================== USER CARD (Compte) ==================== */
+    .user-card {
+      background: var(--bg-secondary);
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 16px;
+      box-shadow: var(--shadow-box);
+    }
+
+    .user-card.authenticated {
+      background: linear-gradient(135deg, var(--bg-secondary) 0%, #3e4570 100%);
+      border: 2px solid var(--accent-green);
+    }
+
+    .user-info-display {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+
+    .user-avatar {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      border: 3px solid var(--accent-blue);
+      box-shadow: var(--shadow-box);
+    }
+
+    .user-details {
+      flex: 1;
+    }
+
+    .user-details h3 {
+      font-size: 16px;
+      color: var(--text-primary);
+      margin-bottom: 4px;
+      text-shadow: var(--shadow-text);
+    }
+
+    .user-details p {
+      font-size: 13px;
+      color: var(--text-secondary);
+    }
+
+    .plan-badge-inline {
+      display: inline-flex;
+      align-items: center;
+      padding: 4px 12px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: bold;
+      color: white;
+      margin-left: 8px;
+      text-shadow: var(--shadow-text);
+    }
+
+    .plan-badge-inline.FREE {
+      background: var(--plan-free);
+    }
+
+    .plan-badge-inline.MEDIUM {
+      background: var(--plan-medium);
+    }
+
+    .plan-badge-inline.PREMIUM {
+      background: var(--plan-premium);
+    }
+
+    .quota-display {
+      background: rgba(0,0,0,0.2);
+      border-radius: 8px;
+      padding: 12px;
+      margin-top: 12px;
+    }
+
+    .quota-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+
+    .quota-label {
+      font-size: 13px;
+      color: var(--text-secondary);
+    }
+
+    .quota-value {
+      font-size: 14px;
+      font-weight: bold;
+      color: var(--text-primary);
+    }
+
+    .quota-bar {
+      width: 100%;
+      height: 10px;
+      background: rgba(0,0,0,0.3);
+      border-radius: 5px;
+      overflow: hidden;
+      box-shadow: inset 0 2px 4px rgba(0,0,0,0.3);
+    }
+
+    .quota-progress {
+      height: 100%;
+      background: linear-gradient(90deg, var(--accent-blue) 0%, #4a9fd4 100%);
+      transition: width 0.5s ease, background 0.3s ease;
+      box-shadow: 0 0 8px rgba(90, 185, 234, 0.5);
+    }
+
+    .quota-progress.low {
+      background: linear-gradient(90deg, var(--accent-yellow) 0%, #ffb300 100%);
+      box-shadow: 0 0 8px rgba(255, 193, 7, 0.5);
+    }
+
+    .quota-progress.empty {
+      background: linear-gradient(90deg, var(--accent-red) 0%, #d32f2f 100%);
+      box-shadow: 0 0 8px rgba(239, 83, 80, 0.5);
+    }
+
+    .auth-message {
+      background: rgba(255, 193, 7, 0.2);
+      border: 2px solid var(--accent-yellow);
+      border-radius: 8px;
+      padding: 12px;
+      text-align: center;
+      color: var(--accent-yellow);
+      font-size: 13px;
+      margin-bottom: 12px;
+    }
+
+    /* ==================== BOUTONS ==================== */
+    .btn {
+      width: 100%;
+      padding: 12px 20px;
+      border: none;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: all 0.3s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      text-shadow: var(--shadow-text);
+      box-shadow: var(--shadow-box);
+    }
+
+    .btn:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-hover);
+    }
+
+    .btn:active {
+      transform: translateY(0);
+    }
+
+    .btn-google {
+      background: #4285f4;
+      color: white;
+    }
+
+    .btn-google:hover {
+      background: #357ae8;
+    }
+
+    .btn-logout {
+      background: var(--accent-red);
+      color: white;
+      margin-top: 12px;
+    }
+
+    .btn-logout:hover {
+      background: #d32f2f;
+    }
+
+    .btn-upgrade {
+      background: var(--accent-green);
+      color: white;
+      margin-top: 12px;
+    }
+
+    .btn-upgrade:hover {
+      background: #0e9f6e;
+    }
+
+    .btn-manage-subscription {
+      background: var(--accent-blue);
+      color: white;
+      margin-top: 12px;
+    }
+
+    .btn-manage-subscription:hover {
+      background: #4a9fd4;
+    }
+
+    /* ==================== SETTINGS ROW ==================== */
+    .setting-row {
+      background: var(--bg-secondary);
+      border-radius: 8px;
+      padding: 12px 16px;
+      margin-bottom: 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: var(--shadow-box);
+      transition: all 0.2s;
+    }
+
+    .setting-row:hover {
+      background: var(--bg-tertiary);
+      transform: translateX(4px);
+    }
+
+    .setting-label {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex: 1;
+    }
+
+    .setting-icon {
+      font-size: 24px;
+      width: 32px;
+      text-align: center;
+    }
+
+    .setting-text {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+
+    /* ==================== TOGGLE SWITCH ==================== */
+    .toggle-switch {
+      display: flex;
+      border-radius: 6px;
+      overflow: hidden;
+      background: rgba(0,0,0,0.3);
+      box-shadow: inset 0 2px 4px rgba(0,0,0,0.3);
+    }
+
+    .toggle-btn {
+      padding: 8px 16px;
+      font-weight: bold;
+      font-size: 12px;
+      border: none;
+      cursor: pointer;
+      transition: all 0.3s;
+      color: var(--text-tertiary);
+      background: transparent;
+    }
+
+    .toggle-btn.active {
+      background: var(--toggle-on);
+      color: white;
+      text-shadow: var(--shadow-text);
+      animation: toggleBounce 0.3s ease;
+    }
+
+    .toggle-btn.danger.active {
+      background: var(--toggle-danger);
+    }
+
+    @keyframes toggleBounce {
+      0%, 100% {
+        transform: scale(1);
+      }
+      50% {
+        transform: scale(1.05);
+      }
+    }
+
+    /* ==================== VALUE SELECTOR ==================== */
+    .value-selector {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(0,0,0,0.3);
+      border-radius: 6px;
+      padding: 4px;
+      box-shadow: inset 0 2px 4px rgba(0,0,0,0.3);
+    }
+
+    .selector-btn {
+      background: var(--tab-inactive);
+      border: none;
+      width: 28px;
+      height: 28px;
+      border-radius: 4px;
+      cursor: pointer;
+      color: var(--text-primary);
+      font-size: 14px;
+      font-weight: bold;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .selector-btn:hover {
+      background: var(--tab-active);
+      transform: scale(1.1);
+    }
+
+    .selector-btn:active {
+      transform: scale(0.95);
+    }
+
+    .selector-value {
+      min-width: 120px;
+      text-align: center;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-primary);
+      padding: 0 8px;
+    }
+
+    /* ==================== INFO BOX ==================== */
+    .info-box {
+      background: rgba(90, 185, 234, 0.1);
+      border: 2px solid var(--accent-blue);
+      border-radius: 8px;
+      padding: 12px;
+      margin-top: 12px;
+      font-size: 12px;
+      color: var(--text-secondary);
+      line-height: 1.5;
+    }
+
+    .info-box strong {
+      color: var(--accent-blue);
+    }
+
+    /* ==================== INFO ICON & TOOLTIP ==================== */
+    .info-icon {
+      display: inline-block;
+      margin-left: 6px;
+      font-size: 14px;
+      color: var(--accent-blue);
+      cursor: help;
+      position: relative;
+      opacity: 0.7;
+      transition: opacity 0.2s;
+    }
+
+    .info-icon:hover {
+      opacity: 1;
+    }
+
+    .info-icon::after {
+      content: var(--tooltip-content, attr(data-tooltip-fr));
+      position: absolute;
+      left: 50%;
+      bottom: calc(100% + 8px);
+      transform: translateX(-50%);
+      background: rgba(42, 46, 77, 0.95);
+      color: var(--text-primary);
+      padding: 8px 12px;
+      border-radius: 6px;
+      font-size: 11px;
+      white-space: nowrap;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s;
+      z-index: 1000;
+      border: 1px solid var(--accent-blue);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    }
+
+    .info-icon:hover::after {
+      opacity: 1;
+    }
+
+    /* Triangle du tooltip */
+    .info-icon::before {
+      content: '';
+      position: absolute;
+      left: 50%;
+      bottom: calc(100% + 2px);
+      transform: translateX(-50%);
+      border: 6px solid transparent;
+      border-top-color: var(--accent-blue);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s;
+      z-index: 1001;
+    }
+
+    .info-icon:hover::before {
+      opacity: 1;
+    }
+
+    /* ==================== FOOTER ==================== */
+    .footer {
+      padding: 16px 20px;
+      text-align: center;
+      color: var(--text-tertiary);
+      font-size: 11px;
+      border-top: 1px solid var(--bg-tertiary);
+      margin-top: 20px;
+    }
+
+    /* ==================== SOUTIEN TAB ==================== */
+    .support-content {
+      padding: 20px;
+    }
+
+    .support-link {
+      background: var(--bg-secondary);
+      border-radius: 8px;
+      padding: 16px;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      cursor: pointer;
+      transition: all 0.3s;
+      text-decoration: none;
+      color: var(--text-primary);
+      box-shadow: var(--shadow-box);
+    }
+
+    .support-link:hover {
+      background: var(--bg-tertiary);
+      transform: translateX(8px);
+      box-shadow: var(--shadow-hover);
+    }
+
+    .support-icon {
+      font-size: 28px;
+      width: 40px;
+      text-align: center;
+    }
+
+    .support-text h4 {
+      font-size: 15px;
+      margin-bottom: 4px;
+      color: var(--text-primary);
+    }
+
+    .support-text p {
+      font-size: 12px;
+      color: var(--text-secondary);
+    }
+
+    /* ==================== DISABLED STATE ==================== */
+    .disabled {
+      opacity: 0.4;
+      pointer-events: none;
+    }
+
+    /* ==================== SCROLLBAR ==================== */
+    ::-webkit-scrollbar {
+      width: 8px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: var(--bg-primary);
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: var(--tab-inactive);
+      border-radius: 4px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: var(--tab-hover);
+    }
+  </style>
+</head>
+<body>
+  <!-- ==================== HEADER ==================== -->
+  <div class="header">
+    <div class="header-title">
+      <span class="icon">🤖</span>
+      <span id="extensionTitle">LinkedIn AI Commenter</span>
+    </div>
+    <button class="close-btn" id="closeBtn">✕</button>
+  </div>
+
+  <!-- ==================== ONGLETS PRINCIPAUX ==================== -->
+  <div class="main-tabs">
+    <button class="main-tab active" data-tab="settings" data-i18n="tabSettings">Paramètres</button>
+    <button class="main-tab" data-tab="support" data-i18n="tabSupport">Soutien</button>
+  </div>
+
+  <!-- ==================== CONTENU: PARAMÈTRES ==================== -->
+  <div class="tab-content active" id="settings-content">
+
+    <!-- Sous-onglets -->
+    <div class="sub-tabs">
+      <button class="sub-tab active" data-subtab="account">
+        <span data-i18n="subTabAccount">👤 Compte</span>
+        <span class="badge" id="accountBadge" style="display: none;"></span>
+      </button>
+      <button class="sub-tab" data-subtab="language">
+        <span data-i18n="subTabLanguage">🌐 Langue</span>
+      </button>
+      <button class="sub-tab" data-subtab="more">
+        <span data-i18n="subTabMore">⚙️ Plus</span>
+      </button>
+    </div>
+
+    <!-- ===== SOUS-CONTENU: COMPTE ===== -->
+    <div class="sub-content active" id="account-content">
+
+      <!-- User Card (Non authentifié) -->
+      <div class="user-card" id="userCardUnauthenticated">
+        <div class="auth-message" data-i18n="authMessage">
+          Veuillez vous connecter avec Google pour utiliser le plugin
+        </div>
+        <button class="btn btn-google" id="googleSignInBtn">
+          <span>🔐</span>
+          <span data-i18n="signInWithGoogle">Se connecter avec Google</span>
+        </button>
+      </div>
+
+      <!-- User Card (Authentifié) -->
+      <div class="user-card authenticated" id="userCardAuthenticated" style="display: none;">
+        <div class="user-info-display">
+          <img class="user-avatar" id="userAvatar" src="" alt="Avatar">
+          <div class="user-details">
+            <h3>
+              <span id="userName">John Doe</span>
+              <span class="plan-badge-inline" id="userPlanBadge">FREE</span>
+            </h3>
+            <p id="userEmail">john@example.com</p>
+          </div>
+        </div>
+
+        <!-- Quota -->
+        <div class="quota-display" id="quotaDisplay">
+          <div class="quota-header">
+            <span class="quota-label" data-i18n="quotaLabel">Quota quotidien</span>
+            <span class="quota-value" id="quotaValue">5/5</span>
+          </div>
+          <div class="quota-bar">
+            <div class="quota-progress" id="quotaProgress" style="width: 100%;"></div>
+          </div>
+        </div>
+
+        <button class="btn btn-upgrade" id="upgradeBtn" style="display: none;">
+          <span>⬆️</span>
+          <span data-i18n="upgrade">Mettre à niveau</span>
+        </button>
+
+        <button class="btn btn-manage-subscription" id="manageSubscriptionBtn" style="display: none;">
+          <span>⚙️</span>
+          <span data-i18n="manageSubscription">Gérer mon abonnement</span>
+        </button>
+
+        <button class="btn btn-logout" id="logoutBtn">
+          <span>🚪</span>
+          <span data-i18n="logout">Déconnexion</span>
+        </button>
+      </div>
+
+      <!-- Authentication Toggle -->
+      <div class="setting-row">
+        <div class="setting-label">
+          <span class="setting-icon">🔐</span>
+          <span class="setting-text" data-i18n="authenticationStatus">Authentification</span>
+        </div>
+        <div class="toggle-switch">
+          <button class="toggle-btn" id="authOnBtn" data-i18n="toggleOn">ON</button>
+          <button class="toggle-btn" id="authOffBtn" data-i18n="toggleOff">OFF</button>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ===== SOUS-CONTENU: LANGUE ===== -->
+    <div class="sub-content" id="language-content">
+
+      <!-- Langue de l'interface -->
+      <div class="setting-row">
+        <div class="setting-label">
+          <span class="setting-icon">🌐</span>
+          <span class="setting-text" data-i18n="interfaceLanguage">Langue interface</span>
+        </div>
+        <div class="value-selector">
+          <button class="selector-btn" id="interfaceLangPrev">◀</button>
+          <span class="selector-value" id="interfaceLangValue" data-i18n="french">Français</span>
+          <button class="selector-btn" id="interfaceLangNext">▶</button>
+        </div>
+      </div>
+
+      <!-- Langue des commentaires -->
+      <div class="setting-row">
+        <div class="setting-label">
+          <span class="setting-icon">💬</span>
+          <span class="setting-text" data-i18n="commentLanguage">Langue commentaires</span>
+        </div>
+        <div class="value-selector">
+          <button class="selector-btn" id="commentLangPrev">◀</button>
+          <span class="selector-value" id="commentLangValue" data-i18n="french">Français</span>
+          <button class="selector-btn" id="commentLangNext">▶</button>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ===== SOUS-CONTENU: PLUS ===== -->
+    <div class="sub-content" id="more-content">
+
+      <!-- Info box enrichissement -->
+      <div class="info-box" id="newsInfoBox">
+        <strong data-i18n="newsInfoTitle">ℹ️ Mode Rapide</strong><br>
+        <span id="newsInfoText" data-i18n="newsInfoTitleOnly">Utilise uniquement les titres des actualités LinkedIn. Léger et économique (~10 tokens/actu).</span>
+      </div>
+
+      <!-- Enrichissement LinkedIn -->
+      <div class="setting-row">
+        <div class="setting-label">
+          <span class="setting-icon">📰</span>
+          <span class="setting-text" data-i18n="newsEnrichment">Enrichissement LinkedIn</span>
+        </div>
+        <div class="toggle-switch">
+          <button class="toggle-btn" id="newsOnBtn" data-i18n="toggleOn">ON</button>
+          <button class="toggle-btn danger" id="newsOffBtn" data-i18n="toggleOff">OFF</button>
+        </div>
+      </div>
+
+      <!-- Mode Smart Summary -->
+      <div class="setting-row">
+        <div class="setting-label">
+          <span class="setting-icon">🧠</span>
+          <span class="setting-text" data-i18n="smartSummaryMode">Mode Smart Summary</span>
+        </div>
+        <div class="toggle-switch">
+          <button class="toggle-btn" id="smartOnBtn" data-i18n="toggleOn">ON</button>
+          <button class="toggle-btn danger" id="smartOffBtn" data-i18n="toggleOff">OFF</button>
+        </div>
+      </div>
+
+      <!-- Ton du commentaire -->
+      <div class="setting-row">
+        <div class="setting-label">
+          <span class="setting-icon">📊</span>
+          <span class="setting-text" data-i18n="tone">Ton</span>
+          <span class="info-icon" data-tooltip-fr="S'applique aux commentaires sans émotions" data-tooltip-en="Applies to comments without emotions">ⓘ</span>
+        </div>
+        <div class="value-selector">
+          <button class="selector-btn" id="tonePrev">◀</button>
+          <span class="selector-value" id="toneValue" data-i18n="professional">Professionnel</span>
+          <button class="selector-btn" id="toneNext">▶</button>
+        </div>
+      </div>
+
+      <!-- Longueur -->
+      <div class="setting-row">
+        <div class="setting-label">
+          <span class="setting-icon">📏</span>
+          <span class="setting-text" data-i18n="length">Longueur</span>
+          <span class="info-icon" data-tooltip-fr="S'applique aux commentaires sans émotions" data-tooltip-en="Applies to comments without emotions">ⓘ</span>
+        </div>
+        <div class="value-selector">
+          <button class="selector-btn" id="lengthPrev">◀</button>
+          <span class="selector-value" id="lengthValue" data-i18n="words10to20">10-20 mots</span>
+          <button class="selector-btn" id="lengthNext">▶</button>
+        </div>
+      </div>
+
+      <!-- Nombre de générations -->
+      <div class="setting-row">
+        <div class="setting-label">
+          <span class="setting-icon">🔢</span>
+          <span class="setting-text" data-i18n="generationsCount">Générations</span>
+        </div>
+        <div class="value-selector">
+          <button class="selector-btn" id="generationsPrev">◀</button>
+          <span class="selector-value" id="generationsValue" data-i18n="generation2">2</span>
+          <button class="selector-btn" id="generationsNext">▶</button>
+        </div>
+      </div>
+
+      <!-- Fermeture auto panneau émotions -->
+      <div class="setting-row">
+        <div class="setting-label">
+          <span class="setting-icon">🎯</span>
+          <span class="setting-text" data-i18n="autoCloseEmotionsPanel">Fermeture auto panneau</span>
+          <span class="info-icon" data-tooltip-fr="Ferme automatiquement le panneau émotions après sélection" data-tooltip-en="Automatically closes emotions panel after selection">ⓘ</span>
+        </div>
+        <div class="toggle-switch">
+          <button class="toggle-btn" id="autoCloseOnBtn" data-i18n="toggleOn">ON</button>
+          <button class="toggle-btn danger" id="autoCloseOffBtn" data-i18n="toggleOff">OFF</button>
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+
+  <!-- ==================== CONTENU: SOUTIEN ==================== -->
+  <div class="tab-content" id="support-content">
+    <div class="support-content">
+
+      <a href="#" class="support-link" id="helpLink">
+        <span class="support-icon">📖</span>
+        <div class="support-text">
+          <h4 data-i18n="supportHelp">Documentation</h4>
+          <p data-i18n="supportHelpDesc">Guide d'utilisation et FAQ</p>
+        </div>
+      </a>
+
+      <a href="#" class="support-link" id="feedbackLink">
+        <span class="support-icon">💬</span>
+        <div class="support-text">
+          <h4 data-i18n="supportFeedback">Feedback</h4>
+          <p data-i18n="supportFeedbackDesc">Partagez vos suggestions</p>
+        </div>
+      </a>
+
+      <a href="#" class="support-link" id="bugLink">
+        <span class="support-icon">🐛</span>
+        <div class="support-text">
+          <h4 data-i18n="supportBug">Signaler un bug</h4>
+          <p data-i18n="supportBugDesc">Aidez-nous à améliorer l'extension</p>
+        </div>
+      </a>
+
+      <a href="#" class="support-link" id="contactLink">
+        <span class="support-icon">📧</span>
+        <div class="support-text">
+          <h4 data-i18n="supportContact">Contact</h4>
+          <p data-i18n="supportContactDesc">Contactez le support</p>
+        </div>
+      </a>
+
+    </div>
+  </div>
+
+  <!-- ==================== FOOTER ==================== -->
+  <div class="footer">
+    <span data-i18n="version">Version</span> <span id="versionNumber">2.5.2</span>
+  </div>
+
+  <!-- Scripts -->
+  <script src="api-config.js"></script>
+  <script src="config.js"></script>
+  <script src="auth.js"></script>
+  <script src="i18n.js"></script>
+  <script src="toast.js"></script>
+  <script src="popup.js"></script>
+</body>
+</html>
