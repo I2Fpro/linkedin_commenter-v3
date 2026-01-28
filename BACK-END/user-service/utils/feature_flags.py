@@ -16,7 +16,10 @@ FEATURES = {
         "api_access": False,
         "export_formats": ["txt"],
         "max_prompt_length": 200,
-        "concurrent_requests": 1
+        "concurrent_requests": 1,
+        "include_quote": False,
+        "tag_author": False,
+        "web_search_enabled": False
     },
     "MEDIUM": {
         "daily_generations": 50,
@@ -31,7 +34,10 @@ FEATURES = {
         "api_access": False,
         "export_formats": ["txt", "csv"],
         "max_prompt_length": 500,
-        "concurrent_requests": 2
+        "concurrent_requests": 2,
+        "include_quote": False,
+        "tag_author": False,
+        "web_search_enabled": False
     },
     "PREMIUM": {
         "daily_generations": -1,  # Illimité
@@ -46,7 +52,10 @@ FEATURES = {
         "api_access": True,
         "export_formats": ["txt", "csv", "json", "xlsx"],
         "max_prompt_length": 1000,
-        "concurrent_requests": 5
+        "concurrent_requests": 5,
+        "include_quote": True,
+        "tag_author": True,
+        "web_search_enabled": True
     }
 }
 

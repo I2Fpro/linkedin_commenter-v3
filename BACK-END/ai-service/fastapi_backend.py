@@ -20,6 +20,7 @@ import time
 
 from auth_middleware import get_current_user, auth_middleware
 from config_py import OPENAI_API_KEY, MODEL_NAME, GOOGLE_CLIENT_ID, GOOGLE_CLIENT_ID_WEB, validate_environment
+from prompt_builder import build_enriched_prompt
 from dotenv import load_dotenv
 
 # Import du module News
@@ -124,6 +125,11 @@ class GenerateCommentsRequest(BaseModel):
     plan: Optional[str] = "FREE"
     # Langue de l'interface utilisateur (pour analytics)
     interface_lang: Optional[str] = "fr"
+    # V3 — Enrichissement contextuel
+    include_quote: bool = False
+    tag_author: Optional[str] = None
+    web_search_enabled: bool = False
+    third_party_comments: Optional[List[str]] = None
 
 class GenerateCommentsWithPromptRequest(BaseModel):
     """Corps de requête: génération avec prompt utilisateur"""
@@ -500,8 +506,8 @@ async def record_user_usage(user_email: str, feature: str, metadata: Dict[str, A
         logger.error(f"Erreur lors de l'enregistrement de l'usage: {e}")
         # Ne pas bloquer la réponse si l'enregistrement échoue
 
-def call_openai_api(prompt: str, action_type: str = "generate", options_count: int = 2, language: str = "fr", context: dict = None) -> List[str]:
-    """Envoie un prompt à OpenAI et retourne 1..n propositions
+def call_openai_api(prompt: str, action_type: str = "generate", options_count: int = 2, language: str = "fr", context: dict = None) -> tuple:
+    """Envoie un prompt à OpenAI et retourne (propositions, usage_info)
 
     Args:
         prompt: Le prompt utilisateur
@@ -509,6 +515,10 @@ def call_openai_api(prompt: str, action_type: str = "generate", options_count: i
         options_count: Nombre de propositions à générer
         language: Langue de génération
         context: Métadonnées contextuelles (tone, emotion, intensity, style, etc.)
+
+    Returns:
+        Tuple (comments: List[str], usage_info: dict) avec usage_info contenant
+        tokens_input, tokens_output et model.
     """
     try:
         import datetime
@@ -559,10 +569,17 @@ def call_openai_api(prompt: str, action_type: str = "generate", options_count: i
                     return text[1:-1].strip()
             return text
 
+        # V3 — Extraction des infos de tokens
+        usage_info = {
+            "tokens_input": response.usage.prompt_tokens if response.usage else 0,
+            "tokens_output": response.usage.completion_tokens if response.usage else 0,
+            "model": response.model or MODEL_NAME,
+        }
+
         if action_type == "generate":
-            return [clean_quotes(c.message.content) for c in response.choices]
+            return [clean_quotes(c.message.content) for c in response.choices], usage_info
         else:
-            return [clean_quotes(response.choices[0].message.content)]
+            return [clean_quotes(response.choices[0].message.content)], usage_info
     except Exception as e:
         logger.error("Erreur OpenAI: %s", e)
         raise HTTPException(status_code=500, detail=f"Erreur OpenAI: {e}") from e
@@ -799,6 +816,15 @@ Générez un commentaire qui:
 Commentaire uniquement, sans préambule.
 """
 
+        # V3 — Enrichissement du prompt via prompt_builder
+        prompt = build_enriched_prompt(
+            prompt,
+            include_quote=request.include_quote,
+            tag_author=request.tag_author,
+            web_search_result=None,
+            third_party_comments=request.third_party_comments,
+        )
+
         # Préparer le contexte pour le debug
         debug_context = {
             "tone": request.tone,
@@ -809,20 +835,30 @@ Commentaire uniquement, sans préambule.
             "is_comment": request.isComment,
             "news_enrichment_mode": request.newsEnrichmentMode,
             "has_news_context": len(request.newsContext) > 0 if request.newsContext else False,
-            "news_count": len(request.newsContext) if request.newsContext else 0
+            "news_count": len(request.newsContext) if request.newsContext else 0,
+            "include_quote": request.include_quote,
+            "post_received": request.post is not None and len(request.post.strip()) > 0 if request.post else False,
+            "post_preview": (request.post[:150] + "...") if request.post and len(request.post) > 150 else request.post,
         }
 
-        comments = call_openai_api(prompt, "generate", request.optionsCount, request.commentLanguage, context=debug_context)
+        comments, usage_info = call_openai_api(prompt, "generate", request.optionsCount, request.commentLanguage, context=debug_context)
 
         processing_time_ms = (time.time() - start_time) * 1000
 
-        # Enregistrer l'utilisation après génération réussie
+        # Enregistrer l'utilisation après génération réussie (V3 : enrichi avec tokens)
         await record_user_usage(user_email, "generate_comment", {
             "tone": request.tone,
+            "emotion": request.emotion,
+            "intensity": request.intensity,
+            "style": request.style,
             "length": request.length,
             "language": request.commentLanguage,
             "options_count": request.optionsCount,
-            "is_comment": request.isComment
+            "is_comment": request.isComment,
+            "include_quote": request.include_quote,
+            "tokens_input": usage_info.get("tokens_input", 0),
+            "tokens_output": usage_info.get("tokens_output", 0),
+            "model": usage_info.get("model", ""),
         })
 
         # Track avec PostHog (événement standardisé comment_generated)
@@ -1047,7 +1083,7 @@ Commentaire uniquement.
         # Mesurer le temps de génération
         start_time = time.time()
 
-        comments = call_openai_api(prompt, "generate", request.optionsCount, request.commentLanguage, context=debug_context)
+        comments, _usage = call_openai_api(prompt, "generate", request.optionsCount, request.commentLanguage, context=debug_context)
 
         processing_time_ms = (time.time() - start_time) * 1000
 
@@ -1172,7 +1208,7 @@ Commentaire affiné uniquement.
         "refine_instructions_length": len(request.refineInstructions)
     }
 
-    comments = call_openai_api(prompt, "refine", 1, request.commentLanguage, context=debug_context)
+    comments, _usage = call_openai_api(prompt, "refine", 1, request.commentLanguage, context=debug_context)
 
     # Enregistrer l'utilisation après affinement réussi
     user_email = current_user.get("email")
@@ -1245,7 +1281,7 @@ Commentaire uniquement.
         "target_word_count": new_length
     }
 
-    comments = call_openai_api(prompt, "resize", 1, request.commentLanguage, context=debug_context)
+    comments, _usage = call_openai_api(prompt, "resize", 1, request.commentLanguage, context=debug_context)
 
     # Enregistrer l'utilisation après redimensionnement réussi
     await record_user_usage(user_email, "resize_comment", {

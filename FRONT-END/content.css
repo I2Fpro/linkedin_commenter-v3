@@ -1203,3 +1203,31 @@
 }
 
 /* ========== FIN MÉTADONNÉES DES GÉNÉRATIONS ========== */
+
+/* ========== V3 — TOGGLE CITATION ========== */
+.ai-quote-toggle {
+  background: linear-gradient(135deg, #6c757d 0%, #5a6268 100%) !important;
+  font-size: 12px !important;
+  padding: 4px 10px !important;
+  opacity: 0.85;
+}
+
+.ai-quote-toggle:hover:not(:disabled) {
+  opacity: 1;
+}
+
+.ai-quote-toggle.active {
+  background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%) !important;
+  opacity: 1;
+  box-shadow: 0 0 8px rgba(124, 58, 237, 0.4);
+}
+
+.ai-quote-toggle.locked {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.ai-quote-toggle.locked:hover {
+  transform: none;
+}
+/* ========== FIN V3 TOGGLE CITATION ========== */

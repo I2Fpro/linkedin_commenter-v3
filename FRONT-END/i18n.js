@@ -110,7 +110,13 @@ class I18n {
         usedToday: 'utilisées aujourd\'hui',
         upgradeToMedium: 'Passer à MEDIUM',
         upgradeToPremium: 'Passez à MEDIUM ou PREMIUM pour débloquer',
-        upgradeRequired: 'Veuillez passer à un plan supérieur pour accéder à cette option'
+        upgradeRequired: 'Veuillez passer à un plan supérieur pour accéder à cette option',
+
+        // V3 — Citation contextuelle
+        quoteToggle: 'Citation',
+        quoteToggleActive: 'Citation activée',
+        quoteToggleInactive: 'Citation désactivée',
+        quoteUpgradeRequired: 'La citation contextuelle est réservée aux abonnés Premium'
       },
       en: {
         // Main titles and labels
@@ -219,7 +225,13 @@ class I18n {
         usedToday: 'used today',
         upgradeToMedium: 'Upgrade to MEDIUM',
         upgradeToPremium: 'Upgrade to MEDIUM or PREMIUM to unlock',
-        upgradeRequired: 'Please upgrade to a higher plan to access this option'
+        upgradeRequired: 'Please upgrade to a higher plan to access this option',
+
+        // V3 — Contextual quote
+        quoteToggle: 'Quote',
+        quoteToggleActive: 'Quote enabled',
+        quoteToggleInactive: 'Quote disabled',
+        quoteUpgradeRequired: 'Contextual quotes are reserved for Premium subscribers'
       }
     };
   }

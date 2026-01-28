@@ -281,7 +281,7 @@
     }
 
     // 3. Vérifier dans les parents proches (contexte de commentaire)
-    const parentContext = commentBox.closest('.comments-comment-texteditor, .comment-box, .comments-comment-box');
+    const parentContext = commentBox.closest('[data-view-name="comment-box"], .comments-comment-texteditor, .comment-box, .comments-comment-box');
     const contextWrapper = parentContext?.querySelector('.ai-buttons-wrapper');
     if (contextWrapper) {
       commentBox.setAttribute('data-ai-buttons-added', 'true');
@@ -297,7 +297,7 @@
     }
 
     // 5. Vérifier dans un contexte plus large pour les publications privées
-    const widerContext = commentBox.closest('[data-id], article, .feed-shared-update-v2, [role="article"]');
+    const widerContext = commentBox.closest('[data-view-name="feed-full-update"], [role="listitem"], [data-id], article, .feed-shared-update-v2, [role="article"]');
     if (widerContext) {
       const allCommentBoxes = widerContext.querySelectorAll('[contenteditable="true"], [role="textbox"]');
       let foundNearby = false;
@@ -616,7 +616,8 @@
 
     chrome.storage.sync.get(['tone'], function(data) {
       const isNegative = data.tone === 'negatif';
-      const isReplyToComment = commentBox.closest('.comments-comment-entity') !== null;
+      const isReplyToComment = commentBox.closest('[data-view-name="comment-container"]') !== null ||
+                                commentBox.closest('.comments-comment-entity') !== null;
 
       // Bouton Générer
       const generateButton = document.createElement('button');
@@ -657,9 +658,53 @@
         toggleEmotionsPanel(buttonsWrapper, commentBox);
       };
 
+      // V3 — Bouton toggle Citation (PREMIUM uniquement)
+      const quoteToggle = document.createElement('button');
+      quoteToggle.className = 'ai-generate-button ai-quote-toggle';
+      quoteToggle.type = 'button';
+      if (isNegative) quoteToggle.classList.add('negative');
+      if (isReplyToComment) quoteToggle.classList.add('reply-mode');
+      quoteToggle.innerHTML = `<span>💬 ${t('quoteToggle')}</span>`;
+      quoteToggle.title = t('quoteToggleInactive');
+
+      // Verifier le plan utilisateur pour le gating
+      chrome.storage.local.get(['user_plan'], (result) => {
+        const userPlan = result.user_plan || 'FREE';
+        if (userPlan !== 'PREMIUM') {
+          quoteToggle.classList.add('locked');
+          quoteToggle.innerHTML = `<span>🔒 ${t('quoteToggle')}</span>`;
+        }
+      });
+
+      quoteToggle.onclick = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        chrome.storage.local.get(['user_plan'], (result) => {
+          const userPlan = result.user_plan || 'FREE';
+          if (userPlan !== 'PREMIUM') {
+            window.toastNotification.warning(t('quoteUpgradeRequired'));
+            return;
+          }
+          // Toggle l'etat actif/inactif
+          const isActive = commentBox.getAttribute('data-include-quote') === 'true';
+          if (isActive) {
+            commentBox.removeAttribute('data-include-quote');
+            quoteToggle.classList.remove('active');
+            quoteToggle.innerHTML = `<span>💬 ${t('quoteToggle')}</span>`;
+            quoteToggle.title = t('quoteToggleInactive');
+          } else {
+            commentBox.setAttribute('data-include-quote', 'true');
+            quoteToggle.classList.add('active');
+            quoteToggle.innerHTML = `<span>✨ ${t('quoteToggle')}</span>`;
+            quoteToggle.title = t('quoteToggleActive');
+          }
+        });
+      };
+
       buttonsWrapper.appendChild(generateButton);
       buttonsWrapper.appendChild(promptButton);
       buttonsWrapper.appendChild(personalisationButton);
+      buttonsWrapper.appendChild(quoteToggle);
       commentBox.parentElement.appendChild(buttonsWrapper);
 
       // Retirer le marqueur "en cours" et marquer comme "ajouté"
@@ -919,6 +964,9 @@
         console.log('📰 Mode enrichissement désactivé');
       }
 
+      // V3 — Lire l'etat du toggle Citation
+      const includeQuote = commentBox.getAttribute('data-include-quote') === 'true';
+
       const requestData = {
         post: postContent || null,
         isComment: isReplyToComment,
@@ -929,7 +977,9 @@
         style: selectedStyle,
         // Contexte des actualités LinkedIn
         newsContext: newsContext,
-        newsEnrichmentMode: newsEnrichmentMode
+        newsEnrichmentMode: newsEnrichmentMode,
+        // V3 — Citation contextuelle
+        include_quote: includeQuote
       };
 
       if (isReplyToComment && postContent) {
@@ -1885,7 +1935,9 @@
   // Fonctions utilitaires
   function findPostContainer(commentBox) {
     console.log('🔍 Recherche du container depuis commentBox:', commentBox);
-    const container = commentBox.closest('[data-id]') ||
+    const container = commentBox.closest('[data-view-name="feed-full-update"]') ||
+                      commentBox.closest('[role="listitem"]') ||
+                      commentBox.closest('[data-id]') ||
                       commentBox.closest('article') ||
                       commentBox.closest('.feed-shared-update-v2') ||
                       commentBox.closest('[role="article"]');
@@ -1907,11 +1959,16 @@
     console.log('🔍 extractCommentContent: Début extraction depuis container:', container.className);
 
     // D'abord, essayer de trouver le commentaire parent le plus proche
-    const commentEntity = container.closest('.comments-comment-entity, .comments-comment-item, [data-id*="comment"]');
+    const commentEntity = container.closest('[data-view-name="comment-container"]') ||
+                          container.closest('.comments-comment-entity, .comments-comment-item, [data-id*="comment"]');
     console.log('🔍 extractCommentContent: commentEntity trouvé:', !!commentEntity, commentEntity?.className);
 
     if (commentEntity) {
       const selectors = [
+        // Sélecteurs LinkedIn 2025+ SDUI
+        '[data-view-name="comment-commentary"] [data-testid="expandable-text-box"]',
+        '[data-view-name="comment-commentary"]',
+        // Sélecteurs legacy
         '.comments-comment-item__main-content',
         '.feed-shared-main-content--comment',
         '.update-components-text',
@@ -1964,7 +2021,12 @@
 
     console.log('🔍 extractPostContent: Début extraction depuis container:', container.className);
 
+    // Sélecteurs prioritaires (LinkedIn 2025+ SDUI)
     const selectors = [
+      '[data-view-name="feed-commentary"] [data-testid="expandable-text-box"]',
+      '[data-view-name="feed-commentary"]',
+      '[data-testid="expandable-text-box"]',
+      // Sélecteurs legacy (LinkedIn classique)
       '.feed-shared-update-v2__description',
       '.update-components-text',
       '.feed-shared-inline-show-more-text',
@@ -1988,7 +2050,7 @@
     }
 
     // Fallback 1 : chercher dans le container global
-    const postContainer = container.querySelector('[data-id], article, .feed-shared-update-v2');
+    const postContainer = container.querySelector('[data-view-name="feed-full-update"], [data-id], article, .feed-shared-update-v2');
     console.log('🔍 extractPostContent: postContainer trouvé:', !!postContainer);
     if (postContainer) {
       const allText = postContainer.textContent.trim();
