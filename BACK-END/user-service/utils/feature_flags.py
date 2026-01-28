@@ -205,5 +205,12 @@ def get_upgrade_benefits(current_role: str, target_role: str) -> list:
             benefits.append("Opérations en lot")
         elif feature == "api_access" and change["to"]:
             benefits.append("Accès API")
-    
+        # V3 — Nouvelles features Premium
+        elif feature == "include_quote" and change["to"]:
+            benefits.append("Citations contextuelles dans les commentaires")
+        elif feature == "tag_author" and change["to"]:
+            benefits.append("Tag de l'auteur du post")
+        elif feature == "web_search_enabled" and change["to"]:
+            benefits.append("Enrichissement par recherche web")
+
     return benefits

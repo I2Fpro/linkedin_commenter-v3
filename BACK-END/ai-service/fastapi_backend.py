@@ -156,6 +156,11 @@ class GenerateCommentsWithPromptRequest(BaseModel):
     plan: Optional[str] = "FREE"
     # Langue de l'interface utilisateur (pour analytics)
     interface_lang: Optional[str] = "fr"
+    # V3 — Enrichissement contextuel
+    include_quote: bool = False
+    tag_author: Optional[str] = None
+    web_search_enabled: bool = False
+    third_party_comments: Optional[List[str]] = None
 
 class RefineCommentRequest(BaseModel):
     """Corps de requête: affiner un commentaire"""
@@ -1065,6 +1070,15 @@ Générez un commentaire qui:
 Commentaire uniquement.
 """
 
+        # V3 — Enrichissement du prompt via prompt_builder
+        prompt = build_enriched_prompt(
+            prompt,
+            include_quote=request.include_quote,
+            tag_author=request.tag_author,
+            web_search_result=None,
+            third_party_comments=request.third_party_comments,
+        )
+
         # Préparer le contexte pour le debug
         debug_context = {
             "tone": request.tone,
@@ -1077,24 +1091,29 @@ Commentaire uniquement.
             "user_prompt_length": len(request.userPrompt),
             "news_enrichment_mode": request.newsEnrichmentMode,
             "has_news_context": len(request.newsContext) > 0 if request.newsContext else False,
-            "news_count": len(request.newsContext) if request.newsContext else 0
+            "news_count": len(request.newsContext) if request.newsContext else 0,
+            "include_quote": request.include_quote
         }
 
         # Mesurer le temps de génération
         start_time = time.time()
 
-        comments, _usage = call_openai_api(prompt, "generate", request.optionsCount, request.commentLanguage, context=debug_context)
+        comments, usage_info = call_openai_api(prompt, "generate", request.optionsCount, request.commentLanguage, context=debug_context)
 
         processing_time_ms = (time.time() - start_time) * 1000
 
-        # Enregistrer l'utilisation après génération réussie
+        # Enregistrer l'utilisation après génération réussie (V3 : enrichi avec tokens)
         await record_user_usage(user_email, "generate_comment", {
             "tone": request.tone,
             "length": request.length,
             "language": request.commentLanguage,
             "options_count": request.optionsCount,
             "is_comment": request.isComment,
-            "custom_prompt": True
+            "custom_prompt": True,
+            "include_quote": request.include_quote,
+            "tokens_input": usage_info.get("tokens_input", 0),
+            "tokens_output": usage_info.get("tokens_output", 0),
+            "model": usage_info.get("model", ""),
         })
 
         # Résoudre le distinct_id pour PostHog

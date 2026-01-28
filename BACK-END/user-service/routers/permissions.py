@@ -87,7 +87,7 @@ async def validate_action(
             message="Action autorisée"
         )
     
-    elif request.feature in ["custom_prompt", "refine_enabled", "resize_enabled", "include_quote"]:
+    elif request.feature in ["custom_prompt", "refine_enabled", "resize_enabled", "include_quote", "tag_author", "web_search_enabled"]:
         feature_enabled = role_features.get(request.feature, False)
         
         return PermissionsResponse(
