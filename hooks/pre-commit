@@ -1,0 +1,71 @@
+#!/bin/bash
+# =============================================================================
+# pre-commit hook - Bloque le commit si des URLs DEV local sont detectees
+# =============================================================================
+#
+# Empeche de committer des fichiers front-end contenant des URLs locales
+# (https://*.local.dev) au lieu des placeholders (__*__).
+#
+# Activation (une seule fois) :
+#   git config core.hooksPath hooks
+#
+# Contourner ponctuellement :
+#   git commit --no-verify
+#
+# =============================================================================
+
+# Fichiers front-end qui utilisent le systeme de placeholders
+FRONTEND_FILES=(
+  "FRONT-END/api-config.js"
+  "FRONT-END/manifest.json"
+  "FRONT-END/config.js"
+  "FRONT-END/shared_env.js"
+  "FRONT-END/auth.js"
+  "FRONT-END/background.js"
+  "FRONT-END/popup.js"
+  "FRONT-END/test-connection.html"
+)
+
+# Pattern qui ne doit JAMAIS etre committe
+DEV_PATTERN="local\.dev"
+
+# Recuperer la liste des fichiers stages
+STAGED=$(git diff --cached --name-only 2>/dev/null)
+
+if [ -z "$STAGED" ]; then
+  exit 0
+fi
+
+errors=()
+
+for file in "${FRONTEND_FILES[@]}"; do
+  # Verifier si ce fichier est stage
+  if echo "$STAGED" | grep -q "^${file}$"; then
+    # Lire le contenu STAGE (pas le fichier sur disque)
+    matches=$(git show ":${file}" 2>/dev/null | grep -n "$DEV_PATTERN" || true)
+    if [ -n "$matches" ]; then
+      errors+=("  $file")
+      while IFS= read -r line; do
+        errors+=("    $line")
+      done <<< "$matches"
+    fi
+  fi
+done
+
+if [ ${#errors[@]} -gt 0 ]; then
+  echo ""
+  echo "COMMIT BLOQUE - URLs DEV detectees dans les fichiers stages :"
+  echo ""
+  for err in "${errors[@]}"; do
+    echo "$err"
+  done
+  echo ""
+  echo "Fix : bash scripts/toggle-env.sh placeholder"
+  echo "      puis re-stagez les fichiers (git add ...)"
+  echo ""
+  echo "Contourner : git commit --no-verify"
+  echo ""
+  exit 1
+fi
+
+exit 0

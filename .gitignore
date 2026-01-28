@@ -76,11 +76,18 @@ out/
 # ======================
 *.log
 docker-compose.override.yml
+docker-compose.dev.yml
 
 # ======================
 # Local Dev Tools
 # ======================
 GIT-WORKFLOW-TOOLS/
+
+# Debug context output (dev-tools collector)
+dev-tools/debug-context/browser/
+dev-tools/debug-context/server/
+dev-tools/debug-context/summary.md
+!dev-tools/debug-context/.gitkeep
 
 # ======================
 # Testing
