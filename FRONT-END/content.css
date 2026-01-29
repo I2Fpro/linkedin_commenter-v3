@@ -1231,3 +1231,33 @@
   transform: none;
 }
 /* ========== FIN V3 TOGGLE CITATION ========== */
+
+/* ========== V3 — TOGGLE TAG AUTEUR ========== */
+.ai-tag-author-toggle {
+  background: linear-gradient(135deg, #6c757d 0%, #5a6268 100%) !important;
+  font-size: 12px !important;
+  padding: 4px 10px !important;
+  opacity: 0.85;
+}
+
+.ai-tag-author-toggle:hover:not(:disabled):not(.locked) {
+  opacity: 1;
+}
+
+.ai-tag-author-toggle.active {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
+  opacity: 1;
+  box-shadow: 0 0 8px rgba(16, 185, 129, 0.4);
+}
+
+.ai-tag-author-toggle.locked {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background: linear-gradient(135deg, #9ca3af 0%, #6b7280 100%) !important;
+}
+
+.ai-tag-author-toggle.locked:hover {
+  transform: none;
+  opacity: 0.5;
+}
+/* ========== FIN V3 TOGGLE TAG AUTEUR ========== */
