@@ -8,6 +8,7 @@ from dotenv import load_dotenv
 from database import engine, Base
 from routers import users, subscriptions, permissions, auth, stripe
 from posthog_service import posthog_service
+from version import VERSION
 import logging
 
 # Configuration du logging
@@ -31,7 +32,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title="LinkedIn AI Commenter - User Service",
     description="Service de gestion des utilisateurs et des permissions",
-    version="1.0.0",
+    version=VERSION,
     lifespan=lifespan
 )
 
@@ -55,11 +56,11 @@ app.include_router(stripe.router, prefix="/api/stripe", tags=["stripe"])
 
 @app.get("/health")
 async def health_check():
-    return {"status": "healthy", "service": "user-service"}
+    return {"status": "healthy", "service": "user-service", "version": VERSION}
 
 @app.get("/")
 async def root():
-    return {"message": "LinkedIn AI Commenter - User Service"}
+    return {"message": "LinkedIn AI Commenter - User Service", "version": VERSION}
 
 @app.exception_handler(Exception)
 async def global_exception_handler(request, exc):

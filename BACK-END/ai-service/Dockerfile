@@ -1,6 +1,10 @@
 # Dockerfile pour AI Service - LinkedIn AI Commenter
 FROM python:3.11-slim
 
+# Version de l'application (passee via --build-arg)
+ARG APP_VERSION="0.0.0"
+ENV APP_VERSION=$APP_VERSION
+
 # Définir le répertoire de travail
 WORKDIR /app
 

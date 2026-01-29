@@ -21,6 +21,7 @@ import time
 from auth_middleware import get_current_user, auth_middleware
 from config_py import OPENAI_API_KEY, MODEL_NAME, GOOGLE_CLIENT_ID, GOOGLE_CLIENT_ID_WEB, validate_environment
 from prompt_builder import build_enriched_prompt
+from version import VERSION
 from dotenv import load_dotenv
 
 # Import du module News
@@ -47,7 +48,7 @@ validate_environment()
 logger.info(f"PostHog initialized: enabled={posthog_service.enabled}, api_key={'***' if posthog_service.api_key else 'NOT SET'}")
 
 # --- App ---
-app = FastAPI(title="LinkedIn AI Commenter Backend", version="4.0.0")
+app = FastAPI(title="LinkedIn AI Commenter Backend", version=VERSION)
 
 # Inclure les routes du module News
 app.include_router(news_router)
@@ -593,12 +594,12 @@ def call_openai_api(prompt: str, action_type: str = "generate", options_count: i
 @app.get("/")
 async def root():
     """Endpoint racine: info version & HTTPS"""
-    return {"message": "LinkedIn AI Commenter Backend", "version": "4.0.0", "https": True, "multilingual": True}
+    return {"message": "LinkedIn AI Commenter Backend", "version": VERSION, "https": True, "multilingual": True}
 
 @app.get("/health")
 async def health_check():
     """Vérifie l'état du service pour le monitoring"""
-    return {"status": "ok", "https_enabled": True, "cors_enabled": True, "multilingual": True}
+    return {"status": "ok", "version": VERSION, "https_enabled": True, "cors_enabled": True, "multilingual": True}
 
 @app.get("/config")
 async def get_config():
@@ -615,7 +616,7 @@ async def get_complete_config():
     """Retourne la configuration utile au frontend (sans secrets)."""
     return {
         "google_client_id": GOOGLE_CLIENT_ID_WEB or None,  # Client ID pour le site web
-        "backend_version": "4.0.0",
+        "backend_version": VERSION,
         "openai_model": MODEL_NAME,
         "https_enabled": True,
         "supported_languages": ["fr", "en"],
@@ -1328,7 +1329,7 @@ async def docker_status():
 @app.on_event("startup")
 async def startup_event():
     """Log au démarrage de l'application"""
-    logger.info("🚀 Backend démarré - HTTPS attendu via uvicorn")
+    logger.info(f"🚀 Backend démarré v{VERSION} - HTTPS attendu via uvicorn")
     logger.info("🆔 Extension IDs supportés: chrome-extension://*")
     logger.info("🌐 Support multilingue activé: FR/EN")
 
