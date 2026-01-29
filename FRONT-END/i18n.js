@@ -116,7 +116,14 @@ class I18n {
         quoteToggle: 'Citation',
         quoteToggleActive: 'Citation activée',
         quoteToggleInactive: 'Citation désactivée',
-        quoteUpgradeRequired: 'La citation contextuelle est réservée aux abonnés Premium'
+        quoteUpgradeRequired: 'La citation contextuelle est réservée aux abonnés Premium',
+
+        // V3 — Tag auteur
+        tagAuthor: 'Tag auteur',
+        tagAuthorTooltip: 'Mentionner l\'auteur du post dans le commentaire',
+        tagAuthorActive: 'Tag auteur activé',
+        tagAuthorUpgradeRequired: 'Le tag auteur est réservé aux abonnés Premium',
+        authorNotFound: 'Impossible de trouver le nom de l\'auteur du post'
       },
       en: {
         // Main titles and labels
@@ -231,7 +238,14 @@ class I18n {
         quoteToggle: 'Quote',
         quoteToggleActive: 'Quote enabled',
         quoteToggleInactive: 'Quote disabled',
-        quoteUpgradeRequired: 'Contextual quotes are reserved for Premium subscribers'
+        quoteUpgradeRequired: 'Contextual quotes are reserved for Premium subscribers',
+
+        // V3 — Tag author
+        tagAuthor: 'Tag author',
+        tagAuthorTooltip: 'Mention the post author in the comment',
+        tagAuthorActive: 'Tag author enabled',
+        tagAuthorUpgradeRequired: 'Tag author is reserved for Premium subscribers',
+        authorNotFound: 'Unable to find the post author\'s name'
       }
     };
   }

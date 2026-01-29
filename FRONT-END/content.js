@@ -701,10 +701,67 @@
         });
       };
 
+      // V3 — Bouton toggle Tag Auteur (PREMIUM uniquement)
+      const tagAuthorToggle = document.createElement('button');
+      tagAuthorToggle.className = 'ai-generate-button ai-tag-author-toggle';
+      tagAuthorToggle.type = 'button';
+      if (isNegative) tagAuthorToggle.classList.add('negative');
+      if (isReplyToComment) tagAuthorToggle.classList.add('reply-mode');
+      tagAuthorToggle.innerHTML = `<span>👤 ${t('tagAuthor')}</span>`;
+      tagAuthorToggle.title = t('tagAuthorTooltip');
+
+      // Verifier le plan utilisateur pour le gating
+      chrome.storage.local.get(['user_plan'], (result) => {
+        const userPlan = result.user_plan || 'FREE';
+        if (userPlan !== 'PREMIUM') {
+          tagAuthorToggle.classList.add('locked');
+          tagAuthorToggle.innerHTML = `<span>🔒 ${t('tagAuthor')}</span>`;
+        }
+      });
+
+      tagAuthorToggle.onclick = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        chrome.storage.local.get(['user_plan'], (result) => {
+          const userPlan = result.user_plan || 'FREE';
+          if (userPlan !== 'PREMIUM') {
+            window.toastNotification.warning(t('tagAuthorUpgradeRequired'));
+            return;
+          }
+
+          // Verifier si deja actif — toggle off
+          const currentAuthor = commentBox.getAttribute('data-tag-author');
+          if (currentAuthor) {
+            commentBox.removeAttribute('data-tag-author');
+            tagAuthorToggle.classList.remove('active');
+            tagAuthorToggle.innerHTML = `<span>👤 ${t('tagAuthor')}</span>`;
+            tagAuthorToggle.title = t('tagAuthorTooltip');
+            return;
+          }
+
+          // Tenter d'extraire le nom de l'auteur
+          // LinkedIn 2026 SDUI: le listitem contient le post ET la zone de commentaires
+          const postContainer = commentBox.closest('[role="listitem"], [data-view-name="feed-full-update"], [data-id], article, .feed-shared-update-v2, .comments-comment-item, [data-urn]');
+          const authorName = extractPostAuthorName(postContainer);
+
+          if (authorName) {
+            // Activation reussie
+            commentBox.setAttribute('data-tag-author', authorName);
+            tagAuthorToggle.classList.add('active');
+            tagAuthorToggle.innerHTML = `<span>✨ ${t('tagAuthor')}</span>`;
+            tagAuthorToggle.title = `${t('tagAuthorActive')}: ${authorName}`;
+          } else {
+            // Extraction echouee
+            window.toastNotification.warning(t('authorNotFound'));
+          }
+        });
+      };
+
       buttonsWrapper.appendChild(generateButton);
       buttonsWrapper.appendChild(promptButton);
       buttonsWrapper.appendChild(personalisationButton);
       buttonsWrapper.appendChild(quoteToggle);
+      buttonsWrapper.appendChild(tagAuthorToggle);
       commentBox.parentElement.appendChild(buttonsWrapper);
 
       // Retirer le marqueur "en cours" et marquer comme "ajouté"
@@ -966,6 +1023,8 @@
 
       // V3 — Lire l'etat du toggle Citation
       const includeQuote = commentBox.getAttribute('data-include-quote') === 'true';
+      // V3 — Lire l'etat du toggle Tag Auteur
+      const tagAuthor = commentBox.getAttribute('data-tag-author') || null;
 
       const requestData = {
         post: postContent || null,
@@ -979,7 +1038,9 @@
         newsContext: newsContext,
         newsEnrichmentMode: newsEnrichmentMode,
         // V3 — Citation contextuelle
-        include_quote: includeQuote
+        include_quote: includeQuote,
+        // V3 — Tag auteur
+        tag_author: tagAuthor
       };
 
       if (isReplyToComment && postContent) {
@@ -2012,7 +2073,62 @@
     console.warn('⚠️ extractCommentContent: Container HTML:', container.innerHTML.substring(0, 200));
     return null;
   }
-  
+
+  // V3 Story 1.2 — Extraction du nom de l'auteur du post
+  function extractPostAuthorName(postElement) {
+    if (!postElement) {
+      return null;
+    }
+
+    // Selecteurs tries dans l'ordre de fiabilite (LinkedIn 2026 SDUI)
+    const selectors = [
+      // LinkedIn 2026 SDUI - Bouton Suivre avec aria-label contenant le nom
+      'button[aria-label^="Suivre "]',
+      'button[aria-label^="Follow "]',
+      // LinkedIn 2026 SDUI - Nom dans feed-actor-sub-description
+      '[data-view-name="feed-actor-sub-description"] strong',
+      '[data-view-name="feed-actor-sub-description"] a',
+      // LinkedIn 2025+ legacy - Classes BEM (fallback si SDUI pas actif)
+      '.update-components-actor__name .visually-hidden',
+      '.update-components-actor__name span[aria-hidden="true"]',
+      '.feed-shared-actor__name .visually-hidden',
+      '.feed-shared-actor__name span[aria-hidden="true"]',
+      // Fallback generique
+      '[data-view-name="feed-actor-name"]',
+      '.feed-shared-actor__title',
+      '.update-components-actor__title'
+    ];
+
+    for (const selector of selectors) {
+      const element = postElement.querySelector(selector);
+      if (element) {
+        let rawName = '';
+
+        // Pour les boutons Suivre, extraire le nom depuis aria-label
+        if (selector.startsWith('button[aria-label')) {
+          rawName = element.getAttribute('aria-label') || '';
+          // Retirer le prefixe "Suivre " ou "Follow "
+          rawName = rawName.replace(/^Suivre\s+/i, '').replace(/^Follow\s+/i, '');
+        } else {
+          rawName = element.textContent || '';
+        }
+
+        // Nettoyer : retirer emojis, titres, espaces multiples
+        const cleaned = rawName
+          .replace(/[\u{1F300}-\u{1F9FF}]/gu, '')
+          .replace(/\s*\|.*$/, '')
+          .replace(/\s+/g, ' ')
+          .trim();
+
+        if (cleaned && cleaned.length >= 2 && cleaned.length <= 60) {
+          return cleaned;
+        }
+      }
+    }
+
+    return null;
+  }
+
   function extractPostContent(container) {
     if (!container) {
       console.warn('⚠️ extractPostContent: Container est null');
