@@ -740,8 +740,38 @@
           }
 
           // Tenter d'extraire le nom de l'auteur
-          // LinkedIn 2026 SDUI: le listitem contient le post ET la zone de commentaires
-          const postContainer = commentBox.closest('[role="listitem"], [data-view-name="feed-full-update"], [data-id], article, .feed-shared-update-v2, .comments-comment-item, [data-urn]');
+          // LinkedIn 2026 SDUI: remonter jusqu'au conteneur du POST (pas du commentaire)
+          // On cherche d'abord [role="listitem"] qui englobe tout le post
+          let postContainer = commentBox.closest('[role="listitem"]');
+
+          // Si pas trouve, essayer les autres selecteurs en remontant le plus haut possible
+          if (!postContainer) {
+            // Remonter via parentElement jusqu'a trouver un conteneur avec data-view-name="feed-full-update"
+            // mais au niveau du POST (pas du commentaire)
+            let current = commentBox;
+            let lastFeedUpdate = null;
+            while (current && current !== document.body) {
+              if (current.getAttribute('data-view-name') === 'feed-full-update') {
+                lastFeedUpdate = current;
+              }
+              // Arreter si on trouve un listitem
+              if (current.getAttribute('role') === 'listitem') {
+                postContainer = current;
+                break;
+              }
+              current = current.parentElement;
+            }
+            // Utiliser le feed-full-update le plus haut trouve
+            if (!postContainer && lastFeedUpdate) {
+              postContainer = lastFeedUpdate.parentElement || lastFeedUpdate;
+            }
+          }
+
+          // Fallback sur les anciens selecteurs
+          if (!postContainer) {
+            postContainer = commentBox.closest('[data-id], article, .feed-shared-update-v2, [data-urn]');
+          }
+
           const authorName = extractPostAuthorName(postContainer);
 
           if (authorName) {
@@ -1676,11 +1706,41 @@
         return;
       }
 
-      commentBox.textContent = comment;
+      // V3 Story 1.2 v2 — Insertion en deux temps pour les mentions LinkedIn
+      const tagAuthorName = commentBox.getAttribute('data-tag-author');
+      const { beforeMention, afterMention, hasSplit } = splitCommentForMention(comment);
+
+      if (tagAuthorName && hasSplit && afterMention) {
+        // Mode deux temps : inserer seulement le debut (jusqu'au @Prenom inclus)
+        commentBox.textContent = beforeMention;
+
+        // Extraire le prenom pour la detection
+        const firstName = tagAuthorName.split(' ')[0];
+
+        // Lancer l'observer pour detecter la mention
+        observeMentionCreation(commentBox, afterMention, firstName);
+
+        // Toast pour guider l'utilisateur
+        if (window.toastNotification) {
+          window.toastNotification.info(t('clickMentionSuggestion') || 'Cliquez sur la suggestion LinkedIn');
+        }
+      } else {
+        // Mode normal : inserer tout le commentaire (nettoyer le delimiteur si present)
+        commentBox.textContent = comment.replace('{{{SPLIT}}}', '');
+      }
+
       popup.remove();
       // Supprimer aussi l'overlay
       document.querySelectorAll('.ai-popup-overlay').forEach(o => o.remove());
       commentBox.focus();
+
+      // Positionner le curseur a la fin du texte (necessaire pour que LinkedIn detecte le @)
+      const selection = window.getSelection();
+      const range = document.createRange();
+      range.selectNodeContents(commentBox);
+      range.collapse(false); // false = collapse to end
+      selection.removeAllRanges();
+      selection.addRange(range);
 
       const inputEvent = new Event('input', { bubbles: true });
       commentBox.dispatchEvent(inputEvent);
@@ -2126,7 +2186,113 @@
       }
     }
 
+    // Fallback : chercher des liens <a> avec le pattern LinkedIn "Nom • Titre"
+    const allLinks = postElement.querySelectorAll('a');
+    for (const link of allLinks) {
+      const text = link.textContent || '';
+      // Pattern LinkedIn: "Prénom Nom • 1er/2e/3e" ou "Prénom Nom • Titre"
+      if (text.includes('•') || text.includes('·')) {
+        const parts = text.split(/[•·]/);
+        if (parts.length >= 2) {
+          const potentialName = parts[0].trim();
+          // Verifier que ca ressemble a un nom (2-60 chars, pas que des chiffres)
+          if (potentialName.length >= 2 && potentialName.length <= 60 && !/^\d+$/.test(potentialName)) {
+            // Nettoyer : retirer emojis
+            const cleaned = potentialName
+              .replace(/[\u{1F300}-\u{1F9FF}]/gu, '')
+              .replace(/\s+/g, ' ')
+              .trim();
+            if (cleaned.length >= 2) {
+              return cleaned;
+            }
+          }
+        }
+      }
+    }
+
     return null;
+  }
+
+  // V3 Story 1.2 v2 — Separation du commentaire pour insertion en deux temps
+  function splitCommentForMention(comment) {
+    const delimiter = '{{{SPLIT}}}';
+    const parts = comment.split(delimiter);
+    if (parts.length === 2) {
+      return {
+        beforeMention: parts[0],  // "Comme tu le soulignes @Jean"
+        afterMention: parts[1],   // ", ton analyse est pertinente..."
+        hasSplit: true
+      };
+    }
+    // Pas de delimiteur trouve — fallback
+    return { beforeMention: comment, afterMention: '', hasSplit: false };
+  }
+
+  // V3 Story 1.2 v2 — Observer pour detecter quand LinkedIn cree une mention
+  function observeMentionCreation(commentBox, afterMentionText, firstName) {
+    const observer = new MutationObserver((mutations) => {
+      for (const mutation of mutations) {
+        // Chercher les nouveaux elements ajoutes
+        for (const node of mutation.addedNodes) {
+          if (node.nodeType === 1) { // Element node
+            // LinkedIn cree un element pour la mention (plusieurs patterns possibles)
+            const isMention =
+              node.hasAttribute('data-mention-id') ||
+              node.getAttribute('href')?.includes('linkedin.com/in/') ||
+              node.getAttribute('href')?.includes('linkedin.com/company/') ||
+              node.classList?.contains('mention') ||
+              node.getAttribute('contenteditable') === 'false';
+
+            // Verifier que c'est bien notre mention (contient le prenom)
+            if (isMention && node.textContent?.toLowerCase().includes(firstName.toLowerCase())) {
+              observer.disconnect();
+              // Petit delai pour laisser LinkedIn finir son traitement
+              setTimeout(() => {
+                insertAfterMention(commentBox, afterMentionText);
+              }, 50);
+              return;
+            }
+          }
+        }
+      }
+    });
+
+    observer.observe(commentBox, {
+      childList: true,
+      subtree: true
+    });
+
+    // Timeout de securite : si pas de mention detectee apres 30s, abandonner
+    const timeoutId = setTimeout(() => {
+      observer.disconnect();
+    }, 30000);
+
+    // Stocker le timeout pour pouvoir l'annuler si besoin
+    observer._timeoutId = timeoutId;
+
+    return observer;
+  }
+
+  // V3 Story 1.2 v2 — Inserer la suite du commentaire apres la mention
+  function insertAfterMention(commentBox, afterText) {
+    // Positionner le curseur a la fin
+    const selection = window.getSelection();
+    const range = document.createRange();
+    range.selectNodeContents(commentBox);
+    range.collapse(false); // false = collapse to end
+    selection.removeAllRanges();
+    selection.addRange(range);
+
+    // Inserer la suite du texte via execCommand (meilleure compatibilite avec contentEditable)
+    document.execCommand('insertText', false, afterText);
+
+    // Declencher l'evenement input pour que LinkedIn detecte le changement
+    commentBox.dispatchEvent(new Event('input', { bubbles: true }));
+
+    // Toast de confirmation
+    if (window.toastNotification) {
+      window.toastNotification.success(t('mentionCompleted') || 'Mention ajoutée !');
+    }
   }
 
   function extractPostContent(container) {

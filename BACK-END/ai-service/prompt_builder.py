@@ -23,7 +23,11 @@ QUOTE_INSTRUCTION = (
 
 def _build_tag_author_instruction(author_name: str) -> str:
     """
-    Construit l'instruction pour integrer le nom de l'auteur naturellement.
+    Construit l'instruction pour integrer @prenom avec le marqueur {{{SPLIT}}}.
+    Le frontend utilisera ce marqueur pour l'insertion en deux temps :
+    1. Inserer le debut jusqu'au @prenom
+    2. Attendre que l'utilisateur valide la mention LinkedIn
+    3. Inserer automatiquement la suite
 
     Args:
         author_name: Le nom de l'auteur du post a interpeller.
@@ -31,15 +35,15 @@ def _build_tag_author_instruction(author_name: str) -> str:
     Returns:
         L'instruction pour le LLM.
     """
+    # Extraire le prenom (premier mot)
+    first_name = author_name.split()[0] if author_name else "l'auteur"
     return (
-        f"IMPORTANT — Tag auteur : Integre naturellement le nom de l'auteur du post "
-        f"({author_name}) dans ton commentaire pour l'interpeller directement. "
-        f"NE COMMENCE PAS le commentaire par le nom ou par '@{author_name}'. "
-        f"Integre-le de maniere fluide dans une phrase, par exemple : "
-        f"'Comme tu le soulignes, {author_name}, ...' ou "
-        f"'Ton point de vue, {author_name}, ...' ou "
-        f"'Je rejoins ta reflexion {author_name} sur...' "
-        f"Evite les formulations trop formelles comme 'Cher {author_name}' ou 'Monsieur/Madame'."
+        f"IMPORTANT — Tag auteur : Integre @{first_name} naturellement dans ton commentaire. "
+        f"JUSTE APRES @{first_name}, ajoute le marqueur {{{{{{SPLIT}}}}}} (exactement comme ecrit). "
+        f"Exemple : 'Comme tu le soulignes @{first_name}{{{{{{SPLIT}}}}}}, ton analyse est...' "
+        f"Autre exemple : 'Je rejoins ta reflexion @{first_name}{{{{{{SPLIT}}}}}} sur ce point...' "
+        f"NE COMMENCE PAS le commentaire par @{first_name}. "
+        f"Place @{first_name}{{{{{{SPLIT}}}}}} naturellement au milieu d'une phrase."
     )
 
 

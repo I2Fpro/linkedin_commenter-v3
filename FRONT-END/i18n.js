@@ -120,10 +120,12 @@ class I18n {
 
         // V3 — Tag auteur
         tagAuthor: 'Tag auteur',
-        tagAuthorTooltip: 'Mentionner l\'auteur du post dans le commentaire',
-        tagAuthorActive: 'Tag auteur activé',
+        tagAuthorTooltip: 'Ajoute @auteur dans le commentaire — cliquez sur la suggestion LinkedIn',
+        tagAuthorActive: 'Tag auteur activé pour',
         tagAuthorUpgradeRequired: 'Le tag auteur est réservé aux abonnés Premium',
-        authorNotFound: 'Impossible de trouver le nom de l\'auteur du post'
+        authorNotFound: 'Impossible de trouver le nom de l\'auteur du post',
+        clickMentionSuggestion: 'Cliquez sur la suggestion LinkedIn pour valider la mention',
+        mentionCompleted: 'Mention ajoutée !'
       },
       en: {
         // Main titles and labels
@@ -242,10 +244,12 @@ class I18n {
 
         // V3 — Tag author
         tagAuthor: 'Tag author',
-        tagAuthorTooltip: 'Mention the post author in the comment',
-        tagAuthorActive: 'Tag author enabled',
+        tagAuthorTooltip: 'Adds @author in the comment — click the LinkedIn suggestion',
+        tagAuthorActive: 'Tag author enabled for',
         tagAuthorUpgradeRequired: 'Tag author is reserved for Premium subscribers',
-        authorNotFound: 'Unable to find the post author\'s name'
+        authorNotFound: 'Unable to find the post author\'s name',
+        clickMentionSuggestion: 'Click the LinkedIn suggestion to validate the mention',
+        mentionCompleted: 'Mention added!'
       }
     };
   }
