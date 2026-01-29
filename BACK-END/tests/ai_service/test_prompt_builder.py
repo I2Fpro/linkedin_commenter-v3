@@ -2,6 +2,7 @@
 Tests pour le module prompt_builder.py
 Story 1.1 - Generation de Commentaire avec Citation Contextuelle
 Story 1.2 - Tag Automatique de l'Auteur du Post
+Story 1.3 - Contextualisation via les Commentaires Tiers
 """
 import sys
 import os
@@ -44,7 +45,7 @@ class TestBuildEnrichedPrompt:
         assert result == self.BASE_PROMPT
 
     def test_include_quote_true_with_other_params(self):
-        """Quote + tag_author sont traites, web_search/third_party ignores (story 1.3/1.4)"""
+        """Quote + tag_author + third_party sont traites, web_search ignore (story 1.4)"""
         result = build_enriched_prompt(
             self.BASE_PROMPT,
             include_quote=True,
@@ -54,7 +55,8 @@ class TestBuildEnrichedPrompt:
         )
         assert QUOTE_INSTRUCTION in result
         assert self.BASE_PROMPT in result
-        assert "Jean" in result  # tag_author est maintenant traite
+        assert "Jean" in result  # tag_author est traite
+        assert "Commentaire 1" in result  # third_party_comments est traite
 
     def test_enriched_prompt_structure(self):
         """Le prompt enrichi a la bonne structure : base + saut de ligne + instruction"""
@@ -119,3 +121,88 @@ class TestTagAuthorFeature:
         quote_pos = result.find(QUOTE_INSTRUCTION)
         tag_pos = result.find("@Sophie")
         assert quote_pos < tag_pos, "Quote doit apparaitre avant tag_author"
+
+
+class TestThirdPartyCommentsFeature:
+    """Tests pour la fonctionnalite third_party_comments (Story 1.3)"""
+
+    BASE_PROMPT = "Genere un commentaire professionnel sur ce post LinkedIn."
+
+    def test_third_party_comments_adds_context_instruction(self):
+        """Avec third_party_comments fournis, le prompt contient l'instruction de contexte"""
+        comments = ["Super article !", "Je suis d'accord avec toi"]
+        result = build_enriched_prompt(self.BASE_PROMPT, third_party_comments=comments)
+        assert "Commentaires existants" in result
+        assert "Super article" in result
+        # Verifier que l'instruction de differenciation est presente
+        assert "differencier" in result.lower() or "perspective nouvelle" in result.lower()
+
+    def test_third_party_comments_empty_list_returns_base(self):
+        """Avec third_party_comments=[], le prompt retourne est identique au base_prompt"""
+        result = build_enriched_prompt(self.BASE_PROMPT, third_party_comments=[])
+        assert result == self.BASE_PROMPT
+
+    def test_third_party_comments_none_returns_base(self):
+        """Avec third_party_comments=None, le prompt retourne est identique au base_prompt"""
+        result = build_enriched_prompt(self.BASE_PROMPT, third_party_comments=None)
+        assert result == self.BASE_PROMPT
+
+    def test_third_party_comments_limits_to_ten(self):
+        """Les commentaires tiers sont limites a 10 maximum"""
+        comments = [f"Commentaire {i}" for i in range(15)]
+        result = build_enriched_prompt(self.BASE_PROMPT, third_party_comments=comments)
+        # Verifier que seuls les 10 premiers commentaires sont inclus
+        assert "Commentaire 9" in result
+        assert "Commentaire 10" not in result
+
+    def test_third_party_comments_truncates_long_comments(self):
+        """Les commentaires longs sont tronques a 300 caracteres"""
+        long_comment = "A" * 500
+        result = build_enriched_prompt(self.BASE_PROMPT, third_party_comments=[long_comment])
+        # Verifier que le commentaire est tronque a 300 caracteres
+        assert "A" * 300 in result
+        assert "A" * 301 not in result
+
+    def test_third_party_comments_with_other_options(self):
+        """Les commentaires tiers fonctionnent avec les autres options V3"""
+        comments = ["Excellent point !"]
+        result = build_enriched_prompt(
+            self.BASE_PROMPT,
+            include_quote=True,
+            tag_author="Marie Martin",
+            third_party_comments=comments
+        )
+        # Verifier que toutes les instructions sont presentes
+        assert QUOTE_INSTRUCTION in result
+        assert "@Marie" in result
+        assert "Excellent point" in result
+
+    def test_third_party_comments_order_in_prompt(self):
+        """L'ordre est : base_prompt, quote, tag_author, third_party_comments"""
+        result = build_enriched_prompt(
+            self.BASE_PROMPT,
+            include_quote=True,
+            tag_author="Sophie Lemaire",
+            third_party_comments=["Commentaire test"]
+        )
+        quote_pos = result.find(QUOTE_INSTRUCTION)
+        tag_pos = result.find("@Sophie")
+        comments_pos = result.find("Commentaire test")
+        assert quote_pos < tag_pos < comments_pos, "Ordre: quote < tag < comments"
+
+    def test_third_party_comments_instruction_content(self):
+        """L'instruction third_party_comments contient les consignes de differenciation"""
+        comments = ["Point de vue interessant"]
+        result = build_enriched_prompt(self.BASE_PROMPT, third_party_comments=comments)
+        # Verifier les consignes cles
+        assert "Ne repete PAS" in result
+        assert "perspective nouvelle" in result or "angle different" in result
+        assert "nuancer" in result or "challenger" in result
+
+    def test_third_party_comments_multiple_comments_formatted(self):
+        """Plusieurs commentaires sont formates avec des tirets"""
+        comments = ["Premier commentaire", "Deuxieme commentaire", "Troisieme commentaire"]
+        result = build_enriched_prompt(self.BASE_PROMPT, third_party_comments=comments)
+        assert "- Premier commentaire" in result
+        assert "- Deuxieme commentaire" in result
+        assert "- Troisieme commentaire" in result

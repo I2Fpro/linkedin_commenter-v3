@@ -787,11 +787,55 @@
         });
       };
 
+      // V3 Story 1.3 — Bouton toggle Contexte (commentaires tiers) (PREMIUM uniquement)
+      const contextToggle = document.createElement('button');
+      contextToggle.className = 'ai-generate-button ai-context-toggle';
+      contextToggle.type = 'button';
+      if (isNegative) contextToggle.classList.add('negative');
+      if (isReplyToComment) contextToggle.classList.add('reply-mode');
+      contextToggle.innerHTML = `<span>💬 ${t('contextToggle')}</span>`;
+      contextToggle.title = t('contextToggleTooltip');
+
+      // Verifier le plan utilisateur pour le gating
+      chrome.storage.local.get(['user_plan'], (result) => {
+        const userPlan = result.user_plan || 'FREE';
+        if (userPlan !== 'PREMIUM') {
+          contextToggle.classList.add('locked');
+          contextToggle.innerHTML = `<span>🔒 ${t('contextToggle')}</span>`;
+        }
+      });
+
+      contextToggle.onclick = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        chrome.storage.local.get(['user_plan'], (result) => {
+          const userPlan = result.user_plan || 'FREE';
+          if (userPlan !== 'PREMIUM') {
+            window.toastNotification.warning(t('contextUpgradeRequired'));
+            return;
+          }
+          // Toggle l'etat actif/inactif
+          const isActive = commentBox.getAttribute('data-include-context') === 'true';
+          if (isActive) {
+            commentBox.removeAttribute('data-include-context');
+            contextToggle.classList.remove('active');
+            contextToggle.innerHTML = `<span>💬 ${t('contextToggle')}</span>`;
+            contextToggle.title = t('contextToggleInactive');
+          } else {
+            commentBox.setAttribute('data-include-context', 'true');
+            contextToggle.classList.add('active');
+            contextToggle.innerHTML = `<span>✨ ${t('contextToggle')}</span>`;
+            contextToggle.title = t('contextToggleActive');
+          }
+        });
+      };
+
       buttonsWrapper.appendChild(generateButton);
       buttonsWrapper.appendChild(promptButton);
       buttonsWrapper.appendChild(personalisationButton);
       buttonsWrapper.appendChild(quoteToggle);
       buttonsWrapper.appendChild(tagAuthorToggle);
+      buttonsWrapper.appendChild(contextToggle);
       commentBox.parentElement.appendChild(buttonsWrapper);
 
       // Retirer le marqueur "en cours" et marquer comme "ajouté"
@@ -1055,6 +1099,9 @@
       const includeQuote = commentBox.getAttribute('data-include-quote') === 'true';
       // V3 — Lire l'etat du toggle Tag Auteur
       const tagAuthor = commentBox.getAttribute('data-tag-author') || null;
+      // V3 Story 1.3 — Lire l'etat du toggle Contexte et extraire si actif
+      const includeContext = commentBox.getAttribute('data-include-context') === 'true';
+      const thirdPartyComments = includeContext ? extractThirdPartyComments(postContainer) : [];
 
       const requestData = {
         post: postContent || null,
@@ -1070,7 +1117,9 @@
         // V3 — Citation contextuelle
         include_quote: includeQuote,
         // V3 — Tag auteur
-        tag_author: tagAuthor
+        tag_author: tagAuthor,
+        // V3 Story 1.3 — Commentaires tiers pour contextualisation
+        third_party_comments: thirdPartyComments.length > 0 ? thirdPartyComments : null
       };
 
       if (isReplyToComment && postContent) {
@@ -2211,6 +2260,125 @@
     }
 
     return null;
+  }
+
+  // V3 Story 1.3 — Extraction des commentaires tiers depuis le DOM LinkedIn
+  /**
+   * Extrait les commentaires tiers visibles depuis le DOM LinkedIn.
+   * Utilise une strategie multi-selecteurs resiliente aux changements de DOM.
+   *
+   * Selecteurs LinkedIn 2026 (SDUI architecture):
+   * 1. data-urn sur les containers de commentaires
+   * 2. Classes semantiques .comments-comment-item
+   * 3. Role="article" pour les commentaires
+   * 4. Fallback classes generiques feed-shared-*
+   *
+   * @param {HTMLElement} postElement - L'element du post LinkedIn
+   * @returns {string[]} - Tableau des textes de commentaires (max 10)
+   */
+  function extractThirdPartyComments(postElement) {
+    if (!postElement) {
+      return [];
+    }
+
+    // Selecteurs pour les containers de commentaires (ordre de fiabilite)
+    const commentContainerSelectors = [
+      // LinkedIn 2026 SDUI - Containers avec componentkey (plus fiable)
+      '[componentkey*="replaceableComment_urn:li:comment"]',
+      // LinkedIn 2026 SDUI - Containers de commentaires avec data-urn
+      '[data-urn*="comment"]',
+      // LinkedIn 2025+ - Classes semantiques
+      '.comments-comment-item',
+      '.comments-comment-entity',
+      // LinkedIn 2024 - Fallback
+      '.feed-shared-update-v2__comments-container article',
+      '.comments-comments-list article',
+      // Fallback generique
+      '[data-view-name="comments-comment"]'
+    ];
+
+    // Selecteurs pour le texte du commentaire (a tester sur chaque container)
+    const commentTextSelectors = [
+      // LinkedIn 2026 SDUI - data-testid expandable-text-box (plus fiable)
+      '[data-testid="expandable-text-box"]',
+      // LinkedIn 2026 SDUI - Contenu du commentaire
+      '.update-components-text',
+      '.comments-comment-item__main-content',
+      // LinkedIn 2025+ - Texte du commentaire
+      '.comments-comment-item-content-body',
+      '.comments-comment-texteditor',
+      // Fallback
+      'span.break-words',
+      'p[dir="ltr"]'
+    ];
+
+    // Helper pour extraire les commentaires d'un scope donne
+    function extractFromScope(scope) {
+      const comments = [];
+      for (const containerSelector of commentContainerSelectors) {
+        const containers = scope.querySelectorAll(containerSelector);
+        if (containers.length === 0) continue;
+
+        for (const container of containers) {
+          for (const textSelector of commentTextSelectors) {
+            const textElement = container.querySelector(textSelector);
+            if (textElement) {
+              let text = textElement.textContent || textElement.innerText || '';
+              text = text
+                .trim()
+                .replace(/See more\s*$/i, '')
+                .replace(/Voir plus\s*$/i, '')
+                .replace(/Show less\s*$/i, '')
+                .replace(/Voir moins\s*$/i, '')
+                .replace(/\s+/g, ' ')
+                .trim();
+
+              if (text.length >= 10 && text.length <= 500) {
+                if (!comments.includes(text)) {
+                  comments.push(text);
+                }
+              }
+              break;
+            }
+          }
+          if (comments.length >= 10) break;
+        }
+        if (comments.length > 0) break;
+      }
+      return comments;
+    }
+
+    // 1. D'abord chercher dans le postElement
+    let comments = extractFromScope(postElement);
+
+    // 2. Si aucun commentaire trouve, chercher dans la section commentList adjacente
+    // LinkedIn 2026 SDUI: les commentaires sont dans [data-testid*="commentList"]
+    // qui peut etre adjacent au post plutot qu'a l'interieur
+    if (comments.length === 0) {
+      // Remonter au parent le plus haut possible (listitem ou main container)
+      let searchScope = postElement.closest('[role="listitem"]') ||
+                        postElement.closest('[data-view-name="feed-full-update"]') ||
+                        postElement.closest('[data-id]') ||
+                        postElement.parentElement;
+
+      if (searchScope && searchScope !== postElement) {
+        // Chercher la section de commentaires dans ce scope elargi
+        const commentListSection = searchScope.querySelector('[data-testid*="commentList"]');
+        if (commentListSection) {
+          comments = extractFromScope(commentListSection);
+        } else {
+          // Dernier recours: chercher dans tout le scope
+          comments = extractFromScope(searchScope);
+        }
+      }
+    }
+
+    // AC#3 : Fallback gracieux - warning si extraction echoue (utile pour debug)
+    if (comments.length === 0) {
+      console.warn('[AI] Could not extract third-party comments');
+    }
+
+    return comments.slice(0, 10);
   }
 
   // V3 Story 1.2 v2 — Separation du commentaire pour insertion en deux temps

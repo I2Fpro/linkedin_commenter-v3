@@ -5,8 +5,8 @@ Enrichit le prompt de base avec des instructions contextuelles
 
 Story 1.1 : Citation contextuelle implementee.
 Story 1.2 : Tag auteur implemente.
-Les params web_search_result, third_party_comments sont
-acceptes mais non traites (preparation stories 1.3, 1.4).
+Story 1.3 : Contextualisation via commentaires tiers implementee.
+Le param web_search_result est accepte mais non traite (preparation story 1.4).
 """
 from typing import List, Optional
 
@@ -62,8 +62,10 @@ def build_enriched_prompt(
         include_quote: Si True, ajoute une instruction pour inclure une citation.
         tag_author: Nom de l'auteur a tagger. Si fourni, ajoute une instruction
                     pour integrer le nom naturellement dans le commentaire.
-        web_search_result: Resultat de recherche web (non traite dans stories 1.1-1.2).
-        third_party_comments: Commentaires tiers (non traite dans stories 1.1-1.2).
+        web_search_result: Resultat de recherche web (non traite, story 1.4).
+        third_party_comments: Liste des commentaires tiers existants sur le post.
+                              Si fournie, ajoute un contexte pour que le LLM
+                              genere un commentaire qui se differencie des existants.
 
     Returns:
         Le prompt enrichi ou le prompt de base inchange.
@@ -78,5 +80,23 @@ def build_enriched_prompt(
     if tag_author:
         tag_instruction = _build_tag_author_instruction(tag_author)
         enriched = f"{enriched}\n\n{tag_instruction}"
+
+    # V3 Story 1.3 — Contextualisation via commentaires tiers
+    if third_party_comments and len(third_party_comments) > 0:
+        # Formater les commentaires existants (max 10, tronques a 300 chars)
+        comments_text = "\n".join(
+            [f"- {c[:300]}" for c in third_party_comments[:10]]
+        )
+        context_instruction = (
+            "CONTEXTE IMPORTANT - Commentaires existants sur ce post :\n"
+            f"{comments_text}\n\n"
+            "INSTRUCTION : Ton commentaire doit se differencier des commentaires existants ci-dessus.\n"
+            "- Ne repete PAS les memes points de vue\n"
+            "- Apporte une perspective nouvelle ou un angle different\n"
+            "- Si les autres sont d'accord avec l'auteur, tu peux nuancer ou challenger (avec respect)\n"
+            "- Si les autres critiquent, tu peux defendre ou proposer une vision constructive\n"
+            "- Evite les formulations deja utilisees par les autres commentateurs"
+        )
+        enriched = f"{enriched}\n\n{context_instruction}"
 
     return enriched

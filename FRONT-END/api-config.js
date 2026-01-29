@@ -1,5 +1,7 @@
 // Configuration des URLs des APIs backend pour l'extension LinkedIn AI Commenter
-const API_CONFIG = {
+// Utiliser var pour permettre la re-déclaration dans les Service Workers
+if (typeof API_CONFIG === 'undefined') {
+var API_CONFIG = {
   // URL du service AI (génération de commentaires)
   AI_SERVICE_URL: '__AI_API_URL__',
 
@@ -19,6 +21,7 @@ const API_CONFIG = {
     enabled: true
   }
 };
+}
 
 // Export pour utilisation dans les autres fichiers
 if (typeof module !== 'undefined' && module.exports) {

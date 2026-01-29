@@ -31,17 +31,24 @@ class ExtensionConfig {
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
       
       const config = await response.json();
-      
+
       // Mettre à jour les URLs depuis la configuration du backend
+      // Ignorer les placeholders (commençant par __)
+      const isPlaceholder = (url) => url && url.startsWith('__');
+
       if (config.urls) {
-        this.backendUrl = config.urls.backend || this.backendUrl;
-        this.USER_SERVICE_URL = config.urls.user_service;
+        if (config.urls.backend && !isPlaceholder(config.urls.backend)) {
+          this.backendUrl = config.urls.backend;
+        }
+        if (config.urls.user_service && !isPlaceholder(config.urls.user_service)) {
+          this.USER_SERVICE_URL = config.urls.user_service;
+        }
       }
-      
+
       this.configCache = config;
       this.configLoaded = true;
-      
-      console.log('✅ Configuration chargée depuis le backend:', config);
+
+      console.log('✅ Configuration chargée (URLs effectives):', { backendUrl: this.backendUrl, userServiceUrl: this.USER_SERVICE_URL });
       return config;
     } catch (error) {
       console.error('❌ Erreur chargement config:', error);

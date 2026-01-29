@@ -125,13 +125,20 @@ async function loadBackendConfig() {
       mode: 'cors',
       credentials: 'omit'
     });
-    
+
     if (response.ok) {
       const config = await response.json();
       if (config.urls) {
-        BACKEND_URL = config.urls.backend || BACKEND_URL;
-        USER_SERVICE_URL = config.urls.user_service || USER_SERVICE_URL;
-        console.log('✅ Configuration backend chargée:', config.urls);
+        // Ignorer les placeholders (commençant par __)
+        const isPlaceholder = (url) => url && url.startsWith('__');
+
+        if (config.urls.backend && !isPlaceholder(config.urls.backend)) {
+          BACKEND_URL = config.urls.backend;
+        }
+        if (config.urls.user_service && !isPlaceholder(config.urls.user_service)) {
+          USER_SERVICE_URL = config.urls.user_service;
+        }
+        console.log('✅ Configuration backend chargée (URLs effectives):', { BACKEND_URL, USER_SERVICE_URL });
       }
       return config;
     }

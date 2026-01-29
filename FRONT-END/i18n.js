@@ -125,7 +125,14 @@ class I18n {
         tagAuthorUpgradeRequired: 'Le tag auteur est réservé aux abonnés Premium',
         authorNotFound: 'Impossible de trouver le nom de l\'auteur du post',
         clickMentionSuggestion: 'Cliquez sur la suggestion LinkedIn pour valider la mention',
-        mentionCompleted: 'Mention ajoutée !'
+        mentionCompleted: 'Mention ajoutée !',
+
+        // V3 — Contexte commentaires tiers
+        contextToggle: 'Contexte',
+        contextToggleTooltip: 'Prend en compte les commentaires existants pour se différencier',
+        contextToggleActive: 'Contexte activé',
+        contextToggleInactive: 'Contexte désactivé',
+        contextUpgradeRequired: 'Le contexte des commentaires est réservé aux abonnés Premium'
       },
       en: {
         // Main titles and labels
@@ -249,7 +256,14 @@ class I18n {
         tagAuthorUpgradeRequired: 'Tag author is reserved for Premium subscribers',
         authorNotFound: 'Unable to find the post author\'s name',
         clickMentionSuggestion: 'Click the LinkedIn suggestion to validate the mention',
-        mentionCompleted: 'Mention added!'
+        mentionCompleted: 'Mention added!',
+
+        // V3 — Third-party comments context
+        contextToggle: 'Context',
+        contextToggleTooltip: 'Considers existing comments to differentiate',
+        contextToggleActive: 'Context enabled',
+        contextToggleInactive: 'Context disabled',
+        contextUpgradeRequired: 'Comments context is reserved for Premium subscribers'
       }
     };
   }

@@ -29,9 +29,9 @@ PLACEHOLDERS=(
 
 DEV_VALUES=(
   "192205751398-29e500ilsol48ccvmp8dnoberc6kf1en.apps.googleusercontent.com"
-  "https://users.local.dev"
-  "https://ai.local.dev"
-  "https://site.local.dev"
+  "http://localhost:8444"
+  "http://localhost:8443"
+  "http://localhost:80"
 )
 
 # ---------------------------------------------------------------------------
@@ -54,7 +54,7 @@ FILES=(
 detect_mode() {
   if grep -q "__AI_API_URL__" "$FRONTEND_DIR/api-config.js" 2>/dev/null; then
     echo "placeholder"
-  elif grep -q "https://ai.local.dev" "$FRONTEND_DIR/api-config.js" 2>/dev/null; then
+  elif grep -q "localhost:8443" "$FRONTEND_DIR/api-config.js" 2>/dev/null; then
     echo "dev"
   else
     echo "unknown"
@@ -132,7 +132,7 @@ case "$MODE" in
   *)
     echo "Usage: $0 {dev|placeholder|status}"
     echo ""
-    echo "  dev          Injecte les URLs locales (https://*.local.dev)"
+    echo "  dev          Injecte les URLs locales (http://localhost:PORT)"
     echo "  placeholder  Restaure les __PLACEHOLDERS__ (pour commit)"
     echo "  status       Affiche le mode actuel"
     exit 1
