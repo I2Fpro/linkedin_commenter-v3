@@ -21,6 +21,10 @@ if not OPENAI_API_KEY:
 
 MODEL_NAME = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
 
+# --- Tavily (Web Search) ---
+TAVILY_API_KEY = os.getenv("TAVILY_API_KEY")
+# Note: TAVILY_API_KEY est optionnel - si absent, la recherche web sera desactivee
+
 # --- Google OAuth ---
 GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
 if not GOOGLE_CLIENT_ID:
@@ -43,6 +47,11 @@ def validate_environment():
     # Les erreurs sont levées au dessus si manquantes
     print("✅ Configuration validée")
     print(f"🐳 Serveur: {HOST}:{PORT}")
+    # V3 Story 1.4 - Afficher le statut de la recherche web
+    if TAVILY_API_KEY:
+        print("🌐 Recherche web: activée (Tavily)")
+    else:
+        print("⚠️ Recherche web: désactivée (TAVILY_API_KEY non configurée)")
     return True
 
 if __name__ == "__main__":

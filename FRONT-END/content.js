@@ -830,12 +830,56 @@
         });
       };
 
+      // V3 Story 1.4 — Bouton toggle Recherche Web (PREMIUM uniquement)
+      const webSearchToggle = document.createElement('button');
+      webSearchToggle.className = 'ai-toggle-btn ai-web-search-toggle';
+      webSearchToggle.type = 'button';
+      if (isNegative) webSearchToggle.classList.add('negative');
+      if (isReplyToComment) webSearchToggle.classList.add('reply-mode');
+      webSearchToggle.innerHTML = `<span>🌐 ${t('webSearchToggle')}</span>`;
+      webSearchToggle.title = t('webSearchToggleTooltip');
+
+      // Verifier le plan utilisateur pour le gating
+      chrome.storage.local.get(['user_plan'], (result) => {
+        const userPlan = result.user_plan || 'FREE';
+        if (userPlan !== 'PREMIUM') {
+          webSearchToggle.classList.add('locked');
+          webSearchToggle.innerHTML = `<span>🔒 ${t('webSearchToggle')}</span>`;
+        }
+      });
+
+      webSearchToggle.onclick = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        chrome.storage.local.get(['user_plan'], (result) => {
+          const userPlan = result.user_plan || 'FREE';
+          if (userPlan !== 'PREMIUM') {
+            window.toastNotification.warning(t('webSearchUpgradeRequired'));
+            return;
+          }
+          // Toggle l'etat actif/inactif
+          const isActive = commentBox.getAttribute('data-web-search') === 'true';
+          if (isActive) {
+            commentBox.removeAttribute('data-web-search');
+            webSearchToggle.classList.remove('active');
+            webSearchToggle.innerHTML = `<span>🌐 ${t('webSearchToggle')}</span>`;
+            webSearchToggle.title = t('webSearchToggleInactive');
+          } else {
+            commentBox.setAttribute('data-web-search', 'true');
+            webSearchToggle.classList.add('active');
+            webSearchToggle.innerHTML = `<span>✨ ${t('webSearchToggle')}</span>`;
+            webSearchToggle.title = t('webSearchToggleActive');
+          }
+        });
+      };
+
       buttonsWrapper.appendChild(generateButton);
       buttonsWrapper.appendChild(promptButton);
       buttonsWrapper.appendChild(personalisationButton);
       buttonsWrapper.appendChild(quoteToggle);
       buttonsWrapper.appendChild(tagAuthorToggle);
       buttonsWrapper.appendChild(contextToggle);
+      buttonsWrapper.appendChild(webSearchToggle);
       commentBox.parentElement.appendChild(buttonsWrapper);
 
       // Retirer le marqueur "en cours" et marquer comme "ajouté"
@@ -1102,6 +1146,8 @@
       // V3 Story 1.3 — Lire l'etat du toggle Contexte et extraire si actif
       const includeContext = commentBox.getAttribute('data-include-context') === 'true';
       const thirdPartyComments = includeContext ? extractThirdPartyComments(postContainer) : [];
+      // V3 Story 1.4 — Lire l'etat du toggle Recherche Web
+      const webSearchEnabled = commentBox.getAttribute('data-web-search') === 'true';
 
       const requestData = {
         post: postContent || null,
@@ -1119,7 +1165,9 @@
         // V3 — Tag auteur
         tag_author: tagAuthor,
         // V3 Story 1.3 — Commentaires tiers pour contextualisation
-        third_party_comments: thirdPartyComments.length > 0 ? thirdPartyComments : null
+        third_party_comments: thirdPartyComments.length > 0 ? thirdPartyComments : null,
+        // V3 Story 1.4 — Recherche web
+        web_search_enabled: webSearchEnabled
       };
 
       if (isReplyToComment && postContent) {
@@ -1160,6 +1208,11 @@
           }
         } else if (response && response.comments) {
           showOptionsPopup(commentBox, response.comments, postContent || '', null, isReplyToComment);
+
+          // V3 Story 1.4 — Notification de fallback si recherche web echouee
+          if (response.web_search_fallback) {
+            window.toastNotification.warning(t('webSearchFallbackMessage'));
+          }
 
           // Track successful generation
           if (phClient) {
@@ -1425,6 +1478,13 @@
         console.log('📰 Mode enrichissement désactivé (avec prompt)');
       }
 
+      // V3 — Lire l'etat des toggles
+      const includeQuote = commentBox.getAttribute('data-include-quote') === 'true';
+      const tagAuthor = commentBox.getAttribute('data-tag-author') || null;
+      const includeContext = commentBox.getAttribute('data-include-context') === 'true';
+      const thirdPartyComments = includeContext ? extractThirdPartyComments(postContainer) : [];
+      const webSearchEnabled = commentBox.getAttribute('data-web-search') === 'true';
+
       const requestData = {
         post: postContent || null,
         userPrompt: userPrompt,
@@ -1436,7 +1496,15 @@
         style: selectedStyle,
         // Contexte des actualités LinkedIn
         newsContext: newsContext,
-        newsEnrichmentMode: newsEnrichmentMode
+        newsEnrichmentMode: newsEnrichmentMode,
+        // V3 — Citation contextuelle
+        include_quote: includeQuote,
+        // V3 — Tag auteur
+        tag_author: tagAuthor,
+        // V3 Story 1.3 — Commentaires tiers pour contextualisation
+        third_party_comments: thirdPartyComments.length > 0 ? thirdPartyComments : null,
+        // V3 Story 1.4 — Recherche web
+        web_search_enabled: webSearchEnabled
       };
 
       if (isReplyToComment && postContent) {
@@ -1484,6 +1552,11 @@
           }
         } else if (response && response.comments) {
           showOptionsPopup(commentBox, response.comments, postContent || '', userPrompt, isReplyToComment);
+
+          // V3 Story 1.4 — Notification de fallback si recherche web echouee
+          if (response.web_search_fallback) {
+            window.toastNotification.warning(t('webSearchFallbackMessage'));
+          }
 
           // Track successful generation
           if (phClient) {

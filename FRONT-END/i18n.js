@@ -132,7 +132,15 @@ class I18n {
         contextToggleTooltip: 'Prend en compte les commentaires existants pour se différencier',
         contextToggleActive: 'Contexte activé',
         contextToggleInactive: 'Contexte désactivé',
-        contextUpgradeRequired: 'Le contexte des commentaires est réservé aux abonnés Premium'
+        contextUpgradeRequired: 'Le contexte des commentaires est réservé aux abonnés Premium',
+
+        // V3 Story 1.4 — Recherche web
+        webSearchToggle: 'Recherche web',
+        webSearchToggleTooltip: 'Enrichit avec des sources web récentes',
+        webSearchToggleActive: 'Recherche web activée',
+        webSearchToggleInactive: 'Recherche web désactivée',
+        webSearchUpgradeRequired: 'La recherche web est réservée aux abonnés Premium',
+        webSearchFallbackMessage: 'Aucune source web trouvée — génération classique utilisée'
       },
       en: {
         // Main titles and labels
@@ -263,7 +271,15 @@ class I18n {
         contextToggleTooltip: 'Considers existing comments to differentiate',
         contextToggleActive: 'Context enabled',
         contextToggleInactive: 'Context disabled',
-        contextUpgradeRequired: 'Comments context is reserved for Premium subscribers'
+        contextUpgradeRequired: 'Comments context is reserved for Premium subscribers',
+
+        // V3 Story 1.4 — Web search
+        webSearchToggle: 'Web search',
+        webSearchToggleTooltip: 'Enriches with recent web sources',
+        webSearchToggleActive: 'Web search enabled',
+        webSearchToggleInactive: 'Web search disabled',
+        webSearchUpgradeRequired: 'Web search is reserved for Premium subscribers',
+        webSearchFallbackMessage: 'No web source found — classic generation used'
       }
     };
   }

@@ -3,6 +3,7 @@ Tests pour le module prompt_builder.py
 Story 1.1 - Generation de Commentaire avec Citation Contextuelle
 Story 1.2 - Tag Automatique de l'Auteur du Post
 Story 1.3 - Contextualisation via les Commentaires Tiers
+Story 1.4 - Recherche Web et Fallback Gracieux
 """
 import sys
 import os
@@ -45,18 +46,19 @@ class TestBuildEnrichedPrompt:
         assert result == self.BASE_PROMPT
 
     def test_include_quote_true_with_other_params(self):
-        """Quote + tag_author + third_party sont traites, web_search ignore (story 1.4)"""
+        """Quote + tag_author + web_search + third_party sont tous traites"""
         result = build_enriched_prompt(
             self.BASE_PROMPT,
             include_quote=True,
             tag_author="Jean Dupont",
-            web_search_result="Resultat web",
+            web_search_result="Source: Article X - https://example.com - Info pertinente",
             third_party_comments=["Commentaire 1", "Commentaire 2"],
         )
         assert QUOTE_INSTRUCTION in result
         assert self.BASE_PROMPT in result
         assert "Jean" in result  # tag_author est traite
         assert "Commentaire 1" in result  # third_party_comments est traite
+        assert "CONTEXTE WEB" in result  # web_search_result est traite (Story 1.4)
 
     def test_enriched_prompt_structure(self):
         """Le prompt enrichi a la bonne structure : base + saut de ligne + instruction"""
@@ -206,3 +208,65 @@ class TestThirdPartyCommentsFeature:
         assert "- Premier commentaire" in result
         assert "- Deuxieme commentaire" in result
         assert "- Troisieme commentaire" in result
+
+
+class TestWebSearchResultFeature:
+    """Tests pour la fonctionnalite web_search_result (Story 1.4)"""
+
+    BASE_PROMPT = "Genere un commentaire professionnel sur ce post LinkedIn."
+
+    def test_web_search_result_adds_context_instruction(self):
+        """Avec web_search_result fourni, le prompt contient l'instruction de contexte web"""
+        web_result = "Source: AI News - https://ainews.com - Les LLMs progressent"
+        result = build_enriched_prompt(self.BASE_PROMPT, web_search_result=web_result)
+        assert "CONTEXTE WEB" in result
+        assert "AI News" in result
+        assert "ainews.com" in result
+
+    def test_web_search_result_none_returns_base(self):
+        """Avec web_search_result=None, le prompt retourne est identique au base_prompt"""
+        result = build_enriched_prompt(self.BASE_PROMPT, web_search_result=None)
+        assert result == self.BASE_PROMPT
+
+    def test_web_search_result_empty_string_returns_base(self):
+        """Avec web_search_result='', le prompt retourne est identique au base_prompt"""
+        result = build_enriched_prompt(self.BASE_PROMPT, web_search_result="")
+        assert result == self.BASE_PROMPT
+
+    def test_web_search_result_instruction_content(self):
+        """L'instruction web_search_result contient les consignes d'integration"""
+        web_result = "Source pertinente pour le commentaire"
+        result = build_enriched_prompt(self.BASE_PROMPT, web_search_result=web_result)
+        # Verifier les consignes cles
+        assert "Integre cette source" in result
+        assert "N'invente PAS" in result
+
+    def test_web_search_result_with_all_other_options(self):
+        """La recherche web fonctionne avec toutes les autres options V3"""
+        result = build_enriched_prompt(
+            self.BASE_PROMPT,
+            include_quote=True,
+            tag_author="Jean Dupont",
+            web_search_result="Source web pertinente",
+            third_party_comments=["Commentaire 1"]
+        )
+        # Verifier que toutes les sections sont presentes
+        assert QUOTE_INSTRUCTION in result
+        assert "@Jean" in result
+        assert "CONTEXTE WEB" in result
+        assert "Commentaire 1" in result
+
+    def test_web_search_result_order_in_prompt(self):
+        """L'ordre est : base_prompt, quote, tag_author, web_search, third_party_comments"""
+        result = build_enriched_prompt(
+            self.BASE_PROMPT,
+            include_quote=True,
+            tag_author="Sophie Lemaire",
+            web_search_result="Source web test",
+            third_party_comments=["Commentaire test"]
+        )
+        quote_pos = result.find(QUOTE_INSTRUCTION)
+        tag_pos = result.find("@Sophie")
+        web_pos = result.find("CONTEXTE WEB")
+        comments_pos = result.find("Commentaire test")
+        assert quote_pos < tag_pos < web_pos < comments_pos, "Ordre: quote < tag < web < comments"

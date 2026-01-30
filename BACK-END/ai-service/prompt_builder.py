@@ -6,7 +6,7 @@ Enrichit le prompt de base avec des instructions contextuelles
 Story 1.1 : Citation contextuelle implementee.
 Story 1.2 : Tag auteur implemente.
 Story 1.3 : Contextualisation via commentaires tiers implementee.
-Le param web_search_result est accepte mais non traite (preparation story 1.4).
+Story 1.4 : Recherche web et fallback gracieux implementee.
 """
 from typing import List, Optional
 
@@ -62,7 +62,9 @@ def build_enriched_prompt(
         include_quote: Si True, ajoute une instruction pour inclure une citation.
         tag_author: Nom de l'auteur a tagger. Si fourni, ajoute une instruction
                     pour integrer le nom naturellement dans le commentaire.
-        web_search_result: Resultat de recherche web (non traite, story 1.4).
+        web_search_result: Resultat de recherche web (Story 1.4). Si fourni,
+                           ajoute une instruction pour integrer la source web
+                           de maniere naturelle dans le commentaire.
         third_party_comments: Liste des commentaires tiers existants sur le post.
                               Si fournie, ajoute un contexte pour que le LLM
                               genere un commentaire qui se differencie des existants.
@@ -80,6 +82,19 @@ def build_enriched_prompt(
     if tag_author:
         tag_instruction = _build_tag_author_instruction(tag_author)
         enriched = f"{enriched}\n\n{tag_instruction}"
+
+    # V3 Story 1.4 — Recherche web
+    if web_search_result:
+        web_instruction = (
+            "CONTEXTE WEB — Source recente trouvee :\n"
+            f"{web_search_result}\n\n"
+            "INSTRUCTION : Integre cette source de maniere naturelle dans ton commentaire.\n"
+            "- Cite la source ou l'information cle de facon pertinente\n"
+            "- N'invente PAS de lien ou de source\n"
+            "- Si la source inclut une URL, tu peux la mentionner brievement\n"
+            "- L'information doit renforcer ton argument, pas le remplacer"
+        )
+        enriched = f"{enriched}\n\n{web_instruction}"
 
     # V3 Story 1.3 — Contextualisation via commentaires tiers
     if third_party_comments and len(third_party_comments) > 0:

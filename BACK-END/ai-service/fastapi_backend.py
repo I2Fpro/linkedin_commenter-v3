@@ -22,6 +22,7 @@ from auth_middleware import get_current_user, auth_middleware
 from config_py import OPENAI_API_KEY, MODEL_NAME, GOOGLE_CLIENT_ID, GOOGLE_CLIENT_ID_WEB, validate_environment
 from prompt_builder import build_enriched_prompt
 from version import VERSION
+from web_search import search_web_for_context
 from dotenv import load_dotenv
 
 # Import du module News
@@ -822,12 +823,25 @@ Générez un commentaire qui:
 Commentaire uniquement, sans préambule.
 """
 
+        # V3 Story 1.4 — Recherche web si activee
+        web_search_result = None
+        web_search_success = False
+        if request.web_search_enabled:
+            logger.info("Web search: lancement de la recherche...")
+            web_search_result, web_search_success = await search_web_for_context(
+                client=client,
+                post_content=cleaned_post,
+                model=MODEL_NAME
+            )
+            if not web_search_success:
+                logger.info("Web search: fallback vers generation classique")
+
         # V3 — Enrichissement du prompt via prompt_builder
         prompt = build_enriched_prompt(
             prompt,
             include_quote=request.include_quote,
             tag_author=request.tag_author,
-            web_search_result=None,
+            web_search_result=web_search_result,
             third_party_comments=request.third_party_comments,
         )
 
@@ -843,6 +857,8 @@ Commentaire uniquement, sans préambule.
             "has_news_context": len(request.newsContext) > 0 if request.newsContext else False,
             "news_count": len(request.newsContext) if request.newsContext else 0,
             "include_quote": request.include_quote,
+            "web_search_enabled": request.web_search_enabled,
+            "web_search_success": web_search_success,
             "post_received": request.post is not None and len(request.post.strip()) > 0 if request.post else False,
             "post_preview": (request.post[:150] + "...") if request.post and len(request.post) > 150 else request.post,
         }
@@ -865,6 +881,8 @@ Commentaire uniquement, sans préambule.
             "tokens_input": usage_info.get("tokens_input", 0),
             "tokens_output": usage_info.get("tokens_output", 0),
             "model": usage_info.get("model", ""),
+            "web_search_enabled": request.web_search_enabled,
+            "web_search_success": web_search_success,
         })
 
         # Track avec PostHog (événement standardisé comment_generated)
@@ -888,7 +906,8 @@ Commentaire uniquement, sans préambule.
 
         return {
             "comments": comments[:request.optionsCount],
-            "context_used": context_used
+            "context_used": context_used,
+            "web_search_fallback": request.web_search_enabled and not web_search_success
         }
 
     except Exception as exc:
@@ -1071,12 +1090,25 @@ Générez un commentaire qui:
 Commentaire uniquement.
 """
 
+        # V3 Story 1.4 — Recherche web si activee
+        web_search_result = None
+        web_search_success = False
+        if request.web_search_enabled:
+            logger.info("Web search: lancement de la recherche...")
+            web_search_result, web_search_success = await search_web_for_context(
+                client=client,
+                post_content=cleaned_post,
+                model=MODEL_NAME
+            )
+            if not web_search_success:
+                logger.info("Web search: fallback vers generation classique")
+
         # V3 — Enrichissement du prompt via prompt_builder
         prompt = build_enriched_prompt(
             prompt,
             include_quote=request.include_quote,
             tag_author=request.tag_author,
-            web_search_result=None,
+            web_search_result=web_search_result,
             third_party_comments=request.third_party_comments,
         )
 
@@ -1093,7 +1125,9 @@ Commentaire uniquement.
             "news_enrichment_mode": request.newsEnrichmentMode,
             "has_news_context": len(request.newsContext) > 0 if request.newsContext else False,
             "news_count": len(request.newsContext) if request.newsContext else 0,
-            "include_quote": request.include_quote
+            "include_quote": request.include_quote,
+            "web_search_enabled": request.web_search_enabled,
+            "web_search_success": web_search_success
         }
 
         # Mesurer le temps de génération
@@ -1115,6 +1149,8 @@ Commentaire uniquement.
             "tokens_input": usage_info.get("tokens_input", 0),
             "tokens_output": usage_info.get("tokens_output", 0),
             "model": usage_info.get("model", ""),
+            "web_search_enabled": request.web_search_enabled,
+            "web_search_success": web_search_success,
         })
 
         # Résoudre le distinct_id pour PostHog
@@ -1142,7 +1178,8 @@ Commentaire uniquement.
 
         return {
             "comments": comments[:request.optionsCount],
-            "context_used": context_used
+            "context_used": context_used,
+            "web_search_fallback": request.web_search_enabled and not web_search_success
         }
 
     except Exception as exc:
