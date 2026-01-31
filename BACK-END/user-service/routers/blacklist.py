@@ -22,7 +22,7 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
-@router.post("/", response_model=BlacklistEntryResponse, status_code=status.HTTP_201_CREATED)
+@router.post("", response_model=BlacklistEntryResponse, status_code=status.HTTP_201_CREATED)
 async def add_to_blacklist(
     entry: BlacklistEntryCreate,
     current_user: User = Depends(get_current_user),
@@ -64,7 +64,7 @@ async def add_to_blacklist(
     return new_entry
 
 
-@router.get("/", response_model=BlacklistListResponse)
+@router.get("", response_model=BlacklistListResponse)
 async def get_blacklist(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)

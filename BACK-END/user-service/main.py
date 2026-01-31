@@ -6,7 +6,7 @@ import os
 from dotenv import load_dotenv
 
 from database import engine, Base
-from routers import users, subscriptions, permissions, auth, stripe, blacklist
+from routers import users, subscriptions, permissions, auth, stripe, blacklist, admin
 from posthog_service import posthog_service
 from version import VERSION
 import logging
@@ -33,7 +33,8 @@ app = FastAPI(
     title="LinkedIn AI Commenter - User Service",
     description="Service de gestion des utilisateurs et des permissions",
     version=VERSION,
-    lifespan=lifespan
+    lifespan=lifespan,
+    redirect_slashes=False  # Fix 307 redirect issue with trailing slashes
 )
 
 # Configuration CORS depuis les variables d'environnement
@@ -54,6 +55,7 @@ app.include_router(permissions.router, prefix="/api/permissions", tags=["permiss
 app.include_router(auth.router, prefix="/api/auth", tags=["auth"])
 app.include_router(stripe.router, prefix="/api/stripe", tags=["stripe"])
 app.include_router(blacklist.router, prefix="/api/blacklist", tags=["blacklist"])
+app.include_router(admin.router, prefix="/api/admin", tags=["admin"])
 
 @app.get("/health")
 async def health_check():
