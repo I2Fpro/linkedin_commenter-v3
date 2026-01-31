@@ -72,8 +72,13 @@ async def get_token_usage(
     Returns:
         TokenUsageResponse: Liste des utilisateurs avec leur consommation,
         triee par consommation totale decroissante.
+
+    TODO (Code Review 3.2):
+    - H2: Ajouter pagination pour eviter OOM avec beaucoup de logs (skip/limit params)
+    - M3: Ajouter rate limiting (slowapi) pour proteger contre les abus
     """
     # Recuperer tous les usage_logs avec meta_data contenant des tokens
+    # TODO H2: Pagination - actuellement charge tous les logs en memoire
     logs = db.query(UsageLog).filter(
         UsageLog.meta_data.isnot(None)
     ).all()
@@ -105,7 +110,8 @@ async def get_token_usage(
         stats["generation_count"] += 1
         if model:
             stats["models"].add(model)
-        if stats["last_generation"] is None or log.timestamp > stats["last_generation"]:
+        # Fix M2: Gerer le cas ou log.timestamp est None (donnees legacy V2)
+        if log.timestamp and (stats["last_generation"] is None or log.timestamp > stats["last_generation"]):
             stats["last_generation"] = log.timestamp
 
     # Construire la liste des details
@@ -120,7 +126,8 @@ async def get_token_usage(
             total_tokens_output=stats["total_tokens_output"],
             total_tokens=total,
             generation_count=stats["generation_count"],
-            models_used=list(stats["models"]),
+            # Fix M1: Ordre deterministe pour eviter des reponses API inconsistantes
+            models_used=sorted(stats["models"]),
             last_generation=stats["last_generation"]
         ))
 
