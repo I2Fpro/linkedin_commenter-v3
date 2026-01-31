@@ -117,6 +117,7 @@ services:
       POSTHOG_HOST: ${POSTHOG_HOST:-https://eu.i.posthog.com}
       POSTHOG_ENABLED: ${POSTHOG_ENABLED:-false}
       ENVIRONMENT: ${ENVIRONMENT:-production}
+      TAVILY_API_KEY: ${TAVILY_API_KEY:-}
     volumes:
       - ai_service_logs:/app/logs
     expose:

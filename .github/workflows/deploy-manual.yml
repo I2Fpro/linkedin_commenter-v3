@@ -149,6 +149,7 @@ jobs:
             GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID_PREPROD }}
             GOOGLE_CLIENT_ID_WEB=${{ secrets.GOOGLE_CLIENT_ID_WEB_PREPROD }}
             OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}
+            TAVILY_API_KEY=${{ secrets.TAVILY_API_KEY }}
             STRIPE_SECRET_KEY=${{ secrets.STRIPE_SECRET_KEY_PREPROD }}
             STRIPE_WEBHOOK_SECRET=${{ secrets.STRIPE_WEBHOOK_SECRET_PREPROD }}
             STRIPE_PRICE_MEDIUM_MONTHLY=${{ secrets.STRIPE_PRICE_MEDIUM_MONTHLY }}
@@ -194,6 +195,7 @@ jobs:
             GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID_PROD }}
             GOOGLE_CLIENT_ID_WEB=${{ secrets.GOOGLE_CLIENT_ID_WEB_PROD }}
             OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}
+            TAVILY_API_KEY=${{ secrets.TAVILY_API_KEY }}
             STRIPE_SECRET_KEY=${{ secrets.STRIPE_SECRET_KEY_PROD }}
             STRIPE_WEBHOOK_SECRET=${{ secrets.STRIPE_WEBHOOK_SECRET_PROD }}
             STRIPE_PRICE_MEDIUM_MONTHLY=${{ secrets.STRIPE_PRICE_MEDIUM_MONTHLY }}
