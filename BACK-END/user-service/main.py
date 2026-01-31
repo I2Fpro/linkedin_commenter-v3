@@ -6,7 +6,7 @@ import os
 from dotenv import load_dotenv
 
 from database import engine, Base
-from routers import users, subscriptions, permissions, auth, stripe
+from routers import users, subscriptions, permissions, auth, stripe, blacklist
 from posthog_service import posthog_service
 from version import VERSION
 import logging
@@ -53,6 +53,7 @@ app.include_router(subscriptions.router, prefix="/api/subscriptions", tags=["sub
 app.include_router(permissions.router, prefix="/api/permissions", tags=["permissions"])
 app.include_router(auth.router, prefix="/api/auth", tags=["auth"])
 app.include_router(stripe.router, prefix="/api/stripe", tags=["stripe"])
+app.include_router(blacklist.router, prefix="/api/blacklist", tags=["blacklist"])
 
 @app.get("/health")
 async def health_check():

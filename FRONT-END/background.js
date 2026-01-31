@@ -264,6 +264,16 @@ async function fetchAndStoreUserProfile(token) {
         user_picture: userData.picture || null
       });
 
+      // V3 Story 2.1 — Synchroniser le cache blacklist au login (Premium uniquement)
+      if (userPlan === 'PREMIUM') {
+        try {
+          await syncBlacklistCache(null);
+          console.log('✅ Blacklist cache synchronise au login');
+        } catch (e) {
+          console.warn('⚠️ Erreur sync blacklist au login:', e);
+        }
+      }
+
       // Identifier l'utilisateur dans PostHog avec userId anonyme (SHA256)
       if (posthogClient && typeof posthog !== 'undefined') {
         try {
@@ -432,6 +442,19 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
     case 'registerNews':
       handleRegisterNews(request.data, sendResponse);
+      return true;
+
+    // V3 Story 2.1 — Actions Blacklist
+    case 'addToBlacklist':
+      handleAddToBlacklist(request.blockedName, request.blockedProfileUrl, sendResponse);
+      return true;
+
+    case 'getBlacklist':
+      handleGetBlacklist(sendResponse);
+      return true;
+
+    case 'syncBlacklistCache':
+      syncBlacklistCache(sendResponse);
       return true;
 
 	case 'authStateChanged':
@@ -971,6 +994,176 @@ async function handleRegisterNews(data, sendResponse) {
       success: false,
       error: errorMessage
     });
+  }
+}
+
+// V3 Story 2.1 — Ajouter a la blacklist
+async function handleAddToBlacklist(blockedName, blockedProfileUrl, sendResponse) {
+  try {
+    const token = await getAuthToken();
+    if (!token) {
+      sendResponse({ success: false, error: 'not_authenticated' });
+      return;
+    }
+
+    // Obtenir le JWT
+    const authResponse = await fetch(`${USER_SERVICE_URL}/api/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ google_token: token })
+    });
+
+    if (!authResponse.ok) {
+      sendResponse({ success: false, error: 'auth_failed' });
+      return;
+    }
+
+    const authData = await authResponse.json();
+    const jwtToken = authData.access_token;
+
+    const response = await fetch(`${USER_SERVICE_URL}/api/blacklist`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${jwtToken}`
+      },
+      body: JSON.stringify({
+        blocked_name: blockedName,
+        blocked_profile_url: blockedProfileUrl || null
+      })
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      sendResponse({ success: false, error: error.detail || 'unknown_error' });
+      return;
+    }
+
+    const entry = await response.json();
+
+    // Mettre a jour le cache local
+    await updateBlacklistCache(entry, 'add');
+
+    console.log('✅ Blacklist: ajout de', blockedName);
+    sendResponse({ success: true, entry });
+  } catch (error) {
+    console.error('❌ addToBlacklist error:', error);
+    sendResponse({ success: false, error: error.message });
+  }
+}
+
+// V3 Story 2.1 — Recuperer la blacklist (depuis cache local)
+async function handleGetBlacklist(sendResponse) {
+  try {
+    const cached = await chrome.storage.local.get('blacklist_cache');
+    if (cached.blacklist_cache && cached.blacklist_cache.entries) {
+      sendResponse({ success: true, entries: cached.blacklist_cache.entries, fromCache: true });
+      return;
+    }
+
+    // Si pas de cache, sync depuis le backend
+    syncBlacklistCache((result) => {
+      if (result.success) {
+        sendResponse({ success: true, entries: result.entries, fromCache: false });
+      } else {
+        sendResponse({ success: false, error: result.error, entries: [] });
+      }
+    });
+  } catch (error) {
+    console.error('❌ getBlacklist error:', error);
+    sendResponse({ success: false, error: error.message, entries: [] });
+  }
+}
+
+// V3 Story 2.1 — Synchroniser le cache blacklist depuis le backend
+async function syncBlacklistCache(sendResponse) {
+  try {
+    const token = await getAuthToken();
+    if (!token) {
+      if (sendResponse) sendResponse({ success: false, error: 'not_authenticated' });
+      return;
+    }
+
+    // Obtenir le JWT
+    const authResponse = await fetch(`${USER_SERVICE_URL}/api/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ google_token: token })
+    });
+
+    if (!authResponse.ok) {
+      if (sendResponse) sendResponse({ success: false, error: 'auth_failed' });
+      return;
+    }
+
+    const authData = await authResponse.json();
+    const jwtToken = authData.access_token;
+
+    const response = await fetch(`${USER_SERVICE_URL}/api/blacklist`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${jwtToken}`
+      }
+    });
+
+    if (!response.ok) {
+      // 403 = pas Premium, retourner liste vide sans erreur
+      if (response.status === 403) {
+        await chrome.storage.local.set({
+          blacklist_cache: {
+            entries: [],
+            count: 0,
+            synced_at: Date.now()
+          }
+        });
+        if (sendResponse) sendResponse({ success: true, entries: [] });
+        return;
+      }
+      const error = await response.json();
+      if (sendResponse) sendResponse({ success: false, error: error.detail || 'unknown_error' });
+      return;
+    }
+
+    const data = await response.json();
+
+    // Sauvegarder dans le cache local
+    await chrome.storage.local.set({
+      blacklist_cache: {
+        entries: data.entries,
+        count: data.count,
+        synced_at: Date.now()
+      }
+    });
+
+    console.log('✅ Blacklist cache synchronise:', data.count, 'entrees');
+    if (sendResponse) sendResponse({ success: true, entries: data.entries });
+  } catch (error) {
+    console.error('❌ syncBlacklistCache error:', error);
+    if (sendResponse) sendResponse({ success: false, error: error.message });
+  }
+}
+
+// V3 Story 2.1 — Mettre a jour le cache local
+async function updateBlacklistCache(entry, action) {
+  try {
+    const cached = await chrome.storage.local.get('blacklist_cache');
+    let entries = cached.blacklist_cache?.entries || [];
+
+    if (action === 'add') {
+      entries.unshift(entry); // Ajouter au debut
+    } else if (action === 'remove') {
+      entries = entries.filter(e => e.id !== entry.id);
+    }
+
+    await chrome.storage.local.set({
+      blacklist_cache: {
+        entries,
+        count: entries.length,
+        synced_at: Date.now()
+      }
+    });
+  } catch (error) {
+    console.error('❌ updateBlacklistCache error:', error);
   }
 }
 

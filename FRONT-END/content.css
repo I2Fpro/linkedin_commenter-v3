@@ -1261,3 +1261,214 @@
   opacity: 0.5;
 }
 /* ========== FIN V3 TOGGLE TAG AUTEUR ========== */
+
+/* ========== V3 — TOGGLE CONTEXTE ========== */
+.ai-context-toggle {
+  background: linear-gradient(135deg, #6c757d 0%, #5a6268 100%) !important;
+  font-size: 12px !important;
+  padding: 4px 10px !important;
+  opacity: 0.85;
+}
+
+.ai-context-toggle:hover:not(:disabled):not(.locked) {
+  opacity: 1;
+}
+
+.ai-context-toggle.active {
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%) !important;
+  opacity: 1;
+  box-shadow: 0 0 8px rgba(245, 158, 11, 0.4);
+}
+
+.ai-context-toggle.locked {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background: linear-gradient(135deg, #9ca3af 0%, #6b7280 100%) !important;
+}
+
+.ai-context-toggle.locked:hover {
+  transform: none;
+  opacity: 0.5;
+}
+/* ========== FIN V3 TOGGLE CONTEXTE ========== */
+
+/* ========== V3 — TOGGLE RECHERCHE WEB ========== */
+.ai-web-search-toggle {
+  background: linear-gradient(135deg, #6c757d 0%, #5a6268 100%) !important;
+  font-size: 12px !important;
+  padding: 4px 10px !important;
+  opacity: 0.85;
+}
+
+.ai-web-search-toggle:hover:not(:disabled):not(.locked) {
+  opacity: 1;
+}
+
+.ai-web-search-toggle.active {
+  background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%) !important;
+  opacity: 1;
+  box-shadow: 0 0 8px rgba(14, 165, 233, 0.4);
+}
+
+.ai-web-search-toggle.locked {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background: linear-gradient(135deg, #9ca3af 0%, #6b7280 100%) !important;
+}
+
+.ai-web-search-toggle.locked:hover {
+  transform: none;
+  opacity: 0.5;
+}
+/* ========== FIN V3 TOGGLE RECHERCHE WEB ========== */
+
+/* ========== V3 Story 2.1 — BLACKLIST ========== */
+.ai-blacklist-btn {
+  background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%) !important;
+  font-size: 12px !important;
+  padding: 4px 10px !important;
+  opacity: 0.85;
+}
+
+.ai-blacklist-btn:hover:not(:disabled):not(.locked) {
+  opacity: 1;
+  box-shadow: 0 4px 8px rgba(220, 38, 38, 0.3);
+}
+
+.ai-blacklist-btn.locked {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background: linear-gradient(135deg, #9ca3af 0%, #6b7280 100%) !important;
+}
+
+.ai-blacklist-btn.locked:hover {
+  transform: none;
+  opacity: 0.5;
+}
+
+.ai-view-blacklist-btn {
+  background: linear-gradient(135deg, #6c757d 0%, #5a6268 100%) !important;
+  font-size: 12px !important;
+  padding: 4px 10px !important;
+  opacity: 0.85;
+}
+
+.ai-view-blacklist-btn:hover:not(:disabled):not(.locked) {
+  opacity: 1;
+}
+
+.ai-view-blacklist-btn.locked {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background: linear-gradient(135deg, #9ca3af 0%, #6b7280 100%) !important;
+}
+
+.ai-view-blacklist-btn.locked:hover {
+  transform: none;
+  opacity: 0.5;
+}
+
+/* Modal Blacklist */
+.ai-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2147483647;
+  animation: fadeIn 0.2s ease;
+}
+
+.ai-modal {
+  background: white;
+  border-radius: 12px;
+  width: 400px;
+  max-height: 80vh;
+  overflow: hidden;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+  animation: slideIn 0.3s ease;
+}
+
+.ai-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  border-bottom: 1px solid #e5e7eb;
+  background: #f9fafb;
+}
+
+.ai-modal-header h3 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.ai-modal-close {
+  background: none;
+  border: none;
+  font-size: 28px;
+  cursor: pointer;
+  color: #6b7280;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: all 0.2s ease;
+  line-height: 1;
+}
+
+.ai-modal-close:hover {
+  background: #f3f4f6;
+  color: #1f2937;
+}
+
+.ai-modal-content {
+  padding: 20px;
+  max-height: 60vh;
+  overflow-y: auto;
+}
+
+.ai-blacklist-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.ai-blacklist-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 0;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.ai-blacklist-item:last-child {
+  border-bottom: none;
+}
+
+.ai-blacklist-name {
+  font-weight: 500;
+  color: #1f2937;
+  font-size: 14px;
+}
+
+.ai-blacklist-date {
+  color: #9ca3af;
+  font-size: 12px;
+}
+
+.ai-empty-message {
+  text-align: center;
+  color: #6b7280;
+  padding: 32px 16px;
+  font-size: 14px;
+}
+/* ========== FIN V3 Story 2.1 BLACKLIST ========== */

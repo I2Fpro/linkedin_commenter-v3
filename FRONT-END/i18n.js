@@ -140,7 +140,20 @@ class I18n {
         webSearchToggleActive: 'Recherche web activée',
         webSearchToggleInactive: 'Recherche web désactivée',
         webSearchUpgradeRequired: 'La recherche web est réservée aux abonnés Premium',
-        webSearchFallbackMessage: 'Aucune source web trouvée — génération classique utilisée'
+        webSearchFallbackMessage: 'Aucune source web trouvée — génération classique utilisée',
+
+        // V3 Story 2.1 — Blacklist
+        addToBlacklist: 'Blacklister',
+        addToBlacklistTooltip: 'Ajoute l\'auteur du post à votre blacklist',
+        blacklistTitle: 'Ma blacklist',
+        blacklistEmpty: 'Votre blacklist est vide',
+        blacklistAddSuccess: '{name} a été ajouté à votre blacklist',
+        blacklistAlreadyExists: '{name} est déjà dans votre blacklist',
+        blacklistAddError: 'Erreur lors de l\'ajout à la blacklist',
+        blacklistLoadError: 'Erreur lors du chargement de la blacklist',
+        viewBlacklist: 'Ma liste',
+        viewBlacklistTooltip: 'Voir ma blacklist',
+        blacklistUpgradeRequired: 'La blacklist est réservée aux abonnés Premium'
       },
       en: {
         // Main titles and labels
@@ -279,7 +292,20 @@ class I18n {
         webSearchToggleActive: 'Web search enabled',
         webSearchToggleInactive: 'Web search disabled',
         webSearchUpgradeRequired: 'Web search is reserved for Premium subscribers',
-        webSearchFallbackMessage: 'No web source found — classic generation used'
+        webSearchFallbackMessage: 'No web source found — classic generation used',
+
+        // V3 Story 2.1 — Blacklist
+        addToBlacklist: 'Blacklist',
+        addToBlacklistTooltip: 'Add post author to your blacklist',
+        blacklistTitle: 'My blacklist',
+        blacklistEmpty: 'Your blacklist is empty',
+        blacklistAddSuccess: '{name} has been added to your blacklist',
+        blacklistAlreadyExists: '{name} is already in your blacklist',
+        blacklistAddError: 'Error adding to blacklist',
+        blacklistLoadError: 'Error loading blacklist',
+        viewBlacklist: 'My list',
+        viewBlacklistTooltip: 'View my blacklist',
+        blacklistUpgradeRequired: 'Blacklist is reserved for Premium subscribers'
       }
     };
   }

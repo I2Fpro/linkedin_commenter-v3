@@ -873,6 +873,110 @@
         });
       };
 
+      // V3 Story 2.1 — Bouton Blacklist (PREMIUM uniquement)
+      const blacklistBtn = document.createElement('button');
+      blacklistBtn.className = 'ai-generate-button ai-blacklist-btn';
+      blacklistBtn.type = 'button';
+      if (isNegative) blacklistBtn.classList.add('negative');
+      if (isReplyToComment) blacklistBtn.classList.add('reply-mode');
+      blacklistBtn.innerHTML = `<span>🚫 ${t('addToBlacklist')}</span>`;
+      blacklistBtn.title = t('addToBlacklistTooltip');
+
+      // Verifier le plan utilisateur pour le gating
+      chrome.storage.local.get(['user_plan'], (result) => {
+        const userPlan = result.user_plan || 'FREE';
+        if (userPlan !== 'PREMIUM') {
+          blacklistBtn.classList.add('locked');
+          blacklistBtn.innerHTML = `<span>🔒 ${t('addToBlacklist')}</span>`;
+        }
+      });
+
+      blacklistBtn.onclick = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        chrome.storage.local.get(['user_plan'], (result) => {
+          const userPlan = result.user_plan || 'FREE';
+          if (userPlan !== 'PREMIUM') {
+            window.toastNotification.warning(t('blacklistUpgradeRequired'));
+            return;
+          }
+
+          // Extraire le nom et URL de l'auteur du post
+          let postContainer = commentBox.closest('[role="listitem"]');
+          if (!postContainer) {
+            let current = commentBox;
+            let lastFeedUpdate = null;
+            while (current && current !== document.body) {
+              if (current.getAttribute('data-view-name') === 'feed-full-update') {
+                lastFeedUpdate = current;
+              }
+              if (current.getAttribute('role') === 'listitem') {
+                postContainer = current;
+                break;
+              }
+              current = current.parentElement;
+            }
+            if (!postContainer && lastFeedUpdate) {
+              postContainer = lastFeedUpdate.parentElement || lastFeedUpdate;
+            }
+          }
+          if (!postContainer) {
+            postContainer = commentBox.closest('[data-id], article, .feed-shared-update-v2, [data-urn]');
+          }
+
+          const authorInfo = extractPostAuthorInfo(postContainer);
+          if (!authorInfo || !authorInfo.name) {
+            window.toastNotification.warning(t('authorNotFound'));
+            return;
+          }
+
+          // Ajouter a la blacklist via background.js
+          chrome.runtime.sendMessage({
+            action: 'addToBlacklist',
+            blockedName: authorInfo.name,
+            blockedProfileUrl: authorInfo.url || null
+          }, (response) => {
+            if (response && response.success) {
+              window.toastNotification.success(t('blacklistAddSuccess').replace('{name}', authorInfo.name));
+            } else if (response && response.error === 'Cette personne est deja dans votre blacklist') {
+              window.toastNotification.warning(t('blacklistAlreadyExists').replace('{name}', authorInfo.name));
+            } else {
+              window.toastNotification.error(t('blacklistAddError'));
+            }
+          });
+        });
+      };
+
+      // V3 Story 2.1 — Bouton Voir ma blacklist (PREMIUM uniquement)
+      const viewBlacklistBtn = document.createElement('button');
+      viewBlacklistBtn.className = 'ai-generate-button ai-view-blacklist-btn';
+      viewBlacklistBtn.type = 'button';
+      if (isNegative) viewBlacklistBtn.classList.add('negative');
+      if (isReplyToComment) viewBlacklistBtn.classList.add('reply-mode');
+      viewBlacklistBtn.innerHTML = `<span>📋 ${t('viewBlacklist')}</span>`;
+      viewBlacklistBtn.title = t('viewBlacklistTooltip');
+
+      chrome.storage.local.get(['user_plan'], (result) => {
+        const userPlan = result.user_plan || 'FREE';
+        if (userPlan !== 'PREMIUM') {
+          viewBlacklistBtn.classList.add('locked');
+          viewBlacklistBtn.innerHTML = `<span>🔒 ${t('viewBlacklist')}</span>`;
+        }
+      });
+
+      viewBlacklistBtn.onclick = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        chrome.storage.local.get(['user_plan'], (result) => {
+          const userPlan = result.user_plan || 'FREE';
+          if (userPlan !== 'PREMIUM') {
+            window.toastNotification.warning(t('blacklistUpgradeRequired'));
+            return;
+          }
+          showBlacklistModal();
+        });
+      };
+
       buttonsWrapper.appendChild(generateButton);
       buttonsWrapper.appendChild(promptButton);
       buttonsWrapper.appendChild(personalisationButton);
@@ -880,6 +984,8 @@
       buttonsWrapper.appendChild(tagAuthorToggle);
       buttonsWrapper.appendChild(contextToggle);
       buttonsWrapper.appendChild(webSearchToggle);
+      buttonsWrapper.appendChild(blacklistBtn);
+      buttonsWrapper.appendChild(viewBlacklistBtn);
       commentBox.parentElement.appendChild(buttonsWrapper);
 
       // Retirer le marqueur "en cours" et marquer comme "ajouté"
@@ -2333,6 +2439,112 @@
     }
 
     return null;
+  }
+
+  // V3 Story 2.1 — Extraction du nom ET de l'URL du profil de l'auteur
+  function extractPostAuthorInfo(postElement) {
+    if (!postElement) {
+      return { name: null, url: null };
+    }
+
+    // D'abord extraire le nom via la fonction existante
+    const name = extractPostAuthorName(postElement);
+
+    // Ensuite essayer d'extraire l'URL du profil
+    let url = null;
+
+    // Selecteurs pour le lien du profil (ordre de fiabilite)
+    const profileLinkSelectors = [
+      // LinkedIn 2026 SDUI - Lien profil dans l'en-tete
+      'a[href*="/in/"][data-tracking-control-name]',
+      'a[href*="/in/"]',
+      // Fallback - lien vers company pages
+      'a[href*="/company/"]'
+    ];
+
+    for (const selector of profileLinkSelectors) {
+      const element = postElement.querySelector(selector);
+      if (element && element.href) {
+        // Verifier que c'est bien un lien LinkedIn profil
+        if (element.href.includes('/in/') || element.href.includes('/company/')) {
+          url = element.href;
+          break;
+        }
+      }
+    }
+
+    return { name, url };
+  }
+
+  // V3 Story 2.1 — Afficher le modal de la blacklist
+  function showBlacklistModal() {
+    chrome.runtime.sendMessage({ action: 'getBlacklist' }, (response) => {
+      if (!response || !response.success) {
+        window.toastNotification.error(t('blacklistLoadError'));
+        return;
+      }
+      createBlacklistModal(response.entries || []);
+    });
+  }
+
+  // V3 Story 2.1 — Creer le modal de la blacklist
+  function createBlacklistModal(entries) {
+    // Supprimer un modal existant
+    const existingModal = document.getElementById('ai-blacklist-modal');
+    if (existingModal) {
+      existingModal.remove();
+    }
+
+    // Modal overlay
+    const overlay = document.createElement('div');
+    overlay.className = 'ai-modal-overlay';
+    overlay.id = 'ai-blacklist-modal';
+
+    const modal = document.createElement('div');
+    modal.className = 'ai-modal';
+
+    const header = document.createElement('div');
+    header.className = 'ai-modal-header';
+    header.innerHTML = `
+      <h3>${t('blacklistTitle')}</h3>
+      <button class="ai-modal-close">&times;</button>
+    `;
+
+    const content = document.createElement('div');
+    content.className = 'ai-modal-content';
+
+    if (entries.length === 0) {
+      content.innerHTML = `<p class="ai-empty-message">${t('blacklistEmpty')}</p>`;
+    } else {
+      const list = document.createElement('ul');
+      list.className = 'ai-blacklist-list';
+      entries.forEach(entry => {
+        const item = document.createElement('li');
+        item.className = 'ai-blacklist-item';
+        const dateStr = new Date(entry.created_at).toLocaleDateString();
+        item.innerHTML = `
+          <span class="ai-blacklist-name">${entry.blocked_name}</span>
+          <span class="ai-blacklist-date">${dateStr}</span>
+        `;
+        list.appendChild(item);
+      });
+      content.appendChild(list);
+    }
+
+    modal.appendChild(header);
+    modal.appendChild(content);
+    overlay.appendChild(modal);
+    document.body.appendChild(overlay);
+
+    // Event listeners
+    overlay.querySelector('.ai-modal-close').addEventListener('click', () => {
+      overlay.remove();
+    });
+    overlay.addEventListener('click', (e) => {
+      if (e.target === overlay) {
+        overlay.remove();
+      }
+    });
   }
 
   // V3 Story 1.3 — Extraction des commentaires tiers depuis le DOM LinkedIn

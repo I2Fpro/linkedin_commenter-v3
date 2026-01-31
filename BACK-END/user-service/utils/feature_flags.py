@@ -19,7 +19,8 @@ FEATURES = {
         "concurrent_requests": 1,
         "include_quote": False,
         "tag_author": False,
-        "web_search_enabled": False
+        "web_search_enabled": False,
+        "blacklist": False  # V3 Story 2.1 - Blacklist (Premium only)
     },
     "MEDIUM": {
         "daily_generations": 50,
@@ -37,7 +38,8 @@ FEATURES = {
         "concurrent_requests": 2,
         "include_quote": False,
         "tag_author": False,
-        "web_search_enabled": False
+        "web_search_enabled": False,
+        "blacklist": False  # V3 Story 2.1 - Blacklist (Premium only)
     },
     "PREMIUM": {
         "daily_generations": -1,  # Illimité
@@ -55,7 +57,8 @@ FEATURES = {
         "concurrent_requests": 5,
         "include_quote": True,
         "tag_author": True,
-        "web_search_enabled": True
+        "web_search_enabled": True,
+        "blacklist": True  # V3 Story 2.1 - Blacklist (Premium only)
     }
 }
 
@@ -212,5 +215,7 @@ def get_upgrade_benefits(current_role: str, target_role: str) -> list:
             benefits.append("Tag de l'auteur du post")
         elif feature == "web_search_enabled" and change["to"]:
             benefits.append("Enrichissement par recherche web")
+        elif feature == "blacklist" and change["to"]:
+            benefits.append("Gestion de la blacklist de personnes")
 
     return benefits

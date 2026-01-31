@@ -89,3 +89,23 @@ class StripeEvent(Base):
     type = Column(String(100), nullable=False, index=True)
     processed_at = Column(DateTime(timezone=True), server_default=func.now(), index=True)
     data = Column(JSON, nullable=True)  # Pour stocker les données de l'événement si nécessaire
+
+
+class BlacklistEntry(Base):
+    """
+    Entree de blacklist - Story 2.1 Epic 2.
+    Permet a un utilisateur Premium de bloquer des personnes sur LinkedIn.
+    """
+    __tablename__ = "blacklist_entries"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    blocked_name = Column(String(255), nullable=False)
+    blocked_profile_url = Column(String(512), nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+
+    # Relation vers User
+    user = relationship("User", backref="blacklist_entries")
+
+    def __repr__(self):
+        return f"<BlacklistEntry {self.blocked_name}>"
