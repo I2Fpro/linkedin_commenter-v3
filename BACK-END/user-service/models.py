@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, DateTime, Boolean, ForeignKey, Integer, Text, JSON
+from sqlalchemy import Column, String, DateTime, Boolean, ForeignKey, Integer, Text, JSON, UniqueConstraint
 from sqlalchemy.dialects.postgresql import UUID, ENUM
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
@@ -97,6 +97,9 @@ class BlacklistEntry(Base):
     Permet a un utilisateur Premium de bloquer des personnes sur LinkedIn.
     """
     __tablename__ = "blacklist_entries"
+    __table_args__ = (
+        UniqueConstraint('user_id', 'blocked_name', name='uq_blacklist_user_blocked_name'),
+    )
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)

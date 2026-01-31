@@ -938,7 +938,7 @@
           }, (response) => {
             if (response && response.success) {
               window.toastNotification.success(t('blacklistAddSuccess').replace('{name}', authorInfo.name));
-            } else if (response && response.error === 'Cette personne est deja dans votre blacklist') {
+            } else if (response && response.errorCode === 'ALREADY_EXISTS') {
               window.toastNotification.warning(t('blacklistAlreadyExists').replace('{name}', authorInfo.name));
             } else {
               window.toastNotification.error(t('blacklistAddError'));
@@ -2522,10 +2522,18 @@
         const item = document.createElement('li');
         item.className = 'ai-blacklist-item';
         const dateStr = new Date(entry.created_at).toLocaleDateString();
-        item.innerHTML = `
-          <span class="ai-blacklist-name">${entry.blocked_name}</span>
-          <span class="ai-blacklist-date">${dateStr}</span>
-        `;
+
+        // V3 Security fix: Use textContent to prevent XSS
+        const nameSpan = document.createElement('span');
+        nameSpan.className = 'ai-blacklist-name';
+        nameSpan.textContent = entry.blocked_name;
+
+        const dateSpan = document.createElement('span');
+        dateSpan.className = 'ai-blacklist-date';
+        dateSpan.textContent = dateStr;
+
+        item.appendChild(nameSpan);
+        item.appendChild(dateSpan);
         list.appendChild(item);
       });
       content.appendChild(list);
@@ -2545,6 +2553,15 @@
         overlay.remove();
       }
     });
+
+    // Accessibility: fermer avec Escape
+    const handleEscape = (e) => {
+      if (e.key === 'Escape') {
+        overlay.remove();
+        document.removeEventListener('keydown', handleEscape);
+      }
+    };
+    document.addEventListener('keydown', handleEscape);
   }
 
   // V3 Story 1.3 — Extraction des commentaires tiers depuis le DOM LinkedIn

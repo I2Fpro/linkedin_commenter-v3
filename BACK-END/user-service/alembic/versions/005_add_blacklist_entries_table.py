@@ -43,6 +43,14 @@ def upgrade():
     # Index pour le chargement rapide de la liste par utilisateur (NFR4 < 200ms)
     op.create_index('ix_blacklist_entries_user_id', 'blacklist_entries', ['user_id'])
 
+    # Contrainte UNIQUE pour eviter les doublons (user_id, blocked_name)
+    # Securise contre les race conditions entre SELECT et INSERT
+    op.create_unique_constraint(
+        'uq_blacklist_user_blocked_name',
+        'blacklist_entries',
+        ['user_id', 'blocked_name']
+    )
+
 
 def downgrade():
     """
@@ -50,5 +58,6 @@ def downgrade():
 
     ATTENTION: Cette operation supprime definitivement toutes les entrees de blacklist.
     """
+    op.drop_constraint('uq_blacklist_user_blocked_name', 'blacklist_entries', type_='unique')
     op.drop_index('ix_blacklist_entries_user_id', table_name='blacklist_entries')
     op.drop_table('blacklist_entries')

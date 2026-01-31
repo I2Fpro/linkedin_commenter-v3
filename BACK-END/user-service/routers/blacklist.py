@@ -46,7 +46,7 @@ async def add_to_blacklist(
     if existing:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail="Cette personne est deja dans votre blacklist"
+            detail={"code": "ALREADY_EXISTS", "message": "Cette personne est deja dans votre blacklist"}
         )
 
     # Creer l'entree

@@ -1035,7 +1035,11 @@ async function handleAddToBlacklist(blockedName, blockedProfileUrl, sendResponse
 
     if (!response.ok) {
       const error = await response.json();
-      sendResponse({ success: false, error: error.detail || 'unknown_error' });
+      // Support structured error response: {code, message} or plain string
+      const errorDetail = error.detail;
+      const errorCode = typeof errorDetail === 'object' ? errorDetail.code : null;
+      const errorMessage = typeof errorDetail === 'object' ? errorDetail.message : errorDetail;
+      sendResponse({ success: false, error: errorMessage || 'unknown_error', errorCode: errorCode });
       return;
     }
 
