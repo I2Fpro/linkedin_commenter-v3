@@ -66,7 +66,7 @@ class UsageLog(Base):
     user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     feature = Column(String(100), nullable=False)
     timestamp = Column(DateTime(timezone=True), server_default=func.now(), index=True)
-    meta_data = Column(JSON)
+    meta_data = Column('metadata', JSON)  # DB column is 'metadata', Python attr is 'meta_data'
 
     user = relationship("User", back_populates="usage_logs")
 

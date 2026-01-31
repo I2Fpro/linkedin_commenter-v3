@@ -7,8 +7,8 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
 from database import get_db
-from models import User, RoleType
-from schemas.admin import PremiumCountResponse, PremiumUserDetail
+from models import User, RoleType, UsageLog
+from schemas.admin import PremiumCountResponse, PremiumUserDetail, TokenUsageResponse, TokenUsageDetail
 from utils.admin_auth import require_admin
 
 logger = logging.getLogger(__name__)
@@ -51,4 +51,86 @@ async def get_premium_count(
     return PremiumCountResponse(
         count=len(details),
         details=details
+    )
+
+
+@router.get("/token-usage", response_model=TokenUsageResponse)
+async def get_token_usage(
+    current_user: User = Depends(require_admin),
+    db: Session = Depends(get_db)
+):
+    """
+    Retourne la consommation de tokens OpenAI par utilisateur.
+
+    Requiert:
+    - Authentification JWT valide (401 si absent)
+    - Email dans ADMIN_EMAILS (403 si non admin)
+
+    Les donnees proviennent de usage_logs.meta_data (JSONB)
+    avec les champs tokens_input, tokens_output, model.
+
+    Returns:
+        TokenUsageResponse: Liste des utilisateurs avec leur consommation,
+        triee par consommation totale decroissante.
+    """
+    # Recuperer tous les usage_logs avec meta_data contenant des tokens
+    logs = db.query(UsageLog).filter(
+        UsageLog.meta_data.isnot(None)
+    ).all()
+
+    # Agreger par user_id
+    user_stats = {}
+    for log in logs:
+        if not log.meta_data:
+            continue
+
+        user_id = str(log.user_id)
+        tokens_input = log.meta_data.get("tokens_input", 0) or 0
+        tokens_output = log.meta_data.get("tokens_output", 0) or 0
+        model = log.meta_data.get("model", "")
+
+        if user_id not in user_stats:
+            user_stats[user_id] = {
+                "user_id": log.user_id,
+                "total_tokens_input": 0,
+                "total_tokens_output": 0,
+                "generation_count": 0,
+                "models": set(),
+                "last_generation": None
+            }
+
+        stats = user_stats[user_id]
+        stats["total_tokens_input"] += tokens_input
+        stats["total_tokens_output"] += tokens_output
+        stats["generation_count"] += 1
+        if model:
+            stats["models"].add(model)
+        if stats["last_generation"] is None or log.timestamp > stats["last_generation"]:
+            stats["last_generation"] = log.timestamp
+
+    # Construire la liste des details
+    details = []
+    total_tokens_all = 0
+    for stats in user_stats.values():
+        total = stats["total_tokens_input"] + stats["total_tokens_output"]
+        total_tokens_all += total
+        details.append(TokenUsageDetail(
+            user_id=stats["user_id"],
+            total_tokens_input=stats["total_tokens_input"],
+            total_tokens_output=stats["total_tokens_output"],
+            total_tokens=total,
+            generation_count=stats["generation_count"],
+            models_used=list(stats["models"]),
+            last_generation=stats["last_generation"]
+        ))
+
+    # Trier par consommation totale decroissante (AC #2)
+    details.sort(key=lambda x: x.total_tokens, reverse=True)
+
+    logger.info(f"Admin {current_user.id} a consulte le token-usage: {len(details)} utilisateurs")
+
+    return TokenUsageResponse(
+        users=details,
+        total_users=len(details),
+        total_tokens_all=total_tokens_all
     )
