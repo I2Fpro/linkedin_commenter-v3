@@ -55,7 +55,12 @@
       humoristic: 'Humoristique',
       impactful: 'Impactant /\nMarketing',
       benevolent: 'Bienveillant /\nPositif',
-      languageStyle: 'Style de langage'
+      languageStyle: 'Style de langage',
+      // V3 Story 2.3 — Warning personne à éviter
+      blacklistWarningTitle: 'Attention',
+      blacklistWarningMessage: 'Vous avez choisi d\'éviter {name}. Voulez-vous quand même générer un commentaire ?',
+      blacklistWarningYes: 'Générer quand même',
+      blacklistWarningNo: 'Annuler'
     },
     en: {
       generate: '✨ Generate',
@@ -88,7 +93,12 @@
       humoristic: 'Humoristic',
       impactful: 'Impactful /\nMarketing',
       benevolent: 'Benevolent /\nPositive',
-      languageStyle: 'Language Style'
+      languageStyle: 'Language Style',
+      // V3 Story 2.3 — Warning person to avoid
+      blacklistWarningTitle: 'Warning',
+      blacklistWarningMessage: 'You chose to avoid {name}. Do you still want to generate a comment?',
+      blacklistWarningYes: 'Generate anyway',
+      blacklistWarningNo: 'Cancel'
     }
   };
 
@@ -1179,6 +1189,25 @@
       return;
     }
 
+    // V3 Story 2.3 — Verifier si l'auteur est dans la blacklist (PREMIUM uniquement)
+    const userPlanData = await chrome.storage.local.get(['user_plan']);
+    const userPlan = userPlanData.user_plan || 'FREE';
+    if (userPlan === 'PREMIUM') {
+      const postContainer = findPostContainer(commentBox);
+      const authorInfo = extractPostAuthorInfo(postContainer);
+      if (authorInfo && authorInfo.name) {
+        const isBlacklisted = await isAuthorBlacklisted(authorInfo.name);
+        if (isBlacklisted) {
+          const shouldProceed = await showBlacklistWarningPopup(authorInfo.name);
+          if (!shouldProceed) {
+            // Utilisateur a clique "Non" — annuler la generation
+            return;
+          }
+          // Utilisateur a clique "Oui" — continuer normalement
+        }
+      }
+    }
+
     const button = event.target.closest('.ai-generate-button');
     const originalText = button.querySelector('span').textContent;
 
@@ -1377,10 +1406,29 @@
   }
 
   // Gestionnaire de clic sur Avec prompt
-  function handlePromptClick(event, commentBox, isReplyToComment) {
+  async function handlePromptClick(event, commentBox, isReplyToComment) {
     if (!isAuthenticated) {
       window.toastNotification.warning(t('pleaseSignIn'));
       return;
+    }
+
+    // V3 Story 2.3 — Verifier si l'auteur est dans la blacklist (PREMIUM uniquement)
+    const userPlanData = await chrome.storage.local.get(['user_plan']);
+    const userPlan = userPlanData.user_plan || 'FREE';
+    if (userPlan === 'PREMIUM') {
+      const postContainer = findPostContainer(commentBox);
+      const authorInfo = extractPostAuthorInfo(postContainer);
+      if (authorInfo && authorInfo.name) {
+        const isBlacklisted = await isAuthorBlacklisted(authorInfo.name);
+        if (isBlacklisted) {
+          const shouldProceed = await showBlacklistWarningPopup(authorInfo.name);
+          if (!shouldProceed) {
+            // Utilisateur a clique "Non" — annuler la generation
+            return;
+          }
+          // Utilisateur a clique "Oui" — continuer normalement
+        }
+      }
     }
 
     showPromptPopup(commentBox, isReplyToComment);
@@ -2476,6 +2524,124 @@
     return { name, url };
   }
 
+  // V3 Story 2.3 — Verifier si l'auteur est dans la blacklist (cache local)
+  async function isAuthorBlacklisted(authorName) {
+    if (!authorName) return false;
+
+    try {
+      const cached = await chrome.storage.local.get('blacklist_cache');
+      const entries = cached.blacklist_cache?.entries || [];
+
+      // Comparaison insensible a la casse et aux espaces
+      const normalizedName = authorName.toLowerCase().trim();
+      return entries.some(entry =>
+        entry.blocked_name.toLowerCase().trim() === normalizedName
+      );
+    } catch (error) {
+      console.error('isAuthorBlacklisted error:', error);
+      return false; // Fallback gracieux
+    }
+  }
+
+  // V3 Story 2.3 — Popup de confirmation blacklist
+  function showBlacklistWarningPopup(authorName) {
+    return new Promise((resolve) => {
+      // Creer l'overlay
+      const overlay = document.createElement('div');
+      overlay.className = 'ai-modal-overlay ai-blacklist-warning-overlay';
+      overlay.id = 'ai-blacklist-warning-popup';
+
+      // Creer le popup
+      const popup = document.createElement('div');
+      popup.className = 'ai-modal ai-blacklist-warning-popup';
+      popup.setAttribute('role', 'dialog');
+      popup.setAttribute('aria-modal', 'true');
+      popup.setAttribute('aria-labelledby', 'ai-blacklist-warning-title');
+
+      // Header avec icone warning
+      const header = document.createElement('div');
+      header.className = 'ai-modal-header ai-warning-header';
+
+      const title = document.createElement('h3');
+      title.id = 'ai-blacklist-warning-title';
+      title.textContent = t('blacklistWarningTitle');
+      header.appendChild(title);
+
+      // Contenu
+      const content = document.createElement('div');
+      content.className = 'ai-modal-content ai-warning-content';
+
+      const icon = document.createElement('div');
+      icon.className = 'ai-warning-icon';
+      icon.textContent = '\u26A0\uFE0F';
+
+      const message = document.createElement('p');
+      message.className = 'ai-warning-message';
+      message.textContent = t('blacklistWarningMessage').replace('{name}', authorName);
+
+      content.appendChild(icon);
+      content.appendChild(message);
+
+      // Boutons d'action
+      const actions = document.createElement('div');
+      actions.className = 'ai-modal-actions';
+
+      // V3 Story 2.3 Fix: Define handleEscape BEFORE button handlers to avoid memory leak
+      const handleEscape = (e) => {
+        if (e.key === 'Escape') {
+          cleanup();
+          resolve(false);
+        }
+      };
+
+      // Cleanup function to remove overlay and event listener
+      const cleanup = () => {
+        overlay.remove();
+        document.removeEventListener('keydown', handleEscape);
+      };
+
+      const cancelBtn = document.createElement('button');
+      cancelBtn.className = 'ai-btn ai-btn-secondary';
+      cancelBtn.textContent = t('blacklistWarningNo');
+      cancelBtn.addEventListener('click', () => {
+        cleanup();
+        resolve(false);
+      });
+
+      const confirmBtn = document.createElement('button');
+      confirmBtn.className = 'ai-btn ai-btn-primary';
+      confirmBtn.textContent = t('blacklistWarningYes');
+      confirmBtn.addEventListener('click', () => {
+        cleanup();
+        resolve(true);
+      });
+
+      actions.appendChild(cancelBtn);
+      actions.appendChild(confirmBtn);
+
+      // Assembler le popup
+      popup.appendChild(header);
+      popup.appendChild(content);
+      popup.appendChild(actions);
+      overlay.appendChild(popup);
+      document.body.appendChild(overlay);
+
+      // Accessibilite : focus sur le bouton "Non" par defaut
+      cancelBtn.focus();
+
+      // Activer le listener Escape
+      document.addEventListener('keydown', handleEscape);
+
+      // Clic en dehors ferme le popup (= Non)
+      overlay.addEventListener('click', (e) => {
+        if (e.target === overlay) {
+          cleanup();
+          resolve(false);
+        }
+      });
+    });
+  }
+
   // V3 Story 2.1 — Afficher le modal de la blacklist
   function showBlacklistModal() {
     chrome.runtime.sendMessage({ action: 'getBlacklist' }, (response) => {
@@ -2521,6 +2687,7 @@
       entries.forEach(entry => {
         const item = document.createElement('li');
         item.className = 'ai-blacklist-item';
+        item.setAttribute('data-entry-id', entry.id);
         const dateStr = new Date(entry.created_at).toLocaleDateString();
 
         // V3 Security fix: Use textContent to prevent XSS
@@ -2532,8 +2699,18 @@
         dateSpan.className = 'ai-blacklist-date';
         dateSpan.textContent = dateStr;
 
+        // V3 Story 2.2 — Bouton "Retirer"
+        const removeBtn = document.createElement('button');
+        removeBtn.className = 'ai-blacklist-remove-btn';
+        removeBtn.textContent = t('removeFromBlacklist');
+        removeBtn.addEventListener('click', (e) => {
+          e.preventDefault();
+          handleRemoveFromBlacklist(entry.id, entry.blocked_name, item);
+        });
+
         item.appendChild(nameSpan);
         item.appendChild(dateSpan);
+        item.appendChild(removeBtn);
         list.appendChild(item);
       });
       content.appendChild(list);
@@ -2562,6 +2739,61 @@
       }
     };
     document.addEventListener('keydown', handleEscape);
+  }
+
+  // V3 Story 2.2 — Handler pour retirer de la blacklist
+  function handleRemoveFromBlacklist(entryId, blockedName, itemElement) {
+    // Confirmation utilisateur
+    if (!confirm(t('blacklistRemoveConfirm', { name: blockedName }))) {
+      return;
+    }
+
+    // V3 Story 2.2 Fix: Desactiver le bouton pour eviter les double-clics (race condition)
+    const removeBtn = itemElement.querySelector('.ai-blacklist-remove-btn');
+    if (removeBtn) {
+      removeBtn.disabled = true;
+      removeBtn.style.opacity = '0.5';
+      removeBtn.style.cursor = 'wait';
+    }
+
+    chrome.runtime.sendMessage({
+      action: 'removeFromBlacklist',
+      entryId: entryId
+    }, (response) => {
+      if (response.success) {
+        // Supprimer l'element du DOM
+        itemElement.remove();
+        window.toastNotification.success(t('blacklistRemoveSuccess', { name: blockedName }));
+
+        // Verifier si la liste est maintenant vide
+        const list = document.querySelector('.ai-blacklist-list');
+        if (list && list.children.length === 0) {
+          const content = document.querySelector('.ai-modal-content');
+          if (content) {
+            const emptyMsg = document.createElement('p');
+            emptyMsg.className = 'ai-empty-message';
+            emptyMsg.textContent = t('blacklistEmpty');
+            // V3 Story 2.2 Fix: Utiliser removeChild au lieu de innerHTML pour coherence XSS
+            while (content.firstChild) {
+              content.removeChild(content.firstChild);
+            }
+            content.appendChild(emptyMsg);
+          }
+        }
+      } else if (response.error === 'not_found') {
+        window.toastNotification.warning(t('blacklistNotFound'));
+        itemElement.remove();
+      } else {
+        // Reactiver le bouton en cas d'erreur
+        if (removeBtn) {
+          removeBtn.disabled = false;
+          removeBtn.style.opacity = '';
+          removeBtn.style.cursor = '';
+        }
+        window.toastNotification.error(t('blacklistRemoveError'));
+        console.error('removeFromBlacklist error:', response.error);
+      }
+    });
   }
 
   // V3 Story 1.3 — Extraction des commentaires tiers depuis le DOM LinkedIn

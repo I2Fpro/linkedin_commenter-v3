@@ -1,8 +1,9 @@
 """
-Router blacklist - Story 2.1 Epic 2.
+Router blacklist - Story 2.1/2.2 Epic 2.
 CRUD pour la gestion de la blacklist utilisateur Premium.
 """
 import logging
+from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
@@ -106,3 +107,41 @@ async def check_blacklist(
     ).first() is not None
 
     return BlacklistCheckResponse(is_blacklisted=exists, blocked_name=blocked_name)
+
+
+@router.delete("/{entry_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def remove_from_blacklist(
+    entry_id: UUID,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Supprime une personne de la blacklist de l'utilisateur.
+    Requiert le plan Premium.
+    Story 2.2 - Suppression blacklist.
+    """
+    # Verifier le plan Premium
+    if not is_feature_enabled(current_user.role.value, "blacklist"):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="La blacklist est reservee au plan Premium"
+        )
+
+    # Trouver l'entree avec DOUBLE condition (entry_id + user_id) pour isolation donnees
+    entry = db.query(BlacklistEntry).filter(
+        BlacklistEntry.id == entry_id,
+        BlacklistEntry.user_id == current_user.id
+    ).first()
+
+    if not entry:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Entree non trouvee dans votre blacklist"
+        )
+
+    blocked_name = entry.blocked_name
+    db.delete(entry)
+    db.commit()
+
+    logger.info(f"Blacklist: utilisateur {current_user.id} a retire {blocked_name}")
+    return None  # 204 No Content

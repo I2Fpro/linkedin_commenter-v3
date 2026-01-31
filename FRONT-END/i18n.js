@@ -153,7 +153,15 @@ class I18n {
         blacklistLoadError: 'Erreur lors du chargement de la blacklist',
         viewBlacklist: 'Ma liste',
         viewBlacklistTooltip: 'Voir ma blacklist',
-        blacklistUpgradeRequired: 'La blacklist est réservée aux abonnés Premium'
+        blacklistUpgradeRequired: 'La blacklist est réservée aux abonnés Premium',
+
+        // V3 Story 2.2 — Suppression Blacklist
+        removeFromBlacklist: 'Retirer',
+        blacklistRemoveConfirm: 'Voulez-vous vraiment retirer {name} de votre blacklist ?',
+        blacklistRemoveSuccess: '{name} a été retiré de votre blacklist',
+        blacklistRemoveError: 'Erreur lors de la suppression de la blacklist',
+        blacklistNotFound: 'Cette personne n\'est plus dans votre blacklist'
+        // Note: V3 Story 2.3 translations are in content.js local translations object
       },
       en: {
         // Main titles and labels
@@ -305,7 +313,15 @@ class I18n {
         blacklistLoadError: 'Error loading blacklist',
         viewBlacklist: 'My list',
         viewBlacklistTooltip: 'View my blacklist',
-        blacklistUpgradeRequired: 'Blacklist is reserved for Premium subscribers'
+        blacklistUpgradeRequired: 'Blacklist is reserved for Premium subscribers',
+
+        // V3 Story 2.2 — Remove Blacklist
+        removeFromBlacklist: 'Remove',
+        blacklistRemoveConfirm: 'Are you sure you want to remove {name} from your blacklist?',
+        blacklistRemoveSuccess: '{name} has been removed from your blacklist',
+        blacklistRemoveError: 'Error removing from blacklist',
+        blacklistNotFound: 'This person is no longer in your blacklist'
+        // Note: V3 Story 2.3 translations are in content.js local translations object
       }
     };
   }

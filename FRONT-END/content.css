@@ -1446,8 +1446,9 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 14px 0;
-  border-bottom: 1px solid #f3f4f6;
+  padding: 12px 0;
+  border-bottom: 1px solid #f0f0f0;
+  gap: 12px;
 }
 
 .ai-blacklist-item:last-child {
@@ -1471,4 +1472,96 @@
   padding: 32px 16px;
   font-size: 14px;
 }
+
+/* V3 Story 2.2 — Bouton Retirer de la blacklist */
+.ai-blacklist-remove-btn {
+  padding: 4px 8px;
+  border: 1px solid #cc0000;
+  border-radius: 4px;
+  background: transparent;
+  color: #cc0000;
+  font-size: 11px;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.ai-blacklist-remove-btn:hover {
+  background: #cc0000;
+  color: white;
+}
 /* ========== FIN V3 Story 2.1 BLACKLIST ========== */
+
+/* ========== V3 Story 2.3 — POPUP WARNING BLACKLIST ========== */
+.ai-blacklist-warning-overlay {
+  z-index: 2147483647; /* Au-dessus des autres modals */
+}
+
+.ai-blacklist-warning-popup {
+  width: 380px;
+  text-align: center;
+}
+
+.ai-warning-header {
+  background: #fff3cd;
+  border-bottom: 2px solid #ffcc00;
+}
+
+.ai-warning-header h3 {
+  color: #856404;
+  margin: 0;
+}
+
+.ai-warning-content {
+  padding: 24px;
+}
+
+.ai-warning-icon {
+  font-size: 48px;
+  margin-bottom: 16px;
+}
+
+.ai-warning-message {
+  font-size: 14px;
+  color: #333;
+  line-height: 1.5;
+  margin: 0;
+}
+
+.ai-modal-actions {
+  display: flex;
+  gap: 12px;
+  padding: 16px;
+  justify-content: center;
+  border-top: 1px solid #e0e0e0;
+}
+
+.ai-btn {
+  padding: 10px 20px;
+  border-radius: 4px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.ai-btn-secondary {
+  background: #f0f0f0;
+  border: 1px solid #ccc;
+  color: #333;
+}
+
+.ai-btn-secondary:hover {
+  background: #e0e0e0;
+}
+
+.ai-btn-primary {
+  background: #0073b1;
+  border: 1px solid #0073b1;
+  color: white;
+}
+
+.ai-btn-primary:hover {
+  background: #005f8d;
+}
+/* ========== FIN V3 Story 2.3 POPUP WARNING BLACKLIST ========== */

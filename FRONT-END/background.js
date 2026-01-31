@@ -457,6 +457,11 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       syncBlacklistCache(sendResponse);
       return true;
 
+    // V3 Story 2.2 — Retirer de la blacklist
+    case 'removeFromBlacklist':
+      handleRemoveFromBlacklist(request.entryId, sendResponse);
+      return true;
+
 	case 'authStateChanged':
 	  // Gérer le changement d'état d'authentification
 	  if (request.authenticated) {
@@ -1168,6 +1173,78 @@ async function updateBlacklistCache(entry, action) {
     });
   } catch (error) {
     console.error('❌ updateBlacklistCache error:', error);
+  }
+}
+
+// V3 Story 2.2 — Retirer de la blacklist
+async function handleRemoveFromBlacklist(entryId, sendResponse) {
+  // V3 Story 2.2 Fix: Timeout pour eviter les requetes infinies
+  const BLACKLIST_TIMEOUT = 10000; // 10 secondes
+
+  try {
+    const token = await getAuthToken();
+    if (!token) {
+      sendResponse({ success: false, error: 'not_authenticated' });
+      return;
+    }
+
+    // Obtenir le JWT
+    const authResponse = await fetch(`${USER_SERVICE_URL}/api/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ google_token: token })
+    });
+
+    if (!authResponse.ok) {
+      sendResponse({ success: false, error: 'auth_failed' });
+      return;
+    }
+
+    const authData = await authResponse.json();
+    const jwtToken = authData.access_token;
+
+    // V3 Story 2.2 Fix: Ajouter AbortController avec timeout
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), BLACKLIST_TIMEOUT);
+
+    const response = await fetch(`${USER_SERVICE_URL}/api/blacklist/${entryId}`, {
+      method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${jwtToken}`
+      },
+      signal: controller.signal
+    });
+
+    clearTimeout(timeoutId);
+
+    if (!response.ok) {
+      // V3 Story 2.2 Fix: Gestion explicite du 403 (Premium required)
+      if (response.status === 403) {
+        sendResponse({ success: false, error: 'premium_required' });
+        return;
+      }
+      if (response.status === 404) {
+        sendResponse({ success: false, error: 'not_found' });
+        return;
+      }
+      const error = await response.json();
+      sendResponse({ success: false, error: error.detail || 'unknown_error' });
+      return;
+    }
+
+    // Mettre a jour le cache local
+    await updateBlacklistCache({ id: entryId }, 'remove');
+
+    console.log('✅ Blacklist: suppression de', entryId);
+    sendResponse({ success: true });
+  } catch (error) {
+    console.error('❌ removeFromBlacklist error:', error);
+    // V3 Story 2.2 Fix: Message d'erreur plus explicite pour timeout
+    if (error.name === 'AbortError') {
+      sendResponse({ success: false, error: 'timeout' });
+    } else {
+      sendResponse({ success: false, error: error.message });
+    }
   }
 }
 
