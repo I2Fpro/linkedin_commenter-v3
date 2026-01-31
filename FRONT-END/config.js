@@ -4,7 +4,7 @@ class ExtensionConfig {
   constructor() {
     this.extensionId = chrome.runtime.id; // dynamique
     // URL de base temporaire pour le premier appel - sera remplacée par la config du backend
-    this.backendUrl = '__AI_API_URL__';  // Seule valeur en dur, nécessaire pour le bootstrap
+    this.backendUrl = 'http://localhost:8443';  // Seule valeur en dur, nécessaire pour le bootstrap
     this.USER_SERVICE_URL = null; // Sera chargé depuis le backend
     this.requestTimeout = 15000;
     this.configCache = null;
@@ -59,7 +59,7 @@ class ExtensionConfig {
         https_enabled: true,
         urls: {
           backend: this.backendUrl,
-          user_service: '__USERS_API_URL__'
+          user_service: 'http://localhost:8444'
         },
         features: {
           google_auth: true,
@@ -87,7 +87,7 @@ class ExtensionConfig {
 
   // Récupérer l'URL du User Service depuis la config
   getUserServiceUrl() {
-    return this.USER_SERVICE_URL || (this.configCache && this.configCache.urls && this.configCache.urls.user_service) || '__USERS_API_URL__';
+    return this.USER_SERVICE_URL || (this.configCache && this.configCache.urls && this.configCache.urls.user_service) || 'http://localhost:8444';
   }
 
   // Récupérer le Google Client ID depuis la config

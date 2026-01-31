@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LinkedIn AI Commenter - Admin Dashboard</title>
+    <style>
+        /* Reset et base */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background-color: #f3f4f6;
+            color: #1f2937;
+            line-height: 1.5;
+            min-height: 100vh;
+        }
+
+        /* Header */
+        header {
+            background-color: #0077B5;
+            color: white;
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        header h1 {
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+
+        #auth-status {
+            font-size: 0.875rem;
+            opacity: 0.9;
+        }
+
+        /* Main */
+        main {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        /* Sections */
+        section {
+            margin-bottom: 2rem;
+        }
+
+        /* Section Login */
+        #login-section {
+            background: white;
+            border-radius: 8px;
+            padding: 3rem;
+            text-align: center;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        #login-section p {
+            margin-bottom: 1.5rem;
+            color: #6b7280;
+            font-size: 1.125rem;
+        }
+
+        #login-btn {
+            background-color: #0077B5;
+            color: white;
+            border: none;
+            padding: 0.75rem 2rem;
+            font-size: 1rem;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        #login-btn:hover {
+            background-color: #005a8c;
+        }
+
+        /* Dashboard Grid */
+        #dashboard-section {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 1.5rem;
+        }
+
+        /* Metric Cards */
+        .metric-card {
+            background: white;
+            border-radius: 8px;
+            padding: 1.5rem;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        .metric-card h2 {
+            font-size: 1rem;
+            font-weight: 600;
+            color: #374151;
+            margin-bottom: 1rem;
+            padding-bottom: 0.75rem;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .metric-value {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: #0077B5;
+            margin-bottom: 1rem;
+        }
+
+        .metric-detail {
+            font-size: 0.875rem;
+            color: #6b7280;
+        }
+
+        .metric-detail ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        .metric-detail li {
+            padding: 0.5rem 0;
+            border-bottom: 1px solid #f3f4f6;
+        }
+
+        .metric-detail li:last-child {
+            border-bottom: none;
+        }
+
+        .card-description {
+            font-size: 0.875rem;
+            color: #6b7280;
+            margin-bottom: 1rem;
+        }
+
+        /* Token Usage Table */
+        #token-usage-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.875rem;
+            margin-top: 1rem;
+        }
+
+        #token-usage-table thead {
+            background-color: #f9fafb;
+        }
+
+        #token-usage-table th {
+            text-align: left;
+            padding: 0.75rem;
+            font-weight: 600;
+            color: #374151;
+            border-bottom: 2px solid #e5e7eb;
+        }
+
+        #token-usage-table td {
+            padding: 0.75rem;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        #token-usage-table tbody tr:nth-child(even) {
+            background-color: #f9fafb;
+        }
+
+        #token-usage-table tbody tr:hover {
+            background-color: #f3f4f6;
+        }
+
+        /* Conversion Signals */
+        #conversion-signals {
+            font-size: 0.875rem;
+        }
+
+        #conversion-signals p {
+            margin-bottom: 0.75rem;
+        }
+
+        #conversion-signals ol {
+            padding-left: 1.25rem;
+        }
+
+        #conversion-signals li {
+            padding: 0.5rem 0;
+        }
+
+        #conversion-signals .note {
+            margin-top: 1rem;
+            padding: 0.75rem;
+            background-color: #fef3c7;
+            border-radius: 4px;
+            color: #92400e;
+            font-size: 0.813rem;
+        }
+
+        /* Error Section */
+        #error-section {
+            background: white;
+            border-radius: 8px;
+            padding: 2rem;
+            text-align: center;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            border-left: 4px solid #ef4444;
+        }
+
+        #error-message {
+            color: #dc2626;
+            font-size: 1rem;
+        }
+
+        /* Loading State */
+        .loading {
+            opacity: 0.6;
+            pointer-events: none;
+        }
+
+        .loading::after {
+            content: ' Chargement...';
+            font-size: 0.875rem;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            header {
+                flex-direction: column;
+                gap: 0.5rem;
+                text-align: center;
+            }
+
+            main {
+                padding: 1rem;
+            }
+
+            #dashboard-section {
+                grid-template-columns: 1fr;
+            }
+
+            .metric-value {
+                font-size: 2rem;
+            }
+
+            #token-usage-table {
+                font-size: 0.75rem;
+            }
+
+            #token-usage-table th,
+            #token-usage-table td {
+                padding: 0.5rem;
+            }
+        }
+
+        /* Logout button */
+        #logout-btn {
+            background-color: transparent;
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            color: white;
+            padding: 0.5rem 1rem;
+            font-size: 0.875rem;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            margin-left: 1rem;
+        }
+
+        #logout-btn:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+
+        .auth-container {
+            display: flex;
+            align-items: center;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Admin Dashboard</h1>
+        <div class="auth-container">
+            <span id="auth-status"></span>
+            <button id="logout-btn" style="display: none;">Deconnexion</button>
+        </div>
+    </header>
+
+    <main>
+        <!-- Section Login (si non authentifie) -->
+        <section id="login-section" style="display: none;">
+            <p>Veuillez vous connecter pour acceder au dashboard.</p>
+            <button id="login-btn">Se connecter</button>
+            <p style="margin-top: 1.5rem; font-size: 0.875rem; color: #9ca3af;">
+                Utilisez votre JWT admin depuis l'extension Chrome.
+            </p>
+        </section>
+
+        <!-- Section Dashboard (si authentifie admin) -->
+        <section id="dashboard-section" style="display: none;">
+            <!-- Card: Premium Count -->
+            <div class="metric-card" id="premium-card">
+                <h2>Utilisateurs Premium Actifs</h2>
+                <div class="metric-value" id="premium-count">-</div>
+                <div class="metric-detail" id="premium-details"></div>
+            </div>
+
+            <!-- Card: Token Usage -->
+            <div class="metric-card" id="token-card">
+                <h2>Consommation de Tokens</h2>
+                <div class="metric-value" id="total-tokens">-</div>
+                <table id="token-usage-table">
+                    <thead>
+                        <tr>
+                            <th>Utilisateur</th>
+                            <th>Tokens Total</th>
+                            <th>Generations</th>
+                            <th>Modeles</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+
+            <!-- Card: Signaux de Conversion (AC #2) -->
+            <div class="metric-card" id="conversion-card">
+                <h2>Signaux de Conversion</h2>
+                <p class="card-description">Utilisateurs Free les plus actifs (quota atteint)</p>
+                <div id="conversion-signals"></div>
+            </div>
+        </section>
+
+        <!-- Section Erreur (si non admin) -->
+        <section id="error-section" style="display: none;">
+            <p id="error-message"></p>
+            <button id="retry-btn" style="margin-top: 1rem; padding: 0.5rem 1rem; cursor: pointer;">Reessayer</button>
+        </section>
+    </main>
+
+    <script src="admin.js"></script>
+</body>
+</html>

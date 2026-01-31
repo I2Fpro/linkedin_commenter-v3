@@ -83,6 +83,13 @@ async def get_token_usage(
         UsageLog.meta_data.isnot(None)
     ).all()
 
+    # Pre-charger les noms des utilisateurs (decryptes automatiquement par le modele)
+    user_ids = set(log.user_id for log in logs if log.meta_data)
+    users_map = {}
+    if user_ids:
+        users = db.query(User).filter(User.id.in_(user_ids)).all()
+        users_map = {user.id: user.name for user in users}
+
     # Agreger par user_id
     user_stats = {}
     for log in logs:
@@ -97,6 +104,7 @@ async def get_token_usage(
         if user_id not in user_stats:
             user_stats[user_id] = {
                 "user_id": log.user_id,
+                "name": users_map.get(log.user_id, None),
                 "total_tokens_input": 0,
                 "total_tokens_output": 0,
                 "generation_count": 0,
@@ -122,6 +130,7 @@ async def get_token_usage(
         total_tokens_all += total
         details.append(TokenUsageDetail(
             user_id=stats["user_id"],
+            name=stats["name"],
             total_tokens_input=stats["total_tokens_input"],
             total_tokens_output=stats["total_tokens_output"],
             total_tokens=total,

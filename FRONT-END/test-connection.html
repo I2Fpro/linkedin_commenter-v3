@@ -43,8 +43,8 @@
 
     <div class="test-section info">
         <h2>Configuration actuelle</h2>
-        <p><strong>AI Service URL:</strong> <span id="ai-url">__AI_API_URL__</span></p>
-        <p><strong>User Service URL:</strong> <span id="user-url">__USERS_API_URL__</span></p>
+        <p><strong>AI Service URL:</strong> <span id="ai-url">http://localhost:8443</span></p>
+        <p><strong>User Service URL:</strong> <span id="user-url">http://localhost:8444</span></p>
     </div>
 
     <div class="test-section">
@@ -61,8 +61,8 @@
     </div>
 
     <script>
-        const AI_SERVICE_URL = '__AI_API_URL__';
-        const USER_SERVICE_URL = '__USERS_API_URL__';
+        const AI_SERVICE_URL = 'http://localhost:8443';
+        const USER_SERVICE_URL = 'http://localhost:8444';
 
         function addResult(title, success, data) {
             const resultsDiv = document.getElementById('results');

@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "LinkedIn Commenter",
-  "version": "10.8.3",
+  "version": "10.9.0",
   "description": "Générez des commentaires intelligents pour LinkedIn avec l'IA",
   "permissions": [
     "storage",
@@ -12,8 +12,8 @@
   ],
   "host_permissions": [
     "*://*.linkedin.com/*",
-    "__AI_API_URL__/*",
-    "__USERS_API_URL__/*",
+    "http://localhost:8443/*",
+    "http://localhost:8444/*",
     "https://accounts.google.com/*",
     "https://www.googleapis.com/*",
     "https://oauth2.googleapis.com/*",

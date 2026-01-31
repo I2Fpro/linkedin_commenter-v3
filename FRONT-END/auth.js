@@ -4,7 +4,7 @@ class GoogleAuth {
   constructor() {
     // Utilitaire
     this.extensionId = chrome.runtime.id; // dynamique
-    this.backendUrl = (typeof API_CONFIG !== 'undefined' && API_CONFIG) ? API_CONFIG.AI_SERVICE_URL : '__AI_API_URL__';
+    this.backendUrl = (typeof API_CONFIG !== 'undefined' && API_CONFIG) ? API_CONFIG.AI_SERVICE_URL : 'http://localhost:8443';
     this.clientId = null; // chargé via backend
     this.userInfo = null;
     this.defaultTimeout = (typeof API_CONFIG !== 'undefined' && API_CONFIG) ? API_CONFIG.REQUEST_TIMEOUT : 15000;

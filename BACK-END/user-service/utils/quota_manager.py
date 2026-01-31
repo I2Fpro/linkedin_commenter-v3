@@ -45,7 +45,7 @@ class QuotaManager:
         usage_log = UsageLog(
             user_id=user_id,
             feature=feature,
-            metadata=metadata
+            meta_data=metadata
         )
         
         self.db.add(usage_log)

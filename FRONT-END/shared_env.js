@@ -7,6 +7,6 @@
 (function (global) {
   global.ENV = Object.freeze({
     // Adresse du backend (doit être en HTTPS pour LinkedIn)
-    BACKEND_URL: (typeof API_CONFIG !== 'undefined' && API_CONFIG) ? API_CONFIG.AI_SERVICE_URL : '__AI_API_URL__'
+    BACKEND_URL: (typeof API_CONFIG !== 'undefined' && API_CONFIG) ? API_CONFIG.AI_SERVICE_URL : 'http://localhost:8443'
   });
 })(typeof self !== 'undefined' ? self : window);

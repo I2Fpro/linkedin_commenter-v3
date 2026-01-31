@@ -29,14 +29,16 @@ PLACEHOLDERS=(
 
 DEV_VALUES=(
   "192205751398-29e500ilsol48ccvmp8dnoberc6kf1en.apps.googleusercontent.com"
-  "http://localhost:8444"
-  "http://localhost:8443"
-  "http://localhost:80"
+  "https://users.local.dev"
+  "https://ai.local.dev"
+  "https://site.local.dev"
 )
 
 # ---------------------------------------------------------------------------
 # Fichiers front-end concernes
 # ---------------------------------------------------------------------------
+SITE_DIR="$SCRIPT_DIR/../SITE-INTERNET"
+
 FILES=(
   "$FRONTEND_DIR/api-config.js"
   "$FRONTEND_DIR/manifest.json"
@@ -46,6 +48,11 @@ FILES=(
   "$FRONTEND_DIR/background.js"
   "$FRONTEND_DIR/popup.js"
   "$FRONTEND_DIR/test-connection.html"
+  "$SITE_DIR/admin/admin.js"
+  "$SITE_DIR/account/login.html"
+  "$SITE_DIR/account/subscription.html"
+  "$SITE_DIR/checkout-intent.html"
+  "$SITE_DIR/index.html"
 )
 
 # ---------------------------------------------------------------------------
@@ -54,7 +61,7 @@ FILES=(
 detect_mode() {
   if grep -q "__AI_API_URL__" "$FRONTEND_DIR/api-config.js" 2>/dev/null; then
     echo "placeholder"
-  elif grep -q "localhost:8443" "$FRONTEND_DIR/api-config.js" 2>/dev/null; then
+  elif grep -q "ai.local.dev" "$FRONTEND_DIR/api-config.js" 2>/dev/null; then
     echo "dev"
   else
     echo "unknown"

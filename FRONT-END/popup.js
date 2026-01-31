@@ -93,8 +93,8 @@ document.addEventListener('DOMContentLoaded', async function() {
   if (typeof API_CONFIG === 'undefined') {
     console.warn('⚠️ API_CONFIG non disponible, utilisation de valeurs par défaut');
     window.API_CONFIG = {
-      AI_SERVICE_URL: '__AI_API_URL__',
-      USER_SERVICE_URL: '__USERS_API_URL__',
+      AI_SERVICE_URL: 'http://localhost:8443',
+      USER_SERVICE_URL: 'http://localhost:8444',
       REQUEST_TIMEOUT: 15000
     };
   }
@@ -644,14 +644,14 @@ document.addEventListener('DOMContentLoaded', async function() {
     }
 
     // Rediriger vers la page de pricing avec l'ancre #pricing
-    chrome.tabs.create({ url: '__SITE_URL__/#pricing' });
+    chrome.tabs.create({ url: 'http://localhost:80/#pricing' });
   });
 
   // ==================== MANAGE SUBSCRIPTION ====================
 
   manageSubscriptionBtn.addEventListener('click', () => {
     // Ouvrir la page de gestion d'abonnement
-    chrome.tabs.create({ url: '__SITE_URL__/account/subscription' });
+    chrome.tabs.create({ url: 'http://localhost:80/account/subscription' });
   });
 
   // ==================== FONCTIONS D'AFFICHAGE ====================

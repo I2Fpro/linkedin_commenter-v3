@@ -26,6 +26,7 @@ class PremiumCountResponse(BaseModel):
 class TokenUsageDetail(BaseModel):
     """Detail de consommation de tokens par utilisateur."""
     user_id: UUID
+    name: Optional[str] = None  # Nom decrypte pour l'admin
     total_tokens_input: int = 0
     total_tokens_output: int = 0
     total_tokens: int = 0  # input + output
