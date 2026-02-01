@@ -25,6 +25,7 @@ declare -A PLACEHOLDERS=(
     ["__AI_API_HOST__"]="${AI_API_HOST:-$(echo $AI_API_URL | sed 's|https://||')}"
     ["__USERS_API_HOST__"]="${USERS_API_HOST:-$(echo $USERS_API_URL | sed 's|https://||')}"
     ["__SITE_HOST__"]="${SITE_HOST:-$(echo $SITE_URL | sed 's|https://||')}"
+    ["__SUPPORT_EMAIL__"]="${SUPPORT_EMAIL}"
 )
 
 # Compteurs

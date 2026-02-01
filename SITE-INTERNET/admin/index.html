@@ -315,6 +315,40 @@
             display: flex;
             align-items: center;
         }
+
+        /* Google Sign-In Button (Story 4-3) */
+        .google-signin-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.75rem;
+            width: 100%;
+            max-width: 300px;
+            margin: 0 auto;
+            padding: 0.75rem 1.5rem;
+            background-color: white;
+            border: 2px solid #e5e7eb;
+            border-radius: 6px;
+            font-size: 1rem;
+            font-weight: 500;
+            color: #374151;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .google-signin-btn:hover {
+            background-color: #f9fafb;
+            border-color: #d1d5db;
+        }
+
+        .google-signin-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        #jwt-manual-link:hover {
+            color: #0077B5;
+        }
     </style>
 </head>
 <body>
@@ -338,9 +372,21 @@
             <!-- Fix M4: Message contextuel pour erreurs auth -->
             <div id="login-message"></div>
             <p>Veuillez vous connecter pour acceder au dashboard.</p>
-            <button id="login-btn">Se connecter</button>
+
+            <!-- Bouton Google OAuth (Story 4-3) -->
+            <button id="google-signin-btn" class="google-signin-btn">
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M19.6 10.227c0-.709-.064-1.39-.182-2.045H10v3.868h5.382a4.6 4.6 0 01-1.996 3.018v2.51h3.232c1.891-1.742 2.982-4.305 2.982-7.35z" fill="#4285F4"/>
+                    <path d="M10 20c2.7 0 4.964-.895 6.618-2.423l-3.232-2.509c-.895.6-2.04.955-3.386.955-2.605 0-4.81-1.76-5.595-4.123H1.064v2.59A9.996 9.996 0 0010 20z" fill="#34A853"/>
+                    <path d="M4.405 11.9c-.2-.6-.314-1.24-.314-1.9 0-.66.114-1.3.314-1.9V5.51H1.064A9.996 9.996 0 000 10c0 1.614.386 3.14 1.064 4.49l3.34-2.59z" fill="#FBBC05"/>
+                    <path d="M10 3.977c1.468 0 2.786.505 3.823 1.496l2.868-2.868C14.959.99 12.695 0 10 0 6.09 0 2.71 2.24 1.064 5.51l3.34 2.59C5.19 5.736 7.395 3.977 10 3.977z" fill="#EA4335"/>
+                </svg>
+                <span>Se connecter avec Google</span>
+            </button>
+
+            <!-- Fallback JWT manuel (mode avance) -->
             <p style="margin-top: 1.5rem; font-size: 0.875rem; color: #9ca3af;">
-                Utilisez votre JWT admin depuis l'extension Chrome.
+                <a href="#" id="jwt-manual-link" style="color: #6b7280; text-decoration: underline;">Mode avance (JWT manuel)</a>
             </p>
         </section>
 
@@ -385,6 +431,8 @@
         </section>
     </main>
 
+    <!-- Google Identity Services (OAuth 2.0) -->
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
     <script src="admin.js"></script>
 </body>
 </html>

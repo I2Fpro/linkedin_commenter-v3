@@ -5,10 +5,13 @@
 
 // Configuration API - PLACEHOLDER remplace par apply-env.sh au deploy
 const USERS_API_URL = '__USERS_API_URL__';
+const AI_SERVICE_URL = '__AI_API_URL__'; // Story 4-3: Pour charger Google Client ID
 
 // State
 let authToken = null;
 let isLoading = false; // Fix M3: Prevent spam
+let GOOGLE_CLIENT_ID = null; // Story 4-3
+let tokenClient = null; // Story 4-3: OAuth token client
 
 // DOM Elements
 const loginSection = document.getElementById('login-section');
@@ -31,6 +34,8 @@ async function init() {
         await loadDashboard();
     } else {
         showLoginSection();
+        // Story 4-3: Initialiser Google Sign-In
+        initGoogleSignIn();
     }
 
     // Event listeners
@@ -41,10 +46,13 @@ async function init() {
  * Configure les event listeners
  */
 function setupEventListeners() {
-    // Login button
-    const loginBtn = document.getElementById('login-btn');
-    if (loginBtn) {
-        loginBtn.addEventListener('click', handleLogin);
+    // Story 4-3: JWT manual link (fallback)
+    const jwtManualLink = document.getElementById('jwt-manual-link');
+    if (jwtManualLink) {
+        jwtManualLink.addEventListener('click', (e) => {
+            e.preventDefault();
+            handleManualJwtLogin();
+        });
     }
 
     // Logout button
@@ -61,6 +69,7 @@ function setupEventListeners() {
                 loadDashboard();
             } else {
                 showLoginSection();
+                initGoogleSignIn();
             }
         });
     }
@@ -358,14 +367,186 @@ function isValidJwtFormat(token) {
     return parts.every(part => part.length > 0 && base64urlRegex.test(part));
 }
 
+// =============================================================================
+// Story 4-3: Google OAuth Functions
+// =============================================================================
+
 /**
- * Gere le login
- * Fix M2: Valide le format JWT avant stockage
- * Affiche des instructions pour obtenir le JWT depuis l'extension
+ * Story 4-3: Charge la configuration Google OAuth depuis le backend
+ * @returns {Promise<boolean>} True si config chargee avec succes
  */
-function handleLogin() {
+async function loadGoogleConfig() {
+    try {
+        const response = await fetch(`${AI_SERVICE_URL}/config`);
+        if (!response.ok) {
+            throw new Error('Impossible de charger la configuration Google OAuth');
+        }
+        const config = await response.json();
+        GOOGLE_CLIENT_ID = config.google_client_id;
+        console.log('Google Client ID charge');
+        return true;
+    } catch (error) {
+        console.error('Erreur chargement config Google:', error);
+        showLoginSectionWithMessage('Configuration Google OAuth non disponible. Utilisez le mode JWT manuel.');
+        return false;
+    }
+}
+
+/**
+ * Story 4-3: Initialise Google Sign-In
+ */
+async function initGoogleSignIn() {
+    const configLoaded = await loadGoogleConfig();
+    if (!configLoaded || !GOOGLE_CLIENT_ID) {
+        return;
+    }
+
+    // Attendre que le SDK Google soit charge
+    if (typeof google === 'undefined') {
+        console.log('En attente du chargement du SDK Google...');
+        setTimeout(initGoogleSignIn, 100);
+        return;
+    }
+
+    // Initialiser le client OAuth 2.0
+    tokenClient = google.accounts.oauth2.initTokenClient({
+        client_id: GOOGLE_CLIENT_ID,
+        scope: 'https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/userinfo.profile',
+        callback: handleGoogleCallback,
+    });
+
+    // Attacher le bouton Google
+    const googleBtn = document.getElementById('google-signin-btn');
+    if (googleBtn) {
+        googleBtn.addEventListener('click', () => {
+            if (tokenClient) {
+                tokenClient.requestAccessToken();
+            } else {
+                showLoginSectionWithMessage('Google OAuth non initialise. Utilisez le mode JWT manuel.');
+            }
+        });
+    }
+}
+
+/**
+ * Story 4-3: Gere la reponse de Google OAuth
+ * @param {Object} response - Reponse OAuth de Google
+ */
+async function handleGoogleCallback(response) {
+    const googleBtn = document.getElementById('google-signin-btn');
+
+    try {
+        if (response.error) {
+            throw new Error(response.error);
+        }
+
+        // Desactiver le bouton pendant le traitement
+        if (googleBtn) {
+            googleBtn.disabled = true;
+            googleBtn.innerHTML = '<span>Connexion en cours...</span>';
+        }
+
+        const googleAccessToken = response.access_token;
+        console.log('Google access token recu');
+
+        // Echanger le token Google contre un JWT backend
+        const loginResponse = await fetch(`${USERS_API_URL}/api/auth/login`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                google_token: googleAccessToken
+            })
+        });
+
+        if (!loginResponse.ok) {
+            const errorData = await loginResponse.json().catch(() => ({}));
+            throw new Error(errorData.detail || 'Erreur lors de la connexion avec Google');
+        }
+
+        const data = await loginResponse.json();
+
+        if (data.access_token) {
+            // Stocker temporairement le token
+            const tempToken = data.access_token;
+
+            // Verifier que l'utilisateur est admin en appelant un endpoint admin
+            authToken = tempToken;
+            const isAdmin = await verifyAdminAccess();
+
+            if (isAdmin) {
+                // Stocker definitivement le token
+                localStorage.setItem('admin_jwt', authToken);
+                await loadDashboard();
+            } else {
+                // Pas admin - ne pas stocker le token
+                authToken = null;
+                showLoginSectionWithMessage('Acces refuse. Vous n\'etes pas administrateur.');
+            }
+        } else {
+            throw new Error('Token non recu du serveur');
+        }
+
+    } catch (error) {
+        console.error('Erreur de connexion Google:', error);
+        showLoginSectionWithMessage(error.message);
+        authToken = null;
+    } finally {
+        // Reactiver le bouton
+        if (googleBtn) {
+            googleBtn.disabled = false;
+            googleBtn.innerHTML = `
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M19.6 10.227c0-.709-.064-1.39-.182-2.045H10v3.868h5.382a4.6 4.6 0 01-1.996 3.018v2.51h3.232c1.891-1.742 2.982-4.305 2.982-7.35z" fill="#4285F4"/>
+                    <path d="M10 20c2.7 0 4.964-.895 6.618-2.423l-3.232-2.509c-.895.6-2.04.955-3.386.955-2.605 0-4.81-1.76-5.595-4.123H1.064v2.59A9.996 9.996 0 0010 20z" fill="#34A853"/>
+                    <path d="M4.405 11.9c-.2-.6-.314-1.24-.314-1.9 0-.66.114-1.3.314-1.9V5.51H1.064A9.996 9.996 0 000 10c0 1.614.386 3.14 1.064 4.49l3.34-2.59z" fill="#FBBC05"/>
+                    <path d="M10 3.977c1.468 0 2.786.505 3.823 1.496l2.868-2.868C14.959.99 12.695 0 10 0 6.09 0 2.71 2.24 1.064 5.51l3.34 2.59C5.19 5.736 7.395 3.977 10 3.977z" fill="#EA4335"/>
+                </svg>
+                <span>Se connecter avec Google</span>
+            `;
+        }
+    }
+}
+
+/**
+ * Story 4-3: Verifie que l'utilisateur a acces admin
+ * @returns {Promise<boolean>} True si l'utilisateur est admin
+ */
+async function verifyAdminAccess() {
+    try {
+        const response = await fetch(`${USERS_API_URL}/api/admin/premium-count`, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${authToken}`,
+                'Content-Type': 'application/json'
+            }
+        });
+
+        if (response.status === 403) {
+            console.log('Utilisateur non admin (403)');
+            return false;
+        }
+
+        if (response.status === 401) {
+            console.log('Token invalide (401)');
+            return false;
+        }
+
+        return response.ok;
+    } catch (error) {
+        console.error('Erreur verification admin:', error);
+        return false;
+    }
+}
+
+/**
+ * Story 4-3: Gere le login JWT manuel (fallback)
+ * Ancien handleLogin renomme
+ */
+function handleManualJwtLogin() {
     const token = prompt(
-        'Entrez votre JWT admin:\n\n' +
+        'Mode avance - Entrez votre JWT admin:\n\n' +
         'Pour obtenir le JWT:\n' +
         '1. Connectez-vous avec l\'extension Chrome (compte admin)\n' +
         '2. DevTools → Application → Storage → chrome.storage.local\n' +
@@ -394,4 +575,6 @@ function handleLogout() {
     localStorage.removeItem('admin_jwt');
     authToken = null;
     showLoginSection();
+    // Story 4-3: Reinitialiser Google Sign-In apres deconnexion
+    initGoogleSignIn();
 }
