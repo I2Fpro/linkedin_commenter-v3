@@ -3,10 +3,10 @@
 if (typeof API_CONFIG === 'undefined') {
 var API_CONFIG = {
   // URL du service AI (génération de commentaires)
-  AI_SERVICE_URL: 'http://localhost:8443',
+  AI_SERVICE_URL: '__AI_API_URL__',
 
   // URL du service utilisateur (authentification, quotas, permissions)
-  USER_SERVICE_URL: 'http://localhost:8444',
+  USER_SERVICE_URL: '__USERS_API_URL__',
 
   // URL de la base de données PostgreSQL (pour référence, non utilisée directement par le frontend)
   DATABASE_URL: 'postgres://database-host:5432',

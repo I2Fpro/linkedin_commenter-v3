@@ -2001,7 +2001,7 @@
 
       // Empêcher la sélection si l'option est verrouillée
       if (isLocked) {
-        window.toastNotification.warning(t('upgradeRequired') || 'Veuillez passer à un plan supérieur pour accéder à cette option.');
+        showPremiumUpgradePrompt(t('lockedCommentUpgradeRequired'));
         return;
       }
 
@@ -2070,41 +2070,55 @@
     const refineButton = document.createElement('button');
     refineButton.className = 'ai-refine-button';
     if (isNegative) refineButton.classList.add('negative');
-    refineButton.innerHTML = `<span>${t('refine')}</span>`;
+    const isRefineLocked = userPlan === 'FREE';
+    if (isRefineLocked) {
+      refineButton.classList.add('locked');
+      refineButton.innerHTML = `<span>🔒 Affiner</span>`;
+    } else {
+      refineButton.innerHTML = `<span>${t('refine')}</span>`;
+    }
     refineButton.onclick = () => {
-      if (isLocked) {
-        window.toastNotification.warning(t('upgradeRequired') || 'Veuillez passer à un plan supérieur pour accéder à cette option.');
+      if (isRefineLocked) {
+        showPremiumUpgradePrompt(t('lockedCommentUpgradeRequired'));
         return;
       }
       showRefinePopup(commentBox, comment, postContent, userPrompt, index, popup, isReplyToComment);
     };
-    if (isLocked) refineButton.disabled = true;
 
     const minusButton = document.createElement('button');
     minusButton.className = 'ai-minus-button';
     if (isNegative) minusButton.classList.add('negative');
-    minusButton.textContent = '-';
+    const isResizeLocked = userPlan === 'FREE';
+    if (isResizeLocked) {
+      minusButton.classList.add('locked');
+      minusButton.textContent = '🔒';
+    } else {
+      minusButton.textContent = '-';
+    }
     minusButton.onclick = (e) => {
-      if (isLocked) {
-        window.toastNotification.warning(t('upgradeRequired') || 'Veuillez passer à un plan supérieur pour accéder à cette option.');
+      if (isResizeLocked) {
+        showPremiumUpgradePrompt(t('lockedCommentUpgradeRequired'));
         return;
       }
       handleResizeComment(e, commentBox, comment, postContent, '-', index, popup, isReplyToComment);
     };
-    if (isLocked) minusButton.disabled = true;
 
     const plusButton = document.createElement('button');
     plusButton.className = 'ai-plus-button';
     if (isNegative) plusButton.classList.add('negative');
-    plusButton.textContent = '+';
+    if (isResizeLocked) {
+      plusButton.classList.add('locked');
+      plusButton.textContent = '🔒';
+    } else {
+      plusButton.textContent = '+';
+    }
     plusButton.onclick = (e) => {
-      if (isLocked) {
-        window.toastNotification.warning(t('upgradeRequired') || 'Veuillez passer à un plan supérieur pour accéder à cette option.');
+      if (isResizeLocked) {
+        showPremiumUpgradePrompt(t('lockedCommentUpgradeRequired'));
         return;
       }
       handleResizeComment(e, commentBox, comment, postContent, '+', index, popup, isReplyToComment);
     };
-    if (isLocked) plusButton.disabled = true;
 
     buttonsContainer.appendChild(minusButton);
     buttonsContainer.appendChild(refineButton);

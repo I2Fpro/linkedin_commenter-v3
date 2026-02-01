@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "LinkedIn Commenter",
-  "version": "10.11.0",
+  "version": "10.11.1",
   "description": "Générez des commentaires intelligents pour LinkedIn avec l'IA",
   "permissions": [
     "storage",
@@ -22,7 +22,7 @@
     "https://eu.i.posthog.com/*"
   ],
   "oauth2": {
-    "client_id": "__GOOGLE_CLIENT_ID__",
+    "client_id": "192205751398-29e500ilsol48ccvmp8dnoberc6kf1en.apps.googleusercontent.com",
     "scopes": [
       "openid",
       "email",

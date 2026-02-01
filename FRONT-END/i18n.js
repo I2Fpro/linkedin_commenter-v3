@@ -165,7 +165,10 @@ class I18n {
         // V3 Story 4.1 — Premium upgrade prompt
         premiumFeatureLockedTitle: 'Fonctionnalité Premium',
         premiumFeatureLockedMessage: 'Cette fonctionnalité est réservée au plan Premium.',
-        upgradeNow: 'Passer au Premium'
+        upgradeNow: 'Passer au Premium',
+
+        // V3 Story 5.1 — Locked comments upgrade
+        lockedCommentUpgradeRequired: 'Passez à MEDIUM ou PREMIUM pour débloquer les commentaires supplémentaires.'
         // Note: V3 Story 2.3 translations are in content.js local translations object
       },
       en: {
@@ -330,7 +333,10 @@ class I18n {
         // V3 Story 4.1 — Premium upgrade prompt
         premiumFeatureLockedTitle: 'Premium Feature',
         premiumFeatureLockedMessage: 'This feature is reserved for Premium plan.',
-        upgradeNow: 'Upgrade to Premium'
+        upgradeNow: 'Upgrade to Premium',
+
+        // V3 Story 5.1 — Locked comments upgrade
+        lockedCommentUpgradeRequired: 'Upgrade to MEDIUM or PREMIUM to unlock additional comments.'
         // Note: V3 Story 2.3 translations are in content.js local translations object
       }
     };
