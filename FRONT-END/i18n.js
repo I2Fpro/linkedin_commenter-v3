@@ -160,7 +160,12 @@ class I18n {
         blacklistRemoveConfirm: 'Voulez-vous vraiment retirer {name} de votre blacklist ?',
         blacklistRemoveSuccess: '{name} a été retiré de votre blacklist',
         blacklistRemoveError: 'Erreur lors de la suppression de la blacklist',
-        blacklistNotFound: 'Cette personne n\'est plus dans votre blacklist'
+        blacklistNotFound: 'Cette personne n\'est plus dans votre blacklist',
+
+        // V3 Story 4.1 — Premium upgrade prompt
+        premiumFeatureLockedTitle: 'Fonctionnalité Premium',
+        premiumFeatureLockedMessage: 'Cette fonctionnalité est réservée au plan Premium.',
+        upgradeNow: 'Passer au Premium'
         // Note: V3 Story 2.3 translations are in content.js local translations object
       },
       en: {
@@ -320,7 +325,12 @@ class I18n {
         blacklistRemoveConfirm: 'Are you sure you want to remove {name} from your blacklist?',
         blacklistRemoveSuccess: '{name} has been removed from your blacklist',
         blacklistRemoveError: 'Error removing from blacklist',
-        blacklistNotFound: 'This person is no longer in your blacklist'
+        blacklistNotFound: 'This person is no longer in your blacklist',
+
+        // V3 Story 4.1 — Premium upgrade prompt
+        premiumFeatureLockedTitle: 'Premium Feature',
+        premiumFeatureLockedMessage: 'This feature is reserved for Premium plan.',
+        upgradeNow: 'Upgrade to Premium'
         // Note: V3 Story 2.3 translations are in content.js local translations object
       }
     };

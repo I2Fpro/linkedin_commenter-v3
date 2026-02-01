@@ -51,9 +51,13 @@
    * Affiche une notification toast
    * @param {string} message - Message à afficher
    * @param {string} type - Type de notification (success, error, warning, info)
-   * @param {number} duration - Durée d'affichage en ms (défaut: 4000ms)
+   * @param {number|Object} durationOrOptions - Durée d'affichage en ms (défaut: 4000ms) OU objet d'options
+   * @param {Object} durationOrOptions.action - Action optionnelle avec bouton
+   * @param {string} durationOrOptions.action.text - Texte du bouton d'action
+   * @param {Function} durationOrOptions.action.callback - Fonction appelée au clic sur le bouton
+   * @param {number} durationOrOptions.duration - Durée d'affichage en ms
    */
-  function showToast(message, type = 'info', duration = 4000) {
+  function showToast(message, type = 'info', durationOrOptions = 4000) {
     // Initialiser le container si nécessaire
     initToastContainer();
 
@@ -63,6 +67,16 @@
       type = 'info';
     }
 
+    // Gérer les options (V3 Story 4.1 - support des actions)
+    let duration = 4000;
+    let action = null;
+    if (typeof durationOrOptions === 'object') {
+      duration = durationOrOptions.duration || 5000; // Plus long si action présente
+      action = durationOrOptions.action || null;
+    } else {
+      duration = durationOrOptions;
+    }
+
     const config = TOAST_CONFIG[type];
 
     // Créer l'élément toast
@@ -70,12 +84,20 @@
     toast.className = `ai-toast ai-toast-${type}`;
     toast.style.borderLeftColor = config.borderColor;
 
-    // Structure HTML du toast
+    // Structure HTML du toast (avec bouton d'action optionnel)
+    let actionHtml = '';
+    if (action && action.text) {
+      actionHtml = `<button class="ai-toast-action" aria-label="${escapeHtml(action.text)}">${escapeHtml(action.text)}</button>`;
+    }
+
     toast.innerHTML = `
       <div class="ai-toast-icon" style="color: ${config.iconColor}">
         ${config.icon}
       </div>
-      <div class="ai-toast-message">${escapeHtml(message)}</div>
+      <div class="ai-toast-content">
+        <div class="ai-toast-message">${escapeHtml(message)}</div>
+        ${actionHtml}
+      </div>
       <button class="ai-toast-close" aria-label="Fermer">×</button>
     `;
 
@@ -92,6 +114,17 @@
     closeButton.addEventListener('click', () => {
       removeToast(toast);
     });
+
+    // Bouton d'action (V3 Story 4.1)
+    if (action && action.callback) {
+      const actionButton = toast.querySelector('.ai-toast-action');
+      if (actionButton) {
+        actionButton.addEventListener('click', () => {
+          action.callback();
+          removeToast(toast);
+        });
+      }
+    }
 
     // Auto-fermeture après la durée spécifiée
     const timeoutId = setTimeout(() => {

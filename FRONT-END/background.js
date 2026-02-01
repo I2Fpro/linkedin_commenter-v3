@@ -462,6 +462,14 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       handleRemoveFromBlacklist(request.entryId, sendResponse);
       return true;
 
+    // V3 Story 4.1 — Ouvrir la page d'upgrade Premium (Stripe)
+    case 'openUpgradePage':
+      // Utiliser le placeholder pour l'URL Stripe/checkout avec plan=premium
+      const stripeUrl = '__SITE_URL__/checkout-intent.html?plan=premium';
+      chrome.tabs.create({ url: stripeUrl });
+      sendResponse({ success: true });
+      return true;
+
 	case 'authStateChanged':
 	  // Gérer le changement d'état d'authentification
 	  if (request.authenticated) {

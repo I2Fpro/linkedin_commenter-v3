@@ -119,6 +119,23 @@
     });
   }
 
+  // V3 Story 4.1 — Helper pour afficher un toast d'upgrade Premium avec lien Stripe
+  function showPremiumUpgradePrompt(featureMessage) {
+    // Utiliser le message i18n global si disponible, sinon fallback local
+    const message = featureMessage || (window.i18n ? window.i18n.t('premiumFeatureLockedMessage') : 'Cette fonctionnalité est réservée au plan Premium.');
+    const actionText = window.i18n ? window.i18n.t('upgradeNow') : 'Passer au Premium';
+
+    window.toastNotification.warning(message, {
+      duration: 6000,
+      action: {
+        text: actionText,
+        callback: () => {
+          chrome.runtime.sendMessage({ action: 'openUpgradePage' });
+        }
+      }
+    });
+  }
+
   // Fonction pour extraire les actualités LinkedIn
   function extractLinkedInNews() {
     try {
@@ -692,7 +709,8 @@
         chrome.storage.local.get(['user_plan'], (result) => {
           const userPlan = result.user_plan || 'FREE';
           if (userPlan !== 'PREMIUM') {
-            window.toastNotification.warning(t('quoteUpgradeRequired'));
+            // V3 Story 4.1 — Toast avec lien Stripe
+            showPremiumUpgradePrompt(t('quoteUpgradeRequired'));
             return;
           }
           // Toggle l'etat actif/inactif
@@ -735,7 +753,8 @@
         chrome.storage.local.get(['user_plan'], (result) => {
           const userPlan = result.user_plan || 'FREE';
           if (userPlan !== 'PREMIUM') {
-            window.toastNotification.warning(t('tagAuthorUpgradeRequired'));
+            // V3 Story 4.1 — Toast avec lien Stripe
+            showPremiumUpgradePrompt(t('tagAuthorUpgradeRequired'));
             return;
           }
 
@@ -821,7 +840,8 @@
         chrome.storage.local.get(['user_plan'], (result) => {
           const userPlan = result.user_plan || 'FREE';
           if (userPlan !== 'PREMIUM') {
-            window.toastNotification.warning(t('contextUpgradeRequired'));
+            // V3 Story 4.1 — Toast avec lien Stripe
+            showPremiumUpgradePrompt(t('contextUpgradeRequired'));
             return;
           }
           // Toggle l'etat actif/inactif
@@ -864,7 +884,8 @@
         chrome.storage.local.get(['user_plan'], (result) => {
           const userPlan = result.user_plan || 'FREE';
           if (userPlan !== 'PREMIUM') {
-            window.toastNotification.warning(t('webSearchUpgradeRequired'));
+            // V3 Story 4.1 — Toast avec lien Stripe
+            showPremiumUpgradePrompt(t('webSearchUpgradeRequired'));
             return;
           }
           // Toggle l'etat actif/inactif
@@ -907,7 +928,8 @@
         chrome.storage.local.get(['user_plan'], (result) => {
           const userPlan = result.user_plan || 'FREE';
           if (userPlan !== 'PREMIUM') {
-            window.toastNotification.warning(t('blacklistUpgradeRequired'));
+            // V3 Story 4.1 — Toast avec lien Stripe
+            showPremiumUpgradePrompt(t('blacklistUpgradeRequired'));
             return;
           }
 
@@ -980,7 +1002,8 @@
         chrome.storage.local.get(['user_plan'], (result) => {
           const userPlan = result.user_plan || 'FREE';
           if (userPlan !== 'PREMIUM') {
-            window.toastNotification.warning(t('blacklistUpgradeRequired'));
+            // V3 Story 4.1 — Toast avec lien Stripe
+            showPremiumUpgradePrompt(t('blacklistUpgradeRequired'));
             return;
           }
           showBlacklistModal();
