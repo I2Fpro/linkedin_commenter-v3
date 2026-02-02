@@ -51,12 +51,7 @@
             display: none;
         }
 
-        /* Transition douce pour le changement de thème */
-        body, header, main, aside, article, div, a, button, input, h1, h2, h3, p, span, nav {
-            transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease;
-        }
-
-        /* Variables CSS pour le thème light (par défaut) */
+        /* Variables CSS pour le theme light (seul theme disponible) */
         :root {
             --bg-primary: #F3F2EF;
             --bg-secondary: #FFFFFF;
@@ -68,20 +63,6 @@
             --linkedin-blue-soft: #EDF5FD;
             --gradient-start: #0A66C2;
             --gradient-end: #004182;
-        }
-
-        /* Variables CSS pour le thème dark */
-        [data-theme="dark"] {
-            --bg-primary: #1A1A1A;
-            --bg-secondary: #2D2D2D;
-            --border-color: #404040;
-            --text-primary: #E4E4E4;
-            --text-secondary: #B0B0B0;
-            --linkedin-blue: #4A9FE8;
-            --linkedin-blue-dark: #3A8FD8;
-            --linkedin-blue-soft: #1E3A52;
-            --gradient-start: #4A9FE8;
-            --gradient-end: #3A8FD8;
         }
 
         /* Application des variables CSS aux éléments - AVEC !important pour écraser Tailwind */
@@ -194,22 +175,11 @@
     <header class="fixed top-0 left-0 right-0 z-50 bg-white border-b border-linkedin-stroke shadow-sm">
         <div class="max-w-[1128px] mx-auto px-4">
             <div class="flex items-center justify-between h-[52px]">
-                <!-- Left: Logo + Theme + Search -->
+                <!-- Left: Logo + Language + Search -->
                 <div class="flex items-center gap-3">
                     <a href="#" class="flex items-center">
                         <span class="text-lg font-bold text-linkedin-blue" data-translate="header-logo">LinkedIn AI Commenter</span>
                     </a>
-
-                    <!-- Theme Toggle Button -->
-                    <button id="themeToggle" class="flex flex-col items-center text-linkedin-text-secondary hover:text-linkedin-text transition-colors cursor-pointer" aria-label="Toggle theme">
-                        <svg id="sunIcon" class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path>
-                        </svg>
-                        <svg id="moonIcon" class="w-6 h-6 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path>
-                        </svg>
-                        <span class="text-xs hidden sm:block" data-translate="theme-btn">Thème</span>
-                    </button>
 
                     <!-- Language Toggle Button -->
                     <button id="languageToggle" class="flex flex-col items-center text-linkedin-text-secondary hover:text-linkedin-text transition-colors cursor-pointer" aria-label="Toggle language">
@@ -729,7 +699,7 @@
                         <a href="#" class="block text-xs text-linkedin-text-secondary hover:text-linkedin-blue" data-translate="right-footer-terms">CGU</a>
                         <a href="#" class="block text-xs text-linkedin-text-secondary hover:text-linkedin-blue" data-translate="right-footer-privacy">Confidentialité</a>
                     </nav>
-                    <p class="text-xs text-linkedin-text-secondary mt-4" data-translate="right-footer-copyright">© 2025 LinkedIn AI Commenter</p>
+                    <p class="text-xs text-linkedin-text-secondary mt-4" data-translate="right-footer-copyright">© 2026 LinkedIn AI Commenter</p>
                 </div>
 
             </aside>
@@ -737,68 +707,15 @@
     </div>
 
     <script>
-        // Gestion du thème Dark/Light
-        const themeToggle = document.getElementById('themeToggle');
-        const sunIcon = document.getElementById('sunIcon');
-        const moonIcon = document.getElementById('moonIcon');
-        const html = document.documentElement;
-
-        // Charger le thème sauvegardé ou détecter la préférence système
-        const savedTheme = localStorage.getItem('theme');
-        const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-        const currentTheme = savedTheme || (systemPrefersDark ? 'dark' : 'light');
-
-        // Appliquer le thème au chargement
-        if (currentTheme === 'dark') {
-            html.setAttribute('data-theme', 'dark');
-            sunIcon.classList.add('hidden');
-            moonIcon.classList.remove('hidden');
-        }
-
-        // Toggle du thème au clic
-        themeToggle.addEventListener('click', () => {
-            const isDark = html.getAttribute('data-theme') === 'dark';
-
-            if (isDark) {
-                html.removeAttribute('data-theme');
-                localStorage.setItem('theme', 'light');
-                sunIcon.classList.remove('hidden');
-                moonIcon.classList.add('hidden');
-            } else {
-                html.setAttribute('data-theme', 'dark');
-                localStorage.setItem('theme', 'dark');
-                sunIcon.classList.add('hidden');
-                moonIcon.classList.remove('hidden');
-            }
-        });
-
-        // Écouter les changements de préférence système
-        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
-            if (!localStorage.getItem('theme')) {
-                if (e.matches) {
-                    html.setAttribute('data-theme', 'dark');
-                    sunIcon.classList.add('hidden');
-                    moonIcon.classList.remove('hidden');
-                } else {
-                    html.removeAttribute('data-theme');
-                    sunIcon.classList.remove('hidden');
-                    moonIcon.classList.add('hidden');
-                }
-            }
-        });
-
         // Gestion de la traduction FR/EN
         const languageToggle = document.getElementById('languageToggle');
+        const html = document.documentElement;
 
         // Dictionnaire de traductions
         const translations = {
             'header-logo': {
                 fr: 'LinkedIn AI Commenter',
                 en: 'LinkedIn AI Commenter'
-            },
-            'theme-btn': {
-                fr: 'Thème',
-                en: 'Theme'
             },
             'lang-btn': {
                 fr: 'FR/EN',
@@ -945,8 +862,8 @@
                 en: 'Privacy'
             },
             'right-footer-copyright': {
-                fr: '© 2025 LinkedIn AI Commenter',
-                en: '© 2025 LinkedIn AI Commenter'
+                fr: '© 2026 LinkedIn AI Commenter',
+                en: '© 2026 LinkedIn AI Commenter'
             },
             'hero-title': {
                 fr: 'Générez des commentaires LinkedIn intelligents en quelques secondes',
