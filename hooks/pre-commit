@@ -4,7 +4,7 @@
 # =============================================================================
 #
 # Empeche de committer des fichiers front-end contenant des URLs locales
-# (https://*.local.dev) au lieu des placeholders (__*__).
+# (http://localhost:PORT) au lieu des placeholders (__*__).
 #
 # Activation (une seule fois) :
 #   git config core.hooksPath hooks
@@ -26,8 +26,8 @@ FRONTEND_FILES=(
   "FRONT-END/test-connection.html"
 )
 
-# Pattern qui ne doit JAMAIS etre committe
-DEV_PATTERN="local\.dev"
+# Pattern qui ne doit JAMAIS etre committe (localhost avec port)
+DEV_PATTERN="localhost:[0-9]"
 
 # Recuperer la liste des fichiers stages
 STAGED=$(git diff --cached --name-only 2>/dev/null)

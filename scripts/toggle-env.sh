@@ -20,6 +20,9 @@ FRONTEND_DIR="$SCRIPT_DIR/../FRONT-END"
 # Mapping : PLACEHOLDER -> valeur DEV locale
 # ---------------------------------------------------------------------------
 # Ordre : du plus long au plus court (evite les remplacements partiels)
+# NOTE: On utilise localhost directement (pas Traefik) pour eviter les problemes
+#       CORS avec les extensions Chrome. Traefik ne gere pas bien les wildcards
+#       chrome-extension://* dans Access-Control-Allow-Origin.
 PLACEHOLDERS=(
   "__GOOGLE_CLIENT_ID__"
   "__USERS_API_URL__"
@@ -29,9 +32,9 @@ PLACEHOLDERS=(
 
 DEV_VALUES=(
   "192205751398-29e500ilsol48ccvmp8dnoberc6kf1en.apps.googleusercontent.com"
-  "https://users.local.dev"
-  "https://ai.local.dev"
-  "https://site.local.dev"
+  "http://localhost:8444"
+  "http://localhost:8443"
+  "http://localhost:8080"
 )
 
 # ---------------------------------------------------------------------------
@@ -61,7 +64,7 @@ FILES=(
 detect_mode() {
   if grep -q "__AI_API_URL__" "$FRONTEND_DIR/api-config.js" 2>/dev/null; then
     echo "placeholder"
-  elif grep -q "ai.local.dev" "$FRONTEND_DIR/api-config.js" 2>/dev/null; then
+  elif grep -q "localhost:8443" "$FRONTEND_DIR/api-config.js" 2>/dev/null; then
     echo "dev"
   else
     echo "unknown"
