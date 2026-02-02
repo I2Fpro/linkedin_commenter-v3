@@ -551,6 +551,21 @@
   cursor: not-allowed;
 }
 
+/* V3 Story 5.1 - Style pour boutons Refine/Resize verrouilles (FREE plan, 1er commentaire) */
+.ai-refine-button.locked,
+.ai-plus-button.locked,
+.ai-minus-button.locked {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.ai-refine-button.locked:hover,
+.ai-plus-button.locked:hover,
+.ai-minus-button.locked:hover {
+  transform: none;
+  background: transparent;
+}
+
 /* Icône de verrouillage */
 .ai-lock-icon {
   position: absolute;

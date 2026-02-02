@@ -168,7 +168,8 @@ class I18n {
         upgradeNow: 'Passer au Premium',
 
         // V3 Story 5.1 — Locked comments upgrade
-        lockedCommentUpgradeRequired: 'Passez à MEDIUM ou PREMIUM pour débloquer les commentaires supplémentaires.'
+        lockedCommentUpgradeRequired: 'Passez à MEDIUM ou PREMIUM pour débloquer les commentaires supplémentaires.',
+        lockedRefineResizeUpgradeRequired: 'Passez à MEDIUM ou PREMIUM pour utiliser Affiner et Redimensionner.'
         // Note: V3 Story 2.3 translations are in content.js local translations object
       },
       en: {
@@ -336,7 +337,8 @@ class I18n {
         upgradeNow: 'Upgrade to Premium',
 
         // V3 Story 5.1 — Locked comments upgrade
-        lockedCommentUpgradeRequired: 'Upgrade to MEDIUM or PREMIUM to unlock additional comments.'
+        lockedCommentUpgradeRequired: 'Upgrade to MEDIUM or PREMIUM to unlock additional comments.',
+        lockedRefineResizeUpgradeRequired: 'Upgrade to MEDIUM or PREMIUM to use Refine and Resize.'
         // Note: V3 Story 2.3 translations are in content.js local translations object
       }
     };

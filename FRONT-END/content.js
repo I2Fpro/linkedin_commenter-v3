@@ -2067,19 +2067,22 @@
     const buttonsContainer = document.createElement('div');
     buttonsContainer.className = 'ai-action-buttons-container';
 
+    // V3 Story 5.1 Review - Variable unique pour verrouillage boutons FREE
+    const isButtonsLocked = userPlan === 'FREE';
+
     const refineButton = document.createElement('button');
     refineButton.className = 'ai-refine-button';
     if (isNegative) refineButton.classList.add('negative');
-    const isRefineLocked = userPlan === 'FREE';
-    if (isRefineLocked) {
+    if (isButtonsLocked) {
       refineButton.classList.add('locked');
-      refineButton.innerHTML = `<span>🔒 Affiner</span>`;
+      refineButton.setAttribute('aria-disabled', 'true');
+      refineButton.innerHTML = `<span>🔒 ${t('refine')}</span>`;
     } else {
       refineButton.innerHTML = `<span>${t('refine')}</span>`;
     }
     refineButton.onclick = () => {
-      if (isRefineLocked) {
-        showPremiumUpgradePrompt(t('lockedCommentUpgradeRequired'));
+      if (isButtonsLocked) {
+        showPremiumUpgradePrompt(t('lockedRefineResizeUpgradeRequired'));
         return;
       }
       showRefinePopup(commentBox, comment, postContent, userPrompt, index, popup, isReplyToComment);
@@ -2088,16 +2091,16 @@
     const minusButton = document.createElement('button');
     minusButton.className = 'ai-minus-button';
     if (isNegative) minusButton.classList.add('negative');
-    const isResizeLocked = userPlan === 'FREE';
-    if (isResizeLocked) {
+    if (isButtonsLocked) {
       minusButton.classList.add('locked');
+      minusButton.setAttribute('aria-disabled', 'true');
       minusButton.textContent = '🔒';
     } else {
       minusButton.textContent = '-';
     }
     minusButton.onclick = (e) => {
-      if (isResizeLocked) {
-        showPremiumUpgradePrompt(t('lockedCommentUpgradeRequired'));
+      if (isButtonsLocked) {
+        showPremiumUpgradePrompt(t('lockedRefineResizeUpgradeRequired'));
         return;
       }
       handleResizeComment(e, commentBox, comment, postContent, '-', index, popup, isReplyToComment);
@@ -2106,15 +2109,16 @@
     const plusButton = document.createElement('button');
     plusButton.className = 'ai-plus-button';
     if (isNegative) plusButton.classList.add('negative');
-    if (isResizeLocked) {
+    if (isButtonsLocked) {
       plusButton.classList.add('locked');
+      plusButton.setAttribute('aria-disabled', 'true');
       plusButton.textContent = '🔒';
     } else {
       plusButton.textContent = '+';
     }
     plusButton.onclick = (e) => {
-      if (isResizeLocked) {
-        showPremiumUpgradePrompt(t('lockedCommentUpgradeRequired'));
+      if (isButtonsLocked) {
+        showPremiumUpgradePrompt(t('lockedRefineResizeUpgradeRequired'));
         return;
       }
       handleResizeComment(e, commentBox, comment, postContent, '+', index, popup, isReplyToComment);
