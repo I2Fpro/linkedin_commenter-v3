@@ -674,7 +674,7 @@
 
       // Bouton Paramètres (engrenage)
       const personalisationButton = document.createElement('button');
-      personalisationButton.className = 'ai-generate-button settings-button';
+      personalisationButton.className = 'ai-button ai-button--secondary settings-button';
       personalisationButton.type = 'button'; // IMPORTANT: empêche la soumission du formulaire
       if (isNegative) personalisationButton.classList.add('negative');
       if (isReplyToComment) personalisationButton.classList.add('reply-mode');
@@ -687,7 +687,7 @@
 
       // V3 — Bouton toggle Citation (PREMIUM uniquement)
       const quoteToggle = document.createElement('button');
-      quoteToggle.className = 'ai-generate-button ai-quote-toggle';
+      quoteToggle.className = 'ai-button ai-button--secondary ai-quote-toggle';
       quoteToggle.type = 'button';
       if (isNegative) quoteToggle.classList.add('negative');
       if (isReplyToComment) quoteToggle.classList.add('reply-mode');
@@ -731,7 +731,7 @@
 
       // V3 — Bouton toggle Tag Auteur (PREMIUM uniquement)
       const tagAuthorToggle = document.createElement('button');
-      tagAuthorToggle.className = 'ai-generate-button ai-tag-author-toggle';
+      tagAuthorToggle.className = 'ai-button ai-button--secondary ai-tag-author-toggle';
       tagAuthorToggle.type = 'button';
       if (isNegative) tagAuthorToggle.classList.add('negative');
       if (isReplyToComment) tagAuthorToggle.classList.add('reply-mode');
@@ -818,7 +818,7 @@
 
       // V3 Story 1.3 — Bouton toggle Contexte (commentaires tiers) (PREMIUM uniquement)
       const contextToggle = document.createElement('button');
-      contextToggle.className = 'ai-generate-button ai-context-toggle';
+      contextToggle.className = 'ai-button ai-button--secondary ai-context-toggle';
       contextToggle.type = 'button';
       if (isNegative) contextToggle.classList.add('negative');
       if (isReplyToComment) contextToggle.classList.add('reply-mode');
@@ -862,7 +862,7 @@
 
       // V3 Story 1.4 — Bouton toggle Recherche Web (PREMIUM uniquement)
       const webSearchToggle = document.createElement('button');
-      webSearchToggle.className = 'ai-toggle-btn ai-web-search-toggle';
+      webSearchToggle.className = 'ai-button ai-button--secondary ai-web-search-toggle';
       webSearchToggle.type = 'button';
       if (isNegative) webSearchToggle.classList.add('negative');
       if (isReplyToComment) webSearchToggle.classList.add('reply-mode');
@@ -906,7 +906,7 @@
 
       // V3 Story 5.4 — Bouton toggle News LinkedIn (MEDIUM+ uniquement)
       const newsToggle = document.createElement('button');
-      newsToggle.className = 'ai-toggle-btn ai-news-toggle';
+      newsToggle.className = 'ai-button ai-button--secondary ai-news-toggle';
       newsToggle.type = 'button';
       if (isNegative) newsToggle.classList.add('negative');
       if (isReplyToComment) newsToggle.classList.add('reply-mode');
@@ -952,7 +952,7 @@
 
       // V3 Story 2.1 — Bouton Blacklist (PREMIUM uniquement)
       const blacklistBtn = document.createElement('button');
-      blacklistBtn.className = 'ai-generate-button ai-blacklist-btn';
+      blacklistBtn.className = 'ai-button ai-button--danger ai-blacklist-btn';
       blacklistBtn.type = 'button';
       if (isNegative) blacklistBtn.classList.add('negative');
       if (isReplyToComment) blacklistBtn.classList.add('reply-mode');
@@ -1027,7 +1027,7 @@
 
       // V3 Story 2.1 — Bouton Voir ma blacklist (PREMIUM uniquement)
       const viewBlacklistBtn = document.createElement('button');
-      viewBlacklistBtn.className = 'ai-generate-button ai-view-blacklist-btn';
+      viewBlacklistBtn.className = 'ai-button ai-button--secondary ai-view-blacklist-btn';
       viewBlacklistBtn.type = 'button';
       if (isNegative) viewBlacklistBtn.classList.add('negative');
       if (isReplyToComment) viewBlacklistBtn.classList.add('reply-mode');

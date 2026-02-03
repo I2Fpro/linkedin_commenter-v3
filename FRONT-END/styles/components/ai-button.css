@@ -154,6 +154,13 @@
   opacity: 0.5;
   cursor: not-allowed;
   transform: none !important;
+  /* Note: box-shadow sans !important pour permettre l'animation loading */
+  box-shadow: none;
+}
+
+/* Disabled WITHOUT loading - ensure no box-shadow */
+.ai-button:disabled:not(.loading):not(.ai-button--loading),
+.ai-button--disabled:not(.loading):not(.ai-button--loading) {
   box-shadow: none !important;
 }
 
@@ -181,24 +188,51 @@
   transform: translate(-50%, -50%);
 }
 
-/* Animation de bordure pulsante pour loading - effet glow pulse */
-@keyframes ai-button-rotating-border {
-  0%, 100% {
-    box-shadow:
-      0 0 0 3px rgba(255, 215, 0, 0.6),
-      0 0 20px rgba(255, 215, 0, 0.8),
-      0 0 40px rgba(255, 215, 0, 0.4);
-  }
-  50% {
-    box-shadow:
-      0 0 0 3px rgba(255, 215, 0, 0.3),
-      0 0 10px rgba(255, 215, 0, 0.4),
-      0 0 20px rgba(255, 215, 0, 0.2);
-  }
+/* Animation de point tournant pour loading */
+@keyframes ai-button-orbit {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
 }
 
+/* Style pour le point tournant - Primary */
+.ai-button--primary.loading,
 .ai-button--primary.ai-button--loading {
-  animation: ai-button-rotating-border 1.5s linear infinite;
+  position: relative;
+  overflow: visible;
+}
+
+.ai-button--primary.loading::after,
+.ai-button--primary.ai-button--loading::after {
+  content: '';
+  position: absolute;
+  top: -4px;
+  left: -4px;
+  right: -4px;
+  bottom: -4px;
+  border-radius: 12px;
+  background: conic-gradient(
+    from 0deg,
+    transparent 0deg,
+    transparent 270deg,
+    rgba(255, 255, 255, 0.8) 330deg,
+    rgba(255, 215, 0, 1) 360deg
+  );
+  animation: ai-button-orbit 1s linear infinite;
+  z-index: -1;
+}
+
+/* Masque interieur pour creer effet bordure */
+.ai-button--primary.loading::before,
+.ai-button--primary.ai-button--loading::before {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  right: 2px;
+  bottom: 2px;
+  border-radius: 6px;
+  background: var(--ai-primary);
+  z-index: -1;
 }
 
 /* ================================================
@@ -223,24 +257,21 @@
   background: rgba(231, 76, 60, 0.1);
 }
 
-/* Animation loading pour mode negatif - effet glow pulse rouge */
-@keyframes ai-button-rotating-border-negative {
-  0%, 100% {
-    box-shadow:
-      0 0 0 3px rgba(231, 76, 60, 0.6),
-      0 0 20px rgba(231, 76, 60, 0.8),
-      0 0 40px rgba(231, 76, 60, 0.4);
-  }
-  50% {
-    box-shadow:
-      0 0 0 3px rgba(231, 76, 60, 0.3),
-      0 0 10px rgba(231, 76, 60, 0.4),
-      0 0 20px rgba(231, 76, 60, 0.2);
-  }
+/* Style pour le point tournant - Negative */
+.ai-button--negative.ai-button--primary.loading::after,
+.ai-button--negative.ai-button--primary.ai-button--loading::after {
+  background: conic-gradient(
+    from 0deg,
+    transparent 0deg,
+    transparent 270deg,
+    rgba(255, 255, 255, 0.8) 330deg,
+    rgba(231, 76, 60, 1) 360deg
+  );
 }
 
-.ai-button--negative.ai-button--primary.ai-button--loading {
-  animation: ai-button-rotating-border-negative 1.5s linear infinite;
+.ai-button--negative.ai-button--primary.loading::before,
+.ai-button--negative.ai-button--primary.ai-button--loading::before {
+  background: var(--ai-danger);
 }
 
 /* ================================================
@@ -252,7 +283,7 @@
 }
 
 .ai-button--reply-mode.ai-button--primary:hover:not(:disabled) {
-  background: #1976D2;
+  background: var(--ai-accent-dark);
   box-shadow: 0 4px 12px rgba(33, 150, 243, 0.4);
 }
 
@@ -262,27 +293,24 @@
 }
 
 .ai-button--reply-mode.ai-button--negative.ai-button--primary:hover:not(:disabled) {
-  background: #962d22;
+  background: var(--ai-danger-dark);
 }
 
-/* Animation loading pour reply mode - effet glow pulse bleu */
-@keyframes ai-button-rotating-border-reply {
-  0%, 100% {
-    box-shadow:
-      0 0 0 3px rgba(33, 150, 243, 0.6),
-      0 0 20px rgba(33, 150, 243, 0.8),
-      0 0 40px rgba(33, 150, 243, 0.4);
-  }
-  50% {
-    box-shadow:
-      0 0 0 3px rgba(33, 150, 243, 0.3),
-      0 0 10px rgba(33, 150, 243, 0.4),
-      0 0 20px rgba(33, 150, 243, 0.2);
-  }
+/* Style pour le point tournant - Reply Mode */
+.ai-button--reply-mode.ai-button--primary.loading::after,
+.ai-button--reply-mode.ai-button--primary.ai-button--loading::after {
+  background: conic-gradient(
+    from 0deg,
+    transparent 0deg,
+    transparent 270deg,
+    rgba(255, 255, 255, 0.8) 330deg,
+    rgba(33, 150, 243, 1) 360deg
+  );
 }
 
-.ai-button--reply-mode.ai-button--primary.ai-button--loading {
-  animation: ai-button-rotating-border-reply 1.5s linear infinite;
+.ai-button--reply-mode.ai-button--primary.loading::before,
+.ai-button--reply-mode.ai-button--primary.ai-button--loading::before {
+  background: var(--ai-accent);
 }
 
 /* ================================================
@@ -332,8 +360,8 @@
 
 /* Mode negatif added */
 .ai-button--negative.ai-button--added {
-  border-color: #86efac;
-  color: #86efac;
+  border-color: var(--ai-secondary-light);
+  color: var(--ai-secondary-light);
   background: transparent;
 }
 

@@ -89,6 +89,9 @@ dev-tools/debug-context/server/
 dev-tools/debug-context/summary.md
 !dev-tools/debug-context/.gitkeep
 
+# CSS Recorder extension (local debug tool)
+dev-tools/css-recorder-ext/
+
 # ======================
 # Testing
 # ======================
