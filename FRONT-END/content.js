@@ -250,7 +250,7 @@
 
   // Mettre à jour le texte de tous les boutons
   function updateAllButtonsText() {
-    document.querySelectorAll('.ai-generate-button').forEach(button => {
+    document.querySelectorAll('.ai-button, .ai-generate-button').forEach(button => {
       // Ignorer le bouton de paramètres (settings-button)
       if (button.classList.contains('settings-button')) {
         return; // Ne pas changer le texte du bouton ⚙️
@@ -276,7 +276,7 @@
 
   // Mettre à jour l'état des boutons
   function updateButtonsState(wrapper, authenticated) {
-    const buttons = wrapper.querySelectorAll('.ai-generate-button');
+    const buttons = wrapper.querySelectorAll('.ai-button, .ai-generate-button');
     buttons.forEach(button => {
       button.disabled = !authenticated;
 
@@ -648,7 +648,7 @@
 
       // Bouton Générer
       const generateButton = document.createElement('button');
-      generateButton.className = 'ai-generate-button';
+      generateButton.className = 'ai-button ai-button--primary';
       generateButton.type = 'button'; // IMPORTANT: empêche la soumission du formulaire
       if (isNegative) generateButton.classList.add('negative');
       if (isReplyToComment) generateButton.classList.add('reply-mode');
@@ -661,7 +661,7 @@
 
       // Bouton Avec prompt
       const promptButton = document.createElement('button');
-      promptButton.className = 'ai-generate-button with-prompt';
+      promptButton.className = 'ai-button ai-button--primary';
       promptButton.type = 'button'; // IMPORTANT: empêche la soumission du formulaire
       if (isNegative) promptButton.classList.add('negative');
       if (isReplyToComment) promptButton.classList.add('reply-mode');
@@ -1079,7 +1079,8 @@
   // Détecter les clics dans les zones de commentaire
   document.addEventListener('click', function(event) {
     // Ignorer les clics sur les boutons AI et leurs enfants
-    if (event.target.closest('.ai-generate-button') ||
+    if (event.target.closest('.ai-button') ||
+        event.target.closest('.ai-generate-button') ||
         event.target.closest('.ai-buttons-wrapper') ||
         event.target.closest('.ai-prompt-popup') ||
         event.target.closest('.ai-options-popup') ||
@@ -1278,7 +1279,7 @@
       }
     }
 
-    const button = event.target.closest('.ai-generate-button');
+    const button = event.target.closest('.ai-button') || event.target.closest('.ai-generate-button');
     const originalText = button.querySelector('span').textContent;
 
     // Vider le champ de commentaire AVANT l'extraction pour éviter toute confusion
@@ -1547,7 +1548,7 @@
       actionButtons.className = 'ai-prompt-actions';
 
       const cancelButton = document.createElement('button');
-      cancelButton.className = 'ai-prompt-cancel';
+      cancelButton.className = 'ai-button ai-button--secondary ai-prompt-cancel';
       cancelButton.textContent = t('cancel');
       cancelButton.onclick = () => {
         popup.remove();
@@ -1555,7 +1556,7 @@
       };
 
       const submitButton = document.createElement('button');
-      submitButton.className = 'ai-prompt-submit';
+      submitButton.className = 'ai-button ai-button--primary ai-prompt-submit';
       if (isNegative) submitButton.classList.add('negative');
       if (isReplyToComment) submitButton.classList.add('reply-mode');
       submitButton.textContent = t('generate');
@@ -1600,7 +1601,7 @@
       popup.appendChild(actionButtons);
 
       const closeButton = document.createElement('button');
-      closeButton.className = 'ai-close-button';
+      closeButton.className = 'ai-button ai-button--icon ai-button--ghost ai-close-button';
       closeButton.textContent = '×';
       closeButton.onclick = () => {
         popup.remove();
@@ -1908,7 +1909,7 @@
         });
 
         const closeButton = document.createElement('button');
-        closeButton.className = 'ai-close-button';
+        closeButton.className = 'ai-button ai-button--icon ai-button--ghost ai-close-button';
         closeButton.textContent = '×';
         closeButton.onclick = () => {
           popup.remove();
@@ -2065,7 +2066,7 @@
     if (webSearchSourceUrl) {
       // Cas 1: Source disponible — bouton actif
       const showSourceBtn = document.createElement('button');
-      showSourceBtn.className = 'ai-show-source-btn';
+      showSourceBtn.className = 'ai-button ai-button--ghost ai-button--sm ai-show-source-btn';
       if (isNegative) showSourceBtn.classList.add('negative');
       showSourceBtn.innerHTML = `🔗 ${t('showSourceBtn')}`;
       showSourceBtn.onclick = (e) => {
@@ -2085,7 +2086,7 @@
       // webSearchFallback === true signifie recherche echouee/timeout
       // Dans les deux cas, on affiche le bouton grise si pas de source
       const showSourceBtn = document.createElement('button');
-      showSourceBtn.className = 'ai-show-source-btn disabled';
+      showSourceBtn.className = 'ai-button ai-button--ghost ai-button--sm ai-button--disabled ai-show-source-btn';
       if (isNegative) showSourceBtn.classList.add('negative');
       showSourceBtn.innerHTML = `🔗 ${t('noSourceAvailable')}`;
       showSourceBtn.onclick = (e) => {
@@ -2182,7 +2183,7 @@
     const isButtonsLocked = userPlan === 'FREE';
 
     const refineButton = document.createElement('button');
-    refineButton.className = 'ai-refine-button';
+    refineButton.className = 'ai-button ai-button--ghost ai-refine-button';
     if (isNegative) refineButton.classList.add('negative');
     if (isButtonsLocked) {
       refineButton.classList.add('locked');
@@ -2200,14 +2201,14 @@
     };
 
     const minusButton = document.createElement('button');
-    minusButton.className = 'ai-minus-button';
+    minusButton.className = 'ai-button ai-button--ghost ai-minus-button';
     if (isNegative) minusButton.classList.add('negative');
     if (isButtonsLocked) {
       minusButton.classList.add('locked');
       minusButton.setAttribute('aria-disabled', 'true');
       minusButton.textContent = '🔒';
     } else {
-      minusButton.textContent = '-';
+      minusButton.textContent = '➖';
     }
     minusButton.onclick = (e) => {
       if (isButtonsLocked) {
@@ -2218,14 +2219,14 @@
     };
 
     const plusButton = document.createElement('button');
-    plusButton.className = 'ai-plus-button';
+    plusButton.className = 'ai-button ai-button--ghost ai-plus-button';
     if (isNegative) plusButton.classList.add('negative');
     if (isButtonsLocked) {
       plusButton.classList.add('locked');
       plusButton.setAttribute('aria-disabled', 'true');
       plusButton.textContent = '🔒';
     } else {
-      plusButton.textContent = '+';
+      plusButton.textContent = '➕';
     }
     plusButton.onclick = (e) => {
       if (isButtonsLocked) {
@@ -2372,7 +2373,7 @@
       actionButtons.className = 'ai-refine-actions';
 
       const cancelButton = document.createElement('button');
-      cancelButton.className = 'ai-refine-cancel';
+      cancelButton.className = 'ai-button ai-button--secondary ai-refine-cancel';
       cancelButton.textContent = t('cancel');
       cancelButton.onclick = () => {
         popup.remove();
@@ -2380,7 +2381,7 @@
       };
 
       const submitButton = document.createElement('button');
-      submitButton.className = 'ai-refine-submit';
+      submitButton.className = 'ai-button ai-button--primary ai-refine-submit';
       if (isNegative) submitButton.classList.add('negative');
       if (isReplyToComment) submitButton.classList.add('reply-mode');
       submitButton.textContent = t('refine');
@@ -2398,7 +2399,7 @@
       popup.appendChild(actionButtons);
 
       const closeButton = document.createElement('button');
-      closeButton.className = 'ai-close-button';
+      closeButton.className = 'ai-button ai-button--icon ai-button--ghost ai-close-button';
       closeButton.textContent = '×';
       closeButton.onclick = () => {
         popup.remove();
@@ -2753,7 +2754,7 @@
       };
 
       const cancelBtn = document.createElement('button');
-      cancelBtn.className = 'ai-btn ai-btn-secondary';
+      cancelBtn.className = 'ai-button ai-button--secondary';
       cancelBtn.textContent = t('blacklistWarningNo');
       cancelBtn.addEventListener('click', () => {
         cleanup();
@@ -2761,7 +2762,7 @@
       });
 
       const confirmBtn = document.createElement('button');
-      confirmBtn.className = 'ai-btn ai-btn-primary';
+      confirmBtn.className = 'ai-button ai-button--primary';
       confirmBtn.textContent = t('blacklistWarningYes');
       confirmBtn.addEventListener('click', () => {
         cleanup();
@@ -2853,7 +2854,7 @@
 
         // V3 Story 2.2 — Bouton "Retirer"
         const removeBtn = document.createElement('button');
-        removeBtn.className = 'ai-blacklist-remove-btn';
+        removeBtn.className = 'ai-button ai-button--danger ai-button--sm ai-blacklist-remove-btn';
         removeBtn.textContent = t('removeFromBlacklist');
         removeBtn.addEventListener('click', (e) => {
           e.preventDefault();

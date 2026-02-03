@@ -87,7 +87,7 @@
     // Structure HTML du toast (avec bouton d'action optionnel)
     let actionHtml = '';
     if (action && action.text) {
-      actionHtml = `<button class="ai-toast-action" aria-label="${escapeHtml(action.text)}">${escapeHtml(action.text)}</button>`;
+      actionHtml = `<button class="ai-button ai-button--primary ai-button--sm ai-toast-action" aria-label="${escapeHtml(action.text)}">${escapeHtml(action.text)}</button>`;
     }
 
     toast.innerHTML = `
