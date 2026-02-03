@@ -45,7 +45,7 @@ def _get_tavily_client():
 async def search_web_for_context(
     post_content: str = "",
     **kwargs  # Accepte des kwargs supplementaires pour compatibilite
-) -> Tuple[Optional[str], bool]:
+) -> Tuple[Optional[str], bool, Optional[str]]:
     """
     Effectue une recherche web via Tavily API pour enrichir le contexte.
 
@@ -54,32 +54,33 @@ async def search_web_for_context(
         **kwargs: Parametres supplementaires ignores (compatibilite avec ancienne API)
 
     Returns:
-        Tuple (resultat_recherche, success)
-        - Si succes : (texte enrichi avec sources, True)
-        - Si echec/timeout : (None, False)
+        Tuple (resultat_recherche, success, source_url)
+        - Si succes : (texte enrichi avec sources, True, url_de_la_source)
+        - Si echec/timeout : (None, False, None)
 
     Notes:
-        - Timeout de 4 secondes pour respecter NFR2 (< 5s total)
-        - En cas d'echec, retourne (None, False) pour fallback gracieux
+        - Timeout de 10 secondes pour laisser le temps a Tavily
+        - En cas d'echec, retourne (None, False, None) pour fallback gracieux
         - Log WARNING en cas d'echec (pas d'erreur user-facing)
+        - Story 5.5: Retourne maintenant l'URL source separement pour affichage optionnel
     """
     try:
         # Verifier que Tavily est configure
         tavily = _get_tavily_client()
         if tavily is None:
             logger.warning("Web search: Tavily non configure")
-            return None, False
+            return None, False, None
 
         # Construire la requete de recherche a partir du contenu du post
         search_query = _build_search_query(post_content)
         if not search_query:
             logger.warning("Web search: impossible de construire la requete")
-            return None, False
+            return None, False, None
 
         logger.info(f"Web search: recherche Tavily pour '{search_query[:50]}...'")
 
         # Appel avec timeout via asyncio.to_thread pour le code synchrone
-        response = await asyncio.wait_for(
+        result_text, source_url = await asyncio.wait_for(
             asyncio.to_thread(
                 _execute_tavily_search,
                 tavily,
@@ -89,19 +90,19 @@ async def search_web_for_context(
         )
 
         # Verifier si une source a ete trouvee
-        if not response:
+        if not result_text:
             logger.warning("Web search: aucune source pertinente trouvee")
-            return None, False
+            return None, False, None
 
-        logger.info(f"Web search: source trouvee ({len(response)} chars)")
-        return response, True
+        logger.info(f"Web search: source trouvee ({len(result_text)} chars, url={source_url[:50] if source_url else 'None'}...)")
+        return result_text, True, source_url
 
     except asyncio.TimeoutError:
         logger.warning(f"Web search: timeout apres {WEB_SEARCH_TIMEOUT_SECONDS}s")
-        return None, False
+        return None, False, None
     except Exception as e:
         logger.warning(f"Web search: erreur - {type(e).__name__}: {str(e)}")
-        return None, False
+        return None, False, None
 
 
 def _build_search_query(post_content: str) -> Optional[str]:
@@ -124,7 +125,7 @@ def _build_search_query(post_content: str) -> Optional[str]:
     return content
 
 
-def _execute_tavily_search(tavily_client, query: str) -> Optional[str]:
+def _execute_tavily_search(tavily_client, query: str) -> Tuple[Optional[str], Optional[str]]:
     """
     Execute l'appel API Tavily pour la recherche web.
 
@@ -133,7 +134,10 @@ def _execute_tavily_search(tavily_client, query: str) -> Optional[str]:
         query: Requete de recherche
 
     Returns:
-        Texte formate avec la source trouvee ou None
+        Tuple (texte_formate, source_url)
+        - texte_formate: Texte formate avec la source trouvee ou None
+        - source_url: URL de la source ou None
+        Story 5.5: Retourne maintenant l'URL separement pour affichage optionnel
     """
     try:
         # Recherche Tavily avec 1 resultat maximum
@@ -144,20 +148,20 @@ def _execute_tavily_search(tavily_client, query: str) -> Optional[str]:
             include_answer=True,   # Inclut une reponse synthetisee par Tavily
             include_raw_content=False,
             exclude_domains=[
-                # LinkedIn
-                "linkedin.com", "www.linkedin.com",
+                # LinkedIn (tous les sous-domaines pays: fr., de., uk., es., etc.)
+                "linkedin.com",
                 # Meta
-                "facebook.com", "www.facebook.com",
-                "instagram.com", "www.instagram.com",
+                "facebook.com",
+                "instagram.com",
                 "threads.net",
                 # X/Twitter
                 "twitter.com", "x.com",
                 # TikTok
-                "tiktok.com", "www.tiktok.com",
+                "tiktok.com",
                 # Reddit
-                "reddit.com", "www.reddit.com",
+                "reddit.com",
                 # YouTube
-                "youtube.com", "www.youtube.com",
+                "youtube.com",
                 # Autres reseaux sociaux
                 "pinterest.com", "snapchat.com", "tumblr.com", "quora.com",
             ]
@@ -165,7 +169,7 @@ def _execute_tavily_search(tavily_client, query: str) -> Optional[str]:
 
         # Verifier la reponse
         if not response:
-            return None
+            return None, None
 
         # Extraire la reponse synthetisee si disponible
         answer = response.get("answer", "")
@@ -173,10 +177,10 @@ def _execute_tavily_search(tavily_client, query: str) -> Optional[str]:
         # Extraire le premier resultat
         results = response.get("results", [])
         if not results:
-            # Si pas de resultat mais une reponse, l'utiliser
+            # Si pas de resultat mais une reponse, l'utiliser (pas d'URL dans ce cas)
             if answer:
-                return f"Source: Tavily AI\n{answer}"
-            return None
+                return f"Source: Tavily AI\n{answer}", None
+            return None, None
 
         first_result = results[0]
         title = first_result.get("title", "Source web")
@@ -192,8 +196,9 @@ def _execute_tavily_search(tavily_client, query: str) -> Optional[str]:
         elif answer:
             result_parts.append(f"Info: {answer[:300]}")
 
-        return "\n".join(result_parts)
+        # Story 5.5: Retourner le texte formate ET l'URL separement
+        return "\n".join(result_parts), url if url else None
 
     except Exception as e:
         logger.warning(f"Tavily search error: {type(e).__name__}: {str(e)}")
-        return None
+        return None, None

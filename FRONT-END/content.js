@@ -904,6 +904,52 @@
         });
       };
 
+      // V3 Story 5.4 — Bouton toggle News LinkedIn (MEDIUM+ uniquement)
+      const newsToggle = document.createElement('button');
+      newsToggle.className = 'ai-toggle-btn ai-news-toggle';
+      newsToggle.type = 'button';
+      if (isNegative) newsToggle.classList.add('negative');
+      if (isReplyToComment) newsToggle.classList.add('reply-mode');
+      newsToggle.innerHTML = `<span>📰 ${t('newsToggle')}</span>`;
+      newsToggle.title = t('newsToggleTooltip');
+
+      // Verifier le plan utilisateur pour le gating (MEDIUM+ requis)
+      chrome.storage.local.get(['user_plan'], (result) => {
+        const userPlan = result.user_plan || 'FREE';
+        if (userPlan === 'FREE') {
+          newsToggle.classList.add('locked');
+          newsToggle.innerHTML = `<span>🔒 ${t('newsToggle')}</span>`;
+        }
+      });
+
+      newsToggle.onclick = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        chrome.storage.local.get(['user_plan'], (result) => {
+          const userPlan = result.user_plan || 'FREE';
+          if (userPlan === 'FREE') {
+            // V3 Story 5.4 — Toast avec lien Stripe (MEDIUM+ requis)
+            showPremiumUpgradePrompt(t('newsUpgradeRequired'));
+            return;
+          }
+          // V3 Story 5.4 — MEDIUM et PREMIUM utilisent le meme mode smart-summary
+          const newsMode = 'smart-summary';
+          // Toggle l'etat actif/inactif
+          const currentMode = commentBox.getAttribute('data-news-enrichment');
+          if (currentMode) {
+            commentBox.removeAttribute('data-news-enrichment');
+            newsToggle.classList.remove('active');
+            newsToggle.innerHTML = `<span>📰 ${t('newsToggle')}</span>`;
+            newsToggle.title = t('newsToggleInactive');
+          } else {
+            commentBox.setAttribute('data-news-enrichment', newsMode);
+            newsToggle.classList.add('active');
+            newsToggle.innerHTML = `<span>✨ ${t('newsToggle')}</span>`;
+            newsToggle.title = t('newsToggleActive');
+          }
+        });
+      };
+
       // V3 Story 2.1 — Bouton Blacklist (PREMIUM uniquement)
       const blacklistBtn = document.createElement('button');
       blacklistBtn.className = 'ai-generate-button ai-blacklist-btn';
@@ -1017,6 +1063,7 @@
       buttonsWrapper.appendChild(tagAuthorToggle);
       buttonsWrapper.appendChild(contextToggle);
       buttonsWrapper.appendChild(webSearchToggle);
+      buttonsWrapper.appendChild(newsToggle);  // V3 Story 5.4 — News LinkedIn toggle
       buttonsWrapper.appendChild(blacklistBtn);
       buttonsWrapper.appendChild(viewBlacklistBtn);
       commentBox.parentElement.appendChild(buttonsWrapper);
@@ -1282,9 +1329,18 @@
         style: selectedStyle
       });
 
-      // Récupérer le mode d'enrichissement des actualités
-      const settings = await chrome.storage.sync.get(['newsEnrichmentMode']);
-      const newsEnrichmentMode = settings.newsEnrichmentMode || 'title-only';
+      // V3 Story 5.4 — Priorite au toggle du panneau, sinon fallback vers preference popup
+      const toggleNewsMode = commentBox.getAttribute('data-news-enrichment');
+      let newsEnrichmentMode = 'disabled';
+
+      if (toggleNewsMode && toggleNewsMode !== 'disabled') {
+        // Toggle actif dans le panneau → utiliser ce mode
+        newsEnrichmentMode = toggleNewsMode;
+      } else {
+        // Fallback vers la preference popup existante
+        const settings = await chrome.storage.sync.get(['newsEnrichmentMode']);
+        newsEnrichmentMode = settings.newsEnrichmentMode || 'title-only';
+      }
 
       // Extraire et envoyer les actualités LinkedIn au backend (si mode smart-summary)
       let newsContext = [];
@@ -1292,7 +1348,7 @@
         // sendNewsToBackend gère l'envoi au backend uniquement si mode = 'smart-summary'
         // Sinon, elle retourne simplement les news extraites pour le contexte
         newsContext = await sendNewsToBackend(newsEnrichmentMode, currentCommentLanguage);
-        console.log(`📰 Mode enrichissement: ${newsEnrichmentMode}, ${newsContext.length} actualités traitées`);
+        console.log(`📰 Mode enrichissement: ${newsEnrichmentMode}${toggleNewsMode ? ' (toggle panneau)' : ' (preference popup)'}, ${newsContext.length} actualités traitées`);
       } else {
         console.log('📰 Mode enrichissement désactivé');
       }
@@ -1365,7 +1421,8 @@
             }
           }
         } else if (response && response.comments) {
-          showOptionsPopup(commentBox, response.comments, postContent || '', null, isReplyToComment);
+          // V3 Story 5.5 — Passer l'URL source et le flag fallback au popup
+          showOptionsPopup(commentBox, response.comments, postContent || '', null, isReplyToComment, response.web_search_source_url, response.web_search_fallback);
 
           // V3 Story 1.4 — Notification de fallback si recherche web echouee
           if (response.web_search_fallback) {
@@ -1640,9 +1697,18 @@
         style: selectedStyle
       });
 
-      // Récupérer le mode d'enrichissement des actualités
-      const settings = await chrome.storage.sync.get(['newsEnrichmentMode']);
-      const newsEnrichmentMode = settings.newsEnrichmentMode || 'title-only';
+      // V3 Story 5.4 — Priorite au toggle du panneau, sinon fallback vers preference popup
+      const toggleNewsMode = commentBox.getAttribute('data-news-enrichment');
+      let newsEnrichmentMode = 'disabled';
+
+      if (toggleNewsMode && toggleNewsMode !== 'disabled') {
+        // Toggle actif dans le panneau → utiliser ce mode
+        newsEnrichmentMode = toggleNewsMode;
+      } else {
+        // Fallback vers la preference popup existante
+        const settings = await chrome.storage.sync.get(['newsEnrichmentMode']);
+        newsEnrichmentMode = settings.newsEnrichmentMode || 'title-only';
+      }
 
       // Extraire et envoyer les actualités LinkedIn au backend (si mode smart-summary)
       let newsContext = [];
@@ -1650,7 +1716,7 @@
         // sendNewsToBackend gère l'envoi au backend uniquement si mode = 'smart-summary'
         // Sinon, elle retourne simplement les news extraites pour le contexte
         newsContext = await sendNewsToBackend(newsEnrichmentMode, currentCommentLanguage);
-        console.log(`📰 Mode enrichissement (avec prompt): ${newsEnrichmentMode}, ${newsContext.length} actualités traitées`);
+        console.log(`📰 Mode enrichissement (avec prompt): ${newsEnrichmentMode}${toggleNewsMode ? ' (toggle panneau)' : ' (preference popup)'}, ${newsContext.length} actualités traitées`);
       } else {
         console.log('📰 Mode enrichissement désactivé (avec prompt)');
       }
@@ -1728,7 +1794,8 @@
             }
           }
         } else if (response && response.comments) {
-          showOptionsPopup(commentBox, response.comments, postContent || '', userPrompt, isReplyToComment);
+          // V3 Story 5.5 — Passer l'URL source et le flag fallback au popup
+          showOptionsPopup(commentBox, response.comments, postContent || '', userPrompt, isReplyToComment, response.web_search_source_url, response.web_search_fallback);
 
           // V3 Story 1.4 — Notification de fallback si recherche web echouee
           if (response.web_search_fallback) {
@@ -1791,7 +1858,8 @@
   }
 
   // Afficher le popup avec les options
-  function showOptionsPopup(commentBox, comments, postContent, userPrompt, isReplyToComment) {
+  // V3 Story 5.5 — Ajout des parametres webSearchSourceUrl (6eme) et webSearchFallback (7eme)
+  function showOptionsPopup(commentBox, comments, postContent, userPrompt, isReplyToComment, webSearchSourceUrl, webSearchFallback) {
     // Nettoyer les popups et overlays existants
     document.querySelectorAll('.ai-options-popup, .ai-prompt-popup, .ai-popup-overlay').forEach(p => p.remove());
 
@@ -1834,7 +1902,8 @@
             intensity: selectedIntensity,
             style: selectedStyle
           };
-          const option = createCommentOption(comment, index, commentBox, popup, postContent, userPrompt, isReplyToComment, isNegative, userPlan, metadata);
+          // V3 Story 5.5 — Passer webSearchSourceUrl (11eme) et webSearchFallback (12eme)
+          const option = createCommentOption(comment, index, commentBox, popup, postContent, userPrompt, isReplyToComment, isNegative, userPlan, metadata, webSearchSourceUrl, webSearchFallback);
           popup.appendChild(option);
         });
 
@@ -1908,10 +1977,14 @@
   }
 
   // Créer une option de commentaire
-  function createCommentOption(comment, index, commentBox, popup, postContent, userPrompt, isReplyToComment, isNegative, userPlan, metadata) {
+  // V3 Story 5.5 — Ajout des parametres webSearchSourceUrl (11eme) et webSearchFallback (12eme)
+  function createCommentOption(comment, index, commentBox, popup, postContent, userPrompt, isReplyToComment, isNegative, userPlan, metadata, webSearchSourceUrl, webSearchFallback) {
     const option = document.createElement('div');
     option.className = 'ai-option';
     if (isNegative) option.classList.add('negative');
+
+    // V3 Story 5.5 — Variable pour suivre le commentaire (peut etre modifie si source ajoutee)
+    let currentComment = comment;
 
     // Vérifier si cette option est verrouillée pour les utilisateurs FREE
     const isLocked = userPlan === 'FREE' && index > 0; // Options 2 et 3 verrouillées (index 1 et 2)
@@ -1987,6 +2060,42 @@
 
     option.appendChild(optionText);
 
+    // V3 Story 5.5 — Bouton "Afficher la source" ou "Aucune source trouvée"
+    // Le bouton s'affiche des que la recherche web est activee (webSearchFallback indique que la recherche etait activee)
+    if (webSearchSourceUrl) {
+      // Cas 1: Source disponible — bouton actif
+      const showSourceBtn = document.createElement('button');
+      showSourceBtn.className = 'ai-show-source-btn';
+      if (isNegative) showSourceBtn.classList.add('negative');
+      showSourceBtn.innerHTML = `🔗 ${t('showSourceBtn')}`;
+      showSourceBtn.onclick = (e) => {
+        e.stopPropagation(); // Empecher le clic de selectionner l'option
+        // Ajouter la source au commentaire
+        currentComment = comment + `\n\nSource: ${webSearchSourceUrl}`;
+        optionText.textContent = currentComment;
+        // Mettre a jour le bouton
+        showSourceBtn.innerHTML = `✓ ${t('showSourceAdded')}`;
+        showSourceBtn.classList.add('added');
+        showSourceBtn.disabled = true;
+      };
+      option.appendChild(showSourceBtn);
+    } else if (webSearchFallback || webSearchFallback === false) {
+      // Cas 2: Recherche web activee mais aucune source trouvee — bouton grise informatif
+      // Note: webSearchFallback === false signifie recherche reussie mais source = null (cas rare)
+      // webSearchFallback === true signifie recherche echouee/timeout
+      // Dans les deux cas, on affiche le bouton grise si pas de source
+      const showSourceBtn = document.createElement('button');
+      showSourceBtn.className = 'ai-show-source-btn disabled';
+      if (isNegative) showSourceBtn.classList.add('negative');
+      showSourceBtn.innerHTML = `🔗 ${t('noSourceAvailable')}`;
+      showSourceBtn.onclick = (e) => {
+        e.stopPropagation();
+        window.toastNotification.info(t('noSourceAvailable'));
+      };
+      option.appendChild(showSourceBtn);
+    }
+    // Cas 3: Recherche web non activee (webSearchFallback === undefined) — pas de bouton
+
     // Ajouter l'icône de verrouillage si l'option est verrouillée
     if (isLocked) {
       const lockIcon = document.createElement('div');
@@ -2006,8 +2115,9 @@
       }
 
       // V3 Story 1.2 v2 — Insertion en deux temps pour les mentions LinkedIn
+      // V3 Story 5.5 — Utiliser currentComment qui peut inclure la source
       const tagAuthorName = commentBox.getAttribute('data-tag-author');
-      const { beforeMention, afterMention, hasSplit } = splitCommentForMention(comment);
+      const { beforeMention, afterMention, hasSplit } = splitCommentForMention(currentComment);
 
       if (tagAuthorName && hasSplit && afterMention) {
         // Mode deux temps : inserer seulement le debut (jusqu'au @Prenom inclus)
@@ -2025,7 +2135,7 @@
         }
       } else {
         // Mode normal : inserer tout le commentaire (nettoyer le delimiteur si present)
-        commentBox.textContent = comment.replace('{{{SPLIT}}}', '');
+        commentBox.textContent = currentComment.replace('{{{SPLIT}}}', '');
       }
 
       popup.remove();
@@ -2045,11 +2155,12 @@
       commentBox.dispatchEvent(inputEvent);
 
       // Track comment insertion
+      // V3 Story 5.5 — Utiliser currentComment.length (peut inclure la source)
       if (phClient) {
         try {
           phClient.trackCommentInserted({
             commentIndex: index,
-            commentLength: comment.length,
+            commentLength: currentComment.length,
             hasCustomPrompt: !!userPrompt,
             language: metadata?.language || currentCommentLanguage,
             emotion: metadata?.emotion,

@@ -1371,6 +1371,36 @@
 }
 /* ========== FIN V3 TOGGLE RECHERCHE WEB ========== */
 
+/* ========== V3 Story 5.4 — TOGGLE NEWS LINKEDIN ========== */
+.ai-news-toggle {
+  background: linear-gradient(135deg, #6c757d 0%, #5a6268 100%) !important;
+  font-size: 12px !important;
+  padding: 4px 10px !important;
+  opacity: 0.85;
+}
+
+.ai-news-toggle:hover:not(:disabled):not(.locked) {
+  opacity: 1;
+}
+
+.ai-news-toggle.active {
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%) !important;
+  opacity: 1;
+  box-shadow: 0 0 8px rgba(245, 158, 11, 0.4);
+}
+
+.ai-news-toggle.locked {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background: linear-gradient(135deg, #9ca3af 0%, #6b7280 100%) !important;
+}
+
+.ai-news-toggle.locked:hover {
+  transform: none;
+  opacity: 0.5;
+}
+/* ========== FIN V3 TOGGLE NEWS LINKEDIN ========== */
+
 /* ========== V3 Story 2.1 — BLACKLIST ========== */
 .ai-blacklist-btn {
   background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%) !important;
@@ -1614,3 +1644,56 @@
   background: #005f8d;
 }
 /* ========== FIN V3 Story 2.3 POPUP WARNING BLACKLIST ========== */
+
+/* ========== V3 Story 5.5 BOUTON AFFICHER SOURCE ========== */
+
+.ai-show-source-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  font-size: 12px;
+  color: #0a66c2;
+  background: transparent;
+  border: 1px solid #0a66c2;
+  border-radius: 4px;
+  cursor: pointer;
+  margin-top: 8px;
+  margin-bottom: 8px;
+  transition: all 0.2s ease;
+}
+
+.ai-show-source-btn:hover:not(.disabled):not(.added) {
+  background: rgba(10, 102, 194, 0.1);
+}
+
+.ai-show-source-btn.disabled {
+  color: #999;
+  border-color: #ccc;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.ai-show-source-btn.added {
+  color: #057642;
+  border-color: #057642;
+  cursor: default;
+  background: rgba(5, 118, 66, 0.05);
+}
+
+/* Mode negatif */
+.ai-show-source-btn.negative {
+  color: #f5f5f5;
+  border-color: #f5f5f5;
+}
+
+.ai-show-source-btn.negative:hover:not(.disabled):not(.added) {
+  background: rgba(245, 245, 245, 0.1);
+}
+
+.ai-show-source-btn.negative.added {
+  color: #86efac;
+  border-color: #86efac;
+}
+
+/* ========== FIN V3 Story 5.5 BOUTON AFFICHER SOURCE ========== */

@@ -595,7 +595,12 @@ async function handleGenerateComments(data, sendResponse) {
       }
     }
 
-    sendResponse({ comments: result.comments });
+    // V3 Story 5.5 — Inclure web_search_source_url et web_search_fallback dans la reponse
+    sendResponse({
+      comments: result.comments,
+      web_search_source_url: result.web_search_source_url,
+      web_search_fallback: result.web_search_fallback
+    });
 
   } catch (error) {
     console.error('❌ Erreur génération:', error);
@@ -696,7 +701,12 @@ async function handleGenerateCommentsWithPrompt(data, sendResponse) {
       }
     }
 
-    sendResponse({ comments: result.comments });
+    // V3 Story 5.5 — Inclure web_search_source_url et web_search_fallback dans la reponse
+    sendResponse({
+      comments: result.comments,
+      web_search_source_url: result.web_search_source_url,
+      web_search_fallback: result.web_search_fallback
+    });
 
   } catch (error) {
     console.error('❌ Erreur génération avec prompt:', error);

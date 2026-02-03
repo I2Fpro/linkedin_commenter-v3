@@ -824,17 +824,19 @@ Commentaire uniquement, sans préambule.
 """
 
         # V3 Story 1.4 — Recherche web si activee
+        # V3 Story 5.5 — Capture de l'URL source separement
         web_search_result = None
         web_search_success = False
+        web_search_source_url = None
         if request.web_search_enabled:
             logger.info("Web search: lancement de la recherche...")
-            web_search_result, web_search_success = await search_web_for_context(
-                client=client,
-                post_content=cleaned_post,
-                model=MODEL_NAME
+            web_search_result, web_search_success, web_search_source_url = await search_web_for_context(
+                post_content=cleaned_post
             )
             if not web_search_success:
                 logger.info("Web search: fallback vers generation classique")
+            elif web_search_source_url:
+                logger.info(f"Web search: URL source capturee = {web_search_source_url[:50]}...")
 
         # V3 — Enrichissement du prompt via prompt_builder
         prompt = build_enriched_prompt(
@@ -859,6 +861,7 @@ Commentaire uniquement, sans préambule.
             "include_quote": request.include_quote,
             "web_search_enabled": request.web_search_enabled,
             "web_search_success": web_search_success,
+            "web_search_source_url": web_search_source_url,
             "post_received": request.post is not None and len(request.post.strip()) > 0 if request.post else False,
             "post_preview": (request.post[:150] + "...") if request.post and len(request.post) > 150 else request.post,
         }
@@ -904,10 +907,12 @@ Commentaire uniquement, sans préambule.
             }
         )
 
+        # V3 Story 5.5 — Inclure web_search_source_url dans la reponse
         return {
             "comments": comments[:request.optionsCount],
             "context_used": context_used,
-            "web_search_fallback": request.web_search_enabled and not web_search_success
+            "web_search_fallback": request.web_search_enabled and not web_search_success,
+            "web_search_source_url": web_search_source_url
         }
 
     except Exception as exc:
@@ -1091,17 +1096,19 @@ Commentaire uniquement.
 """
 
         # V3 Story 1.4 — Recherche web si activee
+        # V3 Story 5.5 — Capture de l'URL source separement
         web_search_result = None
         web_search_success = False
+        web_search_source_url = None
         if request.web_search_enabled:
             logger.info("Web search: lancement de la recherche...")
-            web_search_result, web_search_success = await search_web_for_context(
-                client=client,
-                post_content=cleaned_post,
-                model=MODEL_NAME
+            web_search_result, web_search_success, web_search_source_url = await search_web_for_context(
+                post_content=cleaned_post
             )
             if not web_search_success:
                 logger.info("Web search: fallback vers generation classique")
+            elif web_search_source_url:
+                logger.info(f"Web search: URL source capturee = {web_search_source_url[:50]}...")
 
         # V3 — Enrichissement du prompt via prompt_builder
         prompt = build_enriched_prompt(
@@ -1127,7 +1134,8 @@ Commentaire uniquement.
             "news_count": len(request.newsContext) if request.newsContext else 0,
             "include_quote": request.include_quote,
             "web_search_enabled": request.web_search_enabled,
-            "web_search_success": web_search_success
+            "web_search_success": web_search_success,
+            "web_search_source_url": web_search_source_url
         }
 
         # Mesurer le temps de génération
@@ -1176,10 +1184,12 @@ Commentaire uniquement.
             }
         )
 
+        # V3 Story 5.5 — Inclure web_search_source_url dans la reponse
         return {
             "comments": comments[:request.optionsCount],
             "context_used": context_used,
-            "web_search_fallback": request.web_search_enabled and not web_search_success
+            "web_search_fallback": request.web_search_enabled and not web_search_success,
+            "web_search_source_url": web_search_source_url
         }
 
     except Exception as exc:

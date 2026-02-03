@@ -169,7 +169,19 @@ class I18n {
 
         // V3 Story 5.1 — Locked comments upgrade
         lockedCommentUpgradeRequired: 'Passez à MEDIUM ou PREMIUM pour débloquer les commentaires supplémentaires.',
-        lockedRefineResizeUpgradeRequired: 'Passez à MEDIUM ou PREMIUM pour utiliser Affiner et Redimensionner.'
+        lockedRefineResizeUpgradeRequired: 'Passez à MEDIUM ou PREMIUM pour utiliser Affiner et Redimensionner.',
+
+        // V3 Story 5.4 — News LinkedIn toggle
+        newsToggle: 'News LinkedIn',
+        newsToggleActive: 'News LinkedIn activées',
+        newsToggleInactive: 'News LinkedIn désactivées',
+        newsToggleTooltip: 'Enrichit votre commentaire avec les actualités LinkedIn',
+        newsUpgradeRequired: 'L\'enrichissement actualités est réservé aux abonnés MEDIUM ou supérieur',
+
+        // V3 Story 5.5 — Afficher la source web
+        showSourceBtn: 'Afficher la source',
+        showSourceAdded: 'Source ajoutée',
+        noSourceAvailable: 'Source non disponible'
         // Note: V3 Story 2.3 translations are in content.js local translations object
       },
       en: {
@@ -338,7 +350,19 @@ class I18n {
 
         // V3 Story 5.1 — Locked comments upgrade
         lockedCommentUpgradeRequired: 'Upgrade to MEDIUM or PREMIUM to unlock additional comments.',
-        lockedRefineResizeUpgradeRequired: 'Upgrade to MEDIUM or PREMIUM to use Refine and Resize.'
+        lockedRefineResizeUpgradeRequired: 'Upgrade to MEDIUM or PREMIUM to use Refine and Resize.',
+
+        // V3 Story 5.4 — News LinkedIn toggle
+        newsToggle: 'LinkedIn News',
+        newsToggleActive: 'LinkedIn News enabled',
+        newsToggleInactive: 'LinkedIn News disabled',
+        newsToggleTooltip: 'Enriches your comment with LinkedIn news',
+        newsUpgradeRequired: 'News enrichment is reserved for MEDIUM subscribers or higher',
+
+        // V3 Story 5.5 — Show web source
+        showSourceBtn: 'Show source',
+        showSourceAdded: 'Source added',
+        noSourceAvailable: 'Source unavailable'
         // Note: V3 Story 2.3 translations are in content.js local translations object
       }
     };
