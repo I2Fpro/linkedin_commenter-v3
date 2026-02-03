@@ -1,0 +1,99 @@
+/* ================================================
+   DESIGN TOKENS - V3.1 UX Refactoring
+   Source: _bmad-output/planning-artifacts/ux-design-specification.md
+   Story: 7.1 - Creation des Design Tokens CSS
+   Date: 2026-02-03
+   ================================================ */
+
+:root {
+  /* ================================================
+     COULEURS PRIMAIRES
+     ================================================ */
+  --ai-primary: #FFD700;           /* Jaune/or - action principale (Generer) */
+  --ai-primary-hover: #FFC107;
+  --ai-secondary: #4CAF50;         /* Vert - succes, actif, validation */
+  --ai-secondary-hover: #43A047;
+  --ai-accent: #2196F3;            /* Bleu - information, liens */
+  --ai-danger: #E74C3C;            /* Rouge - suppression, danger, blacklist */
+  --ai-danger-hover: #C0392B;
+
+  /* ================================================
+     NEUTRES
+     ================================================ */
+  --ai-neutral-100: #FFFFFF;
+  --ai-neutral-200: #E0E0E0;
+  --ai-neutral-300: #A0A0A0;
+  --ai-neutral-400: #6B7280;
+  --ai-neutral-500: #4A4A5A;
+  --ai-neutral-600: #3D3D4D;
+  --ai-neutral-700: #2D2D3D;
+  --ai-neutral-800: #1E1E2E;
+  --ai-neutral-900: #121218;
+
+  /* ================================================
+     FOND (DARK MODE)
+     ================================================ */
+  --ai-bg-dark: var(--ai-neutral-800);
+  --ai-bg-card: var(--ai-neutral-700);
+  --ai-bg-hover: var(--ai-neutral-600);
+  --ai-bg-overlay: rgba(0, 0, 0, 0.6);
+
+  /* ================================================
+     TEXTE
+     ================================================ */
+  --ai-text-primary: var(--ai-neutral-100);
+  --ai-text-secondary: var(--ai-neutral-300);
+  --ai-text-muted: var(--ai-neutral-400);
+
+  /* ================================================
+     ETATS
+     ================================================ */
+  --ai-state-active: var(--ai-secondary);
+  --ai-state-inactive: var(--ai-neutral-400);
+  --ai-state-locked: var(--ai-neutral-500);
+  --ai-state-warning: #F39C12;
+  --ai-state-error: var(--ai-danger);
+
+  /* ================================================
+     ESPACEMENTS
+     ================================================ */
+  --ai-spacing-xs: 4px;
+  --ai-spacing-sm: 8px;
+  --ai-spacing-md: 16px;
+  --ai-spacing-lg: 24px;
+  --ai-spacing-xl: 32px;
+
+  /* ================================================
+     RAYONS DE BORDURE
+     ================================================ */
+  --ai-radius-sm: 4px;
+  --ai-radius-md: 8px;
+  --ai-radius-lg: 12px;
+  --ai-radius-full: 9999px;
+
+  /* ================================================
+     OMBRES
+     ================================================ */
+  --ai-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.2);
+  --ai-shadow-md: 0 4px 6px rgba(0, 0, 0, 0.3);
+  --ai-shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.4);
+
+  /* ================================================
+     TRANSITIONS
+     ================================================ */
+  --ai-transition-fast: 150ms ease;
+  --ai-transition-normal: 300ms ease;
+  --ai-transition-slow: 500ms ease;
+
+  /* ================================================
+     TYPOGRAPHIE
+     ================================================ */
+  --ai-font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --ai-font-size-xs: 11px;
+  --ai-font-size-sm: 13px;
+  --ai-font-size-md: 14px;
+  --ai-font-size-lg: 16px;
+  --ai-font-weight-normal: 400;
+  --ai-font-weight-medium: 500;
+  --ai-font-weight-bold: 600;
+}
