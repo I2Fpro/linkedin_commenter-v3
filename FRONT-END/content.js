@@ -685,21 +685,25 @@
         toggleEmotionsPanel(buttonsWrapper, commentBox);
       };
 
-      // V3 — Bouton toggle Citation (PREMIUM uniquement)
+      // V3 Story 7.3 — Toggle Citation BEM (PREMIUM uniquement)
       const quoteToggle = document.createElement('button');
-      quoteToggle.className = 'ai-button ai-button--secondary ai-quote-toggle';
+      quoteToggle.className = 'ai-toggle ai-toggle--inactive ai-quote-toggle';
       quoteToggle.type = 'button';
+      quoteToggle.setAttribute('aria-pressed', 'false');
+      quoteToggle.setAttribute('aria-label', t('quoteToggleInactive'));
       if (isNegative) quoteToggle.classList.add('negative');
       if (isReplyToComment) quoteToggle.classList.add('reply-mode');
-      quoteToggle.innerHTML = `<span>💬 ${t('quoteToggle')}</span>`;
+      quoteToggle.innerHTML = `<span class="ai-toggle__icon">💬</span><span class="ai-toggle__label">${t('quoteToggle')}</span>`;
       quoteToggle.title = t('quoteToggleInactive');
 
       // Verifier le plan utilisateur pour le gating
       chrome.storage.local.get(['user_plan'], (result) => {
         const userPlan = result.user_plan || 'FREE';
         if (userPlan !== 'PREMIUM') {
-          quoteToggle.classList.add('locked');
-          quoteToggle.innerHTML = `<span>🔒 ${t('quoteToggle')}</span>`;
+          quoteToggle.classList.remove('ai-toggle--inactive');
+          quoteToggle.classList.add('ai-toggle--locked');
+          quoteToggle.setAttribute('aria-disabled', 'true');
+          quoteToggle.innerHTML = `<span class="ai-toggle__icon">💬</span><span class="ai-toggle__label">${t('quoteToggle')}</span><span class="ai-toggle__lock">🔒</span>`;
         }
       });
 
@@ -717,33 +721,41 @@
           const isActive = commentBox.getAttribute('data-include-quote') === 'true';
           if (isActive) {
             commentBox.removeAttribute('data-include-quote');
-            quoteToggle.classList.remove('active');
-            quoteToggle.innerHTML = `<span>💬 ${t('quoteToggle')}</span>`;
+            quoteToggle.classList.remove('ai-toggle--active');
+            quoteToggle.classList.add('ai-toggle--inactive');
+            quoteToggle.setAttribute('aria-pressed', 'false');
+            quoteToggle.innerHTML = `<span class="ai-toggle__icon">💬</span><span class="ai-toggle__label">${t('quoteToggle')}</span>`;
             quoteToggle.title = t('quoteToggleInactive');
           } else {
             commentBox.setAttribute('data-include-quote', 'true');
-            quoteToggle.classList.add('active');
-            quoteToggle.innerHTML = `<span>✨ ${t('quoteToggle')}</span>`;
+            quoteToggle.classList.remove('ai-toggle--inactive');
+            quoteToggle.classList.add('ai-toggle--active');
+            quoteToggle.setAttribute('aria-pressed', 'true');
+            quoteToggle.innerHTML = `<span class="ai-toggle__icon">💬</span><span class="ai-toggle__label">${t('quoteToggle')}</span><span class="ai-toggle__check">✓</span>`;
             quoteToggle.title = t('quoteToggleActive');
           }
         });
       };
 
-      // V3 — Bouton toggle Tag Auteur (PREMIUM uniquement)
+      // V3 Story 7.3 — Toggle Tag Auteur BEM (PREMIUM uniquement)
       const tagAuthorToggle = document.createElement('button');
-      tagAuthorToggle.className = 'ai-button ai-button--secondary ai-tag-author-toggle';
+      tagAuthorToggle.className = 'ai-toggle ai-toggle--inactive ai-tag-author-toggle';
       tagAuthorToggle.type = 'button';
+      tagAuthorToggle.setAttribute('aria-pressed', 'false');
+      tagAuthorToggle.setAttribute('aria-label', t('tagAuthorTooltip'));
       if (isNegative) tagAuthorToggle.classList.add('negative');
       if (isReplyToComment) tagAuthorToggle.classList.add('reply-mode');
-      tagAuthorToggle.innerHTML = `<span>👤 ${t('tagAuthor')}</span>`;
+      tagAuthorToggle.innerHTML = `<span class="ai-toggle__icon">👤</span><span class="ai-toggle__label">${t('tagAuthor')}</span>`;
       tagAuthorToggle.title = t('tagAuthorTooltip');
 
       // Verifier le plan utilisateur pour le gating
       chrome.storage.local.get(['user_plan'], (result) => {
         const userPlan = result.user_plan || 'FREE';
         if (userPlan !== 'PREMIUM') {
-          tagAuthorToggle.classList.add('locked');
-          tagAuthorToggle.innerHTML = `<span>🔒 ${t('tagAuthor')}</span>`;
+          tagAuthorToggle.classList.remove('ai-toggle--inactive');
+          tagAuthorToggle.classList.add('ai-toggle--locked');
+          tagAuthorToggle.setAttribute('aria-disabled', 'true');
+          tagAuthorToggle.innerHTML = `<span class="ai-toggle__icon">👤</span><span class="ai-toggle__label">${t('tagAuthor')}</span><span class="ai-toggle__lock">🔒</span>`;
         }
       });
 
@@ -762,8 +774,10 @@
           const currentAuthor = commentBox.getAttribute('data-tag-author');
           if (currentAuthor) {
             commentBox.removeAttribute('data-tag-author');
-            tagAuthorToggle.classList.remove('active');
-            tagAuthorToggle.innerHTML = `<span>👤 ${t('tagAuthor')}</span>`;
+            tagAuthorToggle.classList.remove('ai-toggle--active');
+            tagAuthorToggle.classList.add('ai-toggle--inactive');
+            tagAuthorToggle.setAttribute('aria-pressed', 'false');
+            tagAuthorToggle.innerHTML = `<span class="ai-toggle__icon">👤</span><span class="ai-toggle__label">${t('tagAuthor')}</span>`;
             tagAuthorToggle.title = t('tagAuthorTooltip');
             return;
           }
@@ -806,8 +820,10 @@
           if (authorName) {
             // Activation reussie
             commentBox.setAttribute('data-tag-author', authorName);
-            tagAuthorToggle.classList.add('active');
-            tagAuthorToggle.innerHTML = `<span>✨ ${t('tagAuthor')}</span>`;
+            tagAuthorToggle.classList.remove('ai-toggle--inactive');
+            tagAuthorToggle.classList.add('ai-toggle--active');
+            tagAuthorToggle.setAttribute('aria-pressed', 'true');
+            tagAuthorToggle.innerHTML = `<span class="ai-toggle__icon">👤</span><span class="ai-toggle__label">${t('tagAuthor')}</span><span class="ai-toggle__check">✓</span>`;
             tagAuthorToggle.title = `${t('tagAuthorActive')}: ${authorName}`;
           } else {
             // Extraction echouee
@@ -816,21 +832,25 @@
         });
       };
 
-      // V3 Story 1.3 — Bouton toggle Contexte (commentaires tiers) (PREMIUM uniquement)
+      // V3 Story 7.3 — Toggle Contexte BEM (commentaires tiers) (PREMIUM uniquement)
       const contextToggle = document.createElement('button');
-      contextToggle.className = 'ai-button ai-button--secondary ai-context-toggle';
+      contextToggle.className = 'ai-toggle ai-toggle--inactive ai-context-toggle';
       contextToggle.type = 'button';
+      contextToggle.setAttribute('aria-pressed', 'false');
+      contextToggle.setAttribute('aria-label', t('contextToggleTooltip'));
       if (isNegative) contextToggle.classList.add('negative');
       if (isReplyToComment) contextToggle.classList.add('reply-mode');
-      contextToggle.innerHTML = `<span>💬 ${t('contextToggle')}</span>`;
+      contextToggle.innerHTML = `<span class="ai-toggle__icon">💭</span><span class="ai-toggle__label">${t('contextToggle')}</span>`;
       contextToggle.title = t('contextToggleTooltip');
 
       // Verifier le plan utilisateur pour le gating
       chrome.storage.local.get(['user_plan'], (result) => {
         const userPlan = result.user_plan || 'FREE';
         if (userPlan !== 'PREMIUM') {
-          contextToggle.classList.add('locked');
-          contextToggle.innerHTML = `<span>🔒 ${t('contextToggle')}</span>`;
+          contextToggle.classList.remove('ai-toggle--inactive');
+          contextToggle.classList.add('ai-toggle--locked');
+          contextToggle.setAttribute('aria-disabled', 'true');
+          contextToggle.innerHTML = `<span class="ai-toggle__icon">💭</span><span class="ai-toggle__label">${t('contextToggle')}</span><span class="ai-toggle__lock">🔒</span>`;
         }
       });
 
@@ -848,33 +868,41 @@
           const isActive = commentBox.getAttribute('data-include-context') === 'true';
           if (isActive) {
             commentBox.removeAttribute('data-include-context');
-            contextToggle.classList.remove('active');
-            contextToggle.innerHTML = `<span>💬 ${t('contextToggle')}</span>`;
+            contextToggle.classList.remove('ai-toggle--active');
+            contextToggle.classList.add('ai-toggle--inactive');
+            contextToggle.setAttribute('aria-pressed', 'false');
+            contextToggle.innerHTML = `<span class="ai-toggle__icon">💭</span><span class="ai-toggle__label">${t('contextToggle')}</span>`;
             contextToggle.title = t('contextToggleInactive');
           } else {
             commentBox.setAttribute('data-include-context', 'true');
-            contextToggle.classList.add('active');
-            contextToggle.innerHTML = `<span>✨ ${t('contextToggle')}</span>`;
+            contextToggle.classList.remove('ai-toggle--inactive');
+            contextToggle.classList.add('ai-toggle--active');
+            contextToggle.setAttribute('aria-pressed', 'true');
+            contextToggle.innerHTML = `<span class="ai-toggle__icon">💭</span><span class="ai-toggle__label">${t('contextToggle')}</span><span class="ai-toggle__check">✓</span>`;
             contextToggle.title = t('contextToggleActive');
           }
         });
       };
 
-      // V3 Story 1.4 — Bouton toggle Recherche Web (PREMIUM uniquement)
+      // V3 Story 7.3 — Toggle Recherche Web BEM (PREMIUM uniquement)
       const webSearchToggle = document.createElement('button');
-      webSearchToggle.className = 'ai-button ai-button--secondary ai-web-search-toggle';
+      webSearchToggle.className = 'ai-toggle ai-toggle--inactive ai-web-search-toggle';
       webSearchToggle.type = 'button';
+      webSearchToggle.setAttribute('aria-pressed', 'false');
+      webSearchToggle.setAttribute('aria-label', t('webSearchToggleTooltip'));
       if (isNegative) webSearchToggle.classList.add('negative');
       if (isReplyToComment) webSearchToggle.classList.add('reply-mode');
-      webSearchToggle.innerHTML = `<span>🌐 ${t('webSearchToggle')}</span>`;
+      webSearchToggle.innerHTML = `<span class="ai-toggle__icon">🔍</span><span class="ai-toggle__label">${t('webSearchToggle')}</span>`;
       webSearchToggle.title = t('webSearchToggleTooltip');
 
       // Verifier le plan utilisateur pour le gating
       chrome.storage.local.get(['user_plan'], (result) => {
         const userPlan = result.user_plan || 'FREE';
         if (userPlan !== 'PREMIUM') {
-          webSearchToggle.classList.add('locked');
-          webSearchToggle.innerHTML = `<span>🔒 ${t('webSearchToggle')}</span>`;
+          webSearchToggle.classList.remove('ai-toggle--inactive');
+          webSearchToggle.classList.add('ai-toggle--locked');
+          webSearchToggle.setAttribute('aria-disabled', 'true');
+          webSearchToggle.innerHTML = `<span class="ai-toggle__icon">🔍</span><span class="ai-toggle__label">${t('webSearchToggle')}</span><span class="ai-toggle__lock">🔒</span>`;
         }
       });
 
@@ -892,33 +920,42 @@
           const isActive = commentBox.getAttribute('data-web-search') === 'true';
           if (isActive) {
             commentBox.removeAttribute('data-web-search');
-            webSearchToggle.classList.remove('active');
-            webSearchToggle.innerHTML = `<span>🌐 ${t('webSearchToggle')}</span>`;
+            webSearchToggle.classList.remove('ai-toggle--active');
+            webSearchToggle.classList.add('ai-toggle--inactive');
+            webSearchToggle.setAttribute('aria-pressed', 'false');
+            webSearchToggle.innerHTML = `<span class="ai-toggle__icon">🔍</span><span class="ai-toggle__label">${t('webSearchToggle')}</span>`;
             webSearchToggle.title = t('webSearchToggleInactive');
           } else {
             commentBox.setAttribute('data-web-search', 'true');
-            webSearchToggle.classList.add('active');
-            webSearchToggle.innerHTML = `<span>✨ ${t('webSearchToggle')}</span>`;
+            webSearchToggle.classList.remove('ai-toggle--inactive');
+            webSearchToggle.classList.add('ai-toggle--active');
+            webSearchToggle.setAttribute('aria-pressed', 'true');
+            webSearchToggle.innerHTML = `<span class="ai-toggle__icon">🔍</span><span class="ai-toggle__label">${t('webSearchToggle')}</span><span class="ai-toggle__check">✓</span>`;
             webSearchToggle.title = t('webSearchToggleActive');
           }
         });
       };
 
       // V3 Story 5.4 — Bouton toggle News LinkedIn (MEDIUM+ uniquement)
+      // V3 Story 7.3 — Toggle News LinkedIn BEM (MEDIUM+ uniquement)
       const newsToggle = document.createElement('button');
-      newsToggle.className = 'ai-button ai-button--secondary ai-news-toggle';
+      newsToggle.className = 'ai-toggle ai-toggle--inactive ai-news-toggle';
       newsToggle.type = 'button';
+      newsToggle.setAttribute('aria-pressed', 'false');
+      newsToggle.setAttribute('aria-label', t('newsToggleTooltip'));
       if (isNegative) newsToggle.classList.add('negative');
       if (isReplyToComment) newsToggle.classList.add('reply-mode');
-      newsToggle.innerHTML = `<span>📰 ${t('newsToggle')}</span>`;
+      newsToggle.innerHTML = `<span class="ai-toggle__icon">📰</span><span class="ai-toggle__label">${t('newsToggle')}</span>`;
       newsToggle.title = t('newsToggleTooltip');
 
       // Verifier le plan utilisateur pour le gating (MEDIUM+ requis)
       chrome.storage.local.get(['user_plan'], (result) => {
         const userPlan = result.user_plan || 'FREE';
         if (userPlan === 'FREE') {
-          newsToggle.classList.add('locked');
-          newsToggle.innerHTML = `<span>🔒 ${t('newsToggle')}</span>`;
+          newsToggle.classList.remove('ai-toggle--inactive');
+          newsToggle.classList.add('ai-toggle--locked');
+          newsToggle.setAttribute('aria-disabled', 'true');
+          newsToggle.innerHTML = `<span class="ai-toggle__icon">📰</span><span class="ai-toggle__label">${t('newsToggle')}</span><span class="ai-toggle__lock">🔒</span>`;
         }
       });
 
@@ -938,13 +975,17 @@
           const currentMode = commentBox.getAttribute('data-news-enrichment');
           if (currentMode) {
             commentBox.removeAttribute('data-news-enrichment');
-            newsToggle.classList.remove('active');
-            newsToggle.innerHTML = `<span>📰 ${t('newsToggle')}</span>`;
+            newsToggle.classList.remove('ai-toggle--active');
+            newsToggle.classList.add('ai-toggle--inactive');
+            newsToggle.setAttribute('aria-pressed', 'false');
+            newsToggle.innerHTML = `<span class="ai-toggle__icon">📰</span><span class="ai-toggle__label">${t('newsToggle')}</span>`;
             newsToggle.title = t('newsToggleInactive');
           } else {
             commentBox.setAttribute('data-news-enrichment', newsMode);
-            newsToggle.classList.add('active');
-            newsToggle.innerHTML = `<span>✨ ${t('newsToggle')}</span>`;
+            newsToggle.classList.remove('ai-toggle--inactive');
+            newsToggle.classList.add('ai-toggle--active');
+            newsToggle.setAttribute('aria-pressed', 'true');
+            newsToggle.innerHTML = `<span class="ai-toggle__icon">📰</span><span class="ai-toggle__label">${t('newsToggle')}</span><span class="ai-toggle__check">✓</span>`;
             newsToggle.title = t('newsToggleActive');
           }
         });
