@@ -1262,9 +1262,9 @@
   // V3 Story 7.6 — Viewport Detection with ResizeObserver
   // Detects narrow viewports and triggers fallback to inline mode
   // ================================================
-  // V3 Story 7.6 - TEMP: seuil abaissé pour tests (original: 500)
-  const VIEWPORT_NARROW = 300;  // < 300px → force inline
-  const VIEWPORT_WIDE = 500;    // > 500px → wide mode
+  // V3 Story 7.6 — Viewport breakpoints (AC #3: < 500px → inline mode)
+  const VIEWPORT_NARROW = 500;  // < 500px → force inline
+  const VIEWPORT_WIDE = 700;    // > 700px → wide mode
 
   // Store active observers for cleanup
   const activeResizeObservers = new WeakMap();
@@ -1351,6 +1351,37 @@
       observer.disconnect();
       activeResizeObservers.delete(controlsElement);
     }
+  }
+
+  // ================================================
+  // V3 Story 7.6 — Auto-cleanup observer for removed controls
+  // Watches DOM for removed ai-controls and cleans up ResizeObservers
+  // Fix: Memory leak prevention (Code Review Issue #1)
+  // ================================================
+  const controlsCleanupObserver = new MutationObserver((mutations) => {
+    for (const mutation of mutations) {
+      for (const removedNode of mutation.removedNodes) {
+        if (removedNode.nodeType === Node.ELEMENT_NODE) {
+          // Check if the removed node is an ai-controls element
+          if (removedNode.classList && removedNode.classList.contains('ai-controls')) {
+            cleanupViewportObserver(removedNode);
+          }
+          // Also check children in case a parent container was removed
+          const removedControls = removedNode.querySelectorAll ?
+            removedNode.querySelectorAll('.ai-controls') : [];
+          removedControls.forEach(control => cleanupViewportObserver(control));
+        }
+      }
+    }
+  });
+
+  // Start observing for removed controls (will be connected after DOM ready)
+  if (document.body) {
+    controlsCleanupObserver.observe(document.body, { childList: true, subtree: true });
+  } else {
+    document.addEventListener('DOMContentLoaded', () => {
+      controlsCleanupObserver.observe(document.body, { childList: true, subtree: true });
+    });
   }
 
   // Ajouter les boutons

@@ -114,6 +114,7 @@ class I18n {
 
         // V3 — Citation contextuelle
         quoteToggle: 'Citation',
+        quoteToggleTooltip: 'Inclut une citation du post dans le commentaire',
         quoteToggleActive: 'Citation activée',
         quoteToggleInactive: 'Citation désactivée',
         quoteUpgradeRequired: 'La citation contextuelle est réservée aux abonnés Premium',
@@ -300,6 +301,7 @@ class I18n {
 
         // V3 — Contextual quote
         quoteToggle: 'Quote',
+        quoteToggleTooltip: 'Includes a quote from the post in the comment',
         quoteToggleActive: 'Quote enabled',
         quoteToggleInactive: 'Quote disabled',
         quoteUpgradeRequired: 'Contextual quotes are reserved for Premium subscribers',
