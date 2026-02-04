@@ -25,8 +25,8 @@
   // Traductions pour le content script
   const translations = {
     fr: {
-      generate: '✨ Générer',
-      withPrompt: '💭 Avec prompt',
+      generate: 'Générer',
+      withPrompt: 'Avec prompt',
       generating: 'Génération...',
       customInstructions: 'Instructions personnalisées',
       addInstructions: 'Ajoutez vos instructions...',
@@ -94,8 +94,8 @@
       personalisationTooltip: 'Choisir émotion et style de langage'
     },
     en: {
-      generate: '✨ Generate',
-      withPrompt: '💭 With prompt',
+      generate: 'Generate',
+      withPrompt: 'With prompt',
       generating: 'Generating...',
       customInstructions: 'Custom instructions',
       addInstructions: 'Add your instructions...',
@@ -1224,6 +1224,292 @@
   }
 
   // ================================================
+  // V3 Story 7.7 — Create Inline Mode Controls
+  // Creates the chip-based UI for regular users
+  // Chips: horizontal layout with labels courts
+  // ================================================
+  function createInlineModeControls(commentBox, userPlan, isNegative, isReplyToComment) {
+    const isPremium = userPlan === 'PREMIUM';
+    const isMediumPlus = userPlan === 'MEDIUM' || userPlan === 'PREMIUM';
+
+    // Container principal
+    const container = document.createElement('div');
+    container.className = 'ai-controls ai-controls--inline';
+    container.setAttribute('data-viewport', 'normal');
+    container.setAttribute('role', 'region');
+    container.setAttribute('aria-label', 'AI Comment Generator');
+
+    // Helper pour creer un chip d'action
+    const createActionChip = (icon, labelKey, onClick, variant = 'secondary') => {
+      const chip = document.createElement('button');
+      chip.type = 'button';
+      chip.className = `ai-chip ai-chip--${variant}`;
+      if (isNegative) chip.classList.add('negative');
+      if (isReplyToComment) chip.classList.add('reply-mode');
+      chip.innerHTML = `<span class="ai-chip__icon">${icon}</span><span class="ai-chip__label">${t(labelKey)}</span>`;
+      chip.setAttribute('aria-label', t(labelKey));
+      chip.onclick = onClick;
+      return chip;
+    };
+
+    // Helper pour creer un chip toggle
+    const createToggleChip = (icon, labelKey, dataAttr, ariaLabelKey, lockedMessageKey, requiredPlan = 'PREMIUM') => {
+      const chip = document.createElement('button');
+      chip.type = 'button';
+      chip.setAttribute('aria-pressed', 'false');
+
+      // Determiner si l'utilisateur a acces
+      const hasAccess = requiredPlan === 'MEDIUM' ? isMediumPlus : isPremium;
+
+      if (!hasAccess) {
+        chip.className = 'ai-chip ai-chip--locked';
+        chip.setAttribute('aria-disabled', 'true');
+        chip.setAttribute('aria-label', t(ariaLabelKey) + ' (Premium)');
+        chip.innerHTML = `<span class="ai-chip__icon">${icon}</span><span class="ai-chip__label">${t(labelKey)}</span><span class="ai-chip__lock">🔒</span>`;
+      } else {
+        chip.className = 'ai-chip ai-chip--inactive';
+        chip.setAttribute('aria-label', t(ariaLabelKey));
+        chip.innerHTML = `<span class="ai-chip__icon">${icon}</span><span class="ai-chip__label">${t(labelKey)}</span>`;
+      }
+
+      if (isNegative) chip.classList.add('negative');
+      if (isReplyToComment) chip.classList.add('reply-mode');
+
+      chip.onclick = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+
+        if (!hasAccess) {
+          showPremiumUpgradePrompt(t(lockedMessageKey));
+          return;
+        }
+
+        const isActive = commentBox.getAttribute(dataAttr) === 'true';
+        if (isActive) {
+          commentBox.removeAttribute(dataAttr);
+          chip.classList.remove('ai-chip--active');
+          chip.classList.add('ai-chip--inactive');
+          chip.setAttribute('aria-pressed', 'false');
+          chip.innerHTML = `<span class="ai-chip__icon">${icon}</span><span class="ai-chip__label">${t(labelKey)}</span>`;
+        } else {
+          commentBox.setAttribute(dataAttr, 'true');
+          chip.classList.remove('ai-chip--inactive');
+          chip.classList.add('ai-chip--active');
+          chip.setAttribute('aria-pressed', 'true');
+          chip.innerHTML = `<span class="ai-chip__icon">${icon}</span><span class="ai-chip__label">${t(labelKey)}</span><span class="ai-chip__check">✓</span>`;
+        }
+
+        const storageKey = `toggle_${dataAttr.replace('data-', '')}`;
+        chrome.storage.local.set({ [storageKey]: !isActive });
+      };
+
+      return chip;
+    };
+
+    // === CHIPS D'ACTION ===
+    const generateChip = createActionChip('✨', 'generate', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      handleGenerateClick(e, commentBox, isReplyToComment);
+    }, 'primary');
+
+    const promptChip = createActionChip('💭', 'withPrompt', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      handlePromptClick(e, commentBox, isReplyToComment);
+    }, 'secondary');
+
+    const randomChip = createActionChip('🎲', 'randomGenerate', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      handleRandomGenerate(e, commentBox, isReplyToComment);
+    }, 'secondary');
+
+    const styleChip = createActionChip('⚙️', 'personalisation', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      toggleEmotionsPanel(container, commentBox);
+    }, 'secondary');
+
+    // === CHIPS TOGGLE (Enrichissement) ===
+    const quoteChip = createToggleChip('💬', 'quoteToggle', 'data-include-quote', 'quoteToggleTooltip', 'quoteUpgradeRequired');
+    const contextChip = createToggleChip('💭', 'contextToggle', 'data-include-context', 'contextToggleTooltip', 'contextUpgradeRequired');
+    const webChip = createToggleChip('🔍', 'webSearchToggle', 'data-web-search', 'webSearchToggleTooltip', 'webSearchUpgradeRequired');
+    const newsChip = createToggleChip('📰', 'newsToggle', 'data-news-enrichment', 'newsToggleTooltip', 'newsUpgradeRequired', 'MEDIUM');
+
+    // Chip Tag auteur avec logique speciale
+    const tagChip = document.createElement('button');
+    tagChip.type = 'button';
+    tagChip.setAttribute('aria-pressed', 'false');
+
+    if (!isPremium) {
+      tagChip.className = 'ai-chip ai-chip--locked';
+      tagChip.setAttribute('aria-disabled', 'true');
+      tagChip.setAttribute('aria-label', t('tagAuthorTooltip') + ' (Premium)');
+      tagChip.innerHTML = `<span class="ai-chip__icon">👤</span><span class="ai-chip__label">${t('tagAuthor')}</span><span class="ai-chip__lock">🔒</span>`;
+    } else {
+      tagChip.className = 'ai-chip ai-chip--inactive';
+      tagChip.setAttribute('aria-label', t('tagAuthorTooltip'));
+      tagChip.innerHTML = `<span class="ai-chip__icon">👤</span><span class="ai-chip__label">${t('tagAuthor')}</span>`;
+    }
+
+    if (isNegative) tagChip.classList.add('negative');
+    if (isReplyToComment) tagChip.classList.add('reply-mode');
+
+    tagChip.onclick = async (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+
+      if (!isPremium) {
+        showPremiumUpgradePrompt(t('tagAuthorUpgradeRequired'));
+        return;
+      }
+
+      const currentAuthor = commentBox.getAttribute('data-tag-author');
+      if (currentAuthor) {
+        commentBox.removeAttribute('data-tag-author');
+        tagChip.classList.remove('ai-chip--active');
+        tagChip.classList.add('ai-chip--inactive');
+        tagChip.setAttribute('aria-pressed', 'false');
+        tagChip.innerHTML = `<span class="ai-chip__icon">👤</span><span class="ai-chip__label">${t('tagAuthor')}</span>`;
+        return;
+      }
+
+      let postContainer = commentBox.closest('.feed-shared-update-v2, [data-urn], article, [data-id]');
+      if (!postContainer) {
+        let current = commentBox;
+        while (current && !postContainer) {
+          const feedUpdate = current.querySelector('.feed-shared-update-v2');
+          if (feedUpdate) {
+            postContainer = feedUpdate;
+            break;
+          }
+          current = current.parentElement;
+        }
+      }
+
+      const authorInfo = extractPostAuthorInfo(postContainer);
+      if (authorInfo && authorInfo.name) {
+        commentBox.setAttribute('data-tag-author', authorInfo.name);
+        tagChip.classList.remove('ai-chip--inactive');
+        tagChip.classList.add('ai-chip--active');
+        tagChip.setAttribute('aria-pressed', 'true');
+        tagChip.innerHTML = `<span class="ai-chip__icon">👤</span><span class="ai-chip__label">${t('tagAuthor')}</span><span class="ai-chip__check">✓</span>`;
+        window.toastNotification.success(t('tagAuthorSuccess').replace('{name}', authorInfo.name));
+      } else {
+        window.toastNotification.warning(t('authorNotFound'));
+      }
+    };
+
+    // === CHIPS BLACKLIST ===
+    const addBlacklistChip = document.createElement('button');
+    addBlacklistChip.type = 'button';
+    addBlacklistChip.className = isPremium ? 'ai-chip ai-chip--danger' : 'ai-chip ai-chip--danger ai-chip--locked';
+    if (isNegative) addBlacklistChip.classList.add('negative');
+    if (isReplyToComment) addBlacklistChip.classList.add('reply-mode');
+    addBlacklistChip.innerHTML = isPremium
+      ? `<span class="ai-chip__icon">🚫</span><span class="ai-chip__label">${t('addToBlacklist')}</span>`
+      : `<span class="ai-chip__icon">🚫</span><span class="ai-chip__label">${t('addToBlacklist')}</span><span class="ai-chip__lock">🔒</span>`;
+    addBlacklistChip.setAttribute('aria-label', t('addToBlacklistTooltip'));
+
+    addBlacklistChip.onclick = async (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+
+      if (!isPremium) {
+        showPremiumUpgradePrompt(t('blacklistUpgradeRequired'));
+        return;
+      }
+
+      let postContainer = commentBox.closest('.feed-shared-update-v2, [data-urn], article, [data-id]');
+      if (!postContainer) {
+        let current = commentBox;
+        while (current && !postContainer) {
+          const feedUpdate = current.querySelector('.feed-shared-update-v2');
+          if (feedUpdate) {
+            postContainer = feedUpdate;
+            break;
+          }
+          current = current.parentElement;
+        }
+      }
+
+      const authorInfo = extractPostAuthorInfo(postContainer);
+      if (!authorInfo || !authorInfo.name) {
+        window.toastNotification.warning(t('authorNotFound'));
+        return;
+      }
+
+      chrome.runtime.sendMessage({
+        action: 'addToBlacklist',
+        blockedName: authorInfo.name,
+        blockedProfileUrl: authorInfo.url || null
+      }, (response) => {
+        if (response && response.success) {
+          window.toastNotification.success(t('blacklistAddSuccess').replace('{name}', authorInfo.name));
+        } else {
+          window.toastNotification.error(t('error'));
+        }
+      });
+    };
+
+    const viewBlacklistChip = document.createElement('button');
+    viewBlacklistChip.type = 'button';
+    viewBlacklistChip.className = isPremium ? 'ai-chip ai-chip--secondary' : 'ai-chip ai-chip--locked';
+    if (isNegative) viewBlacklistChip.classList.add('negative');
+    if (isReplyToComment) viewBlacklistChip.classList.add('reply-mode');
+    viewBlacklistChip.innerHTML = isPremium
+      ? `<span class="ai-chip__icon">📋</span><span class="ai-chip__label">${t('viewBlacklist')}</span>`
+      : `<span class="ai-chip__icon">📋</span><span class="ai-chip__label">${t('viewBlacklist')}</span><span class="ai-chip__lock">🔒</span>`;
+    viewBlacklistChip.setAttribute('aria-label', t('viewBlacklistTooltip'));
+
+    viewBlacklistChip.onclick = (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+
+      if (!isPremium) {
+        showPremiumUpgradePrompt(t('blacklistUpgradeRequired'));
+        return;
+      }
+
+      showBlacklistModal();
+    };
+
+    // === ASSEMBLER LES CHIPS ===
+    // Actions principales
+    container.appendChild(generateChip);
+    container.appendChild(promptChip);
+    container.appendChild(randomChip);
+    container.appendChild(styleChip);
+    // Toggles enrichissement
+    container.appendChild(quoteChip);
+    container.appendChild(tagChip);
+    container.appendChild(contextChip);
+    container.appendChild(webChip);
+    container.appendChild(newsChip);
+    // Blacklist
+    container.appendChild(addBlacklistChip);
+    container.appendChild(viewBlacklistChip);
+
+    // Stocker les references aux elements
+    container._elements = {
+      generateChip,
+      promptChip,
+      randomChip,
+      styleChip,
+      quoteChip,
+      tagChip,
+      contextChip,
+      webChip,
+      newsChip,
+      addBlacklistChip,
+      viewBlacklistChip
+    };
+
+    return container;
+  }
+
+  // ================================================
   // V3 Story 7.6 — Handle Random Generate
   // Randomizes toggle states before generating
   // ================================================
@@ -1431,7 +1717,22 @@
         return;
       }
 
-      // Mode Legacy (inline / compact) — code existant
+      // V3 Story 7.7 — Utiliser le mode Inline si configure
+      if (uiMode === 'inline') {
+        const inlineControls = createInlineModeControls(commentBox, userPlan, isNegative, isReplyToComment);
+
+        parent.appendChild(inlineControls);
+
+        // Retirer le marqueur "en cours" et marquer comme "ajouté"
+        commentBox.removeAttribute('data-ai-buttons-pending');
+        commentBox.setAttribute('data-ai-buttons-added', 'true');
+        commentBox.setAttribute('data-ai-ui-mode', 'inline');
+
+        updateButtonsState(inlineControls, isAuthenticated);
+        return;
+      }
+
+      // Mode Legacy (compact / default) — code existant
       const buttonsWrapper = document.createElement('div');
       buttonsWrapper.className = 'ai-buttons-wrapper';
 

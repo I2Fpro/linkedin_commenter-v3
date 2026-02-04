@@ -1,0 +1,268 @@
+/* ================================================
+   LAYOUT: ai-controls--inline (Mode Inline)
+   Convention: BEM (Block Element Modifier)
+   Story: 7.7 - Implementation Mode Inline
+
+   Purpose: Mode equilibre avec chips compacts et labels courts
+   Caracteristiques: Chips horizontaux, labels courts, wrap automatique
+   Target: Utilisateurs reguliers cherchant equilibre visibilite/efficacite
+
+   Note: Ce fichier est une source/documentation.
+         Les styles sont injectes dans content.css car
+         les extensions Chrome ne supportent pas @import.
+   ================================================ */
+
+/* ================================================
+   MODIFIER: ai-controls--inline
+   Mode Inline - Chips horizontaux avec wrap
+   ================================================ */
+
+.ai-controls--inline {
+  display: flex;
+  align-items: center;
+  gap: var(--ai-spacing-sm, 8px);
+  flex-wrap: wrap;
+  padding: var(--ai-spacing-sm, 8px) 0;
+  margin-top: var(--ai-spacing-sm, 8px);
+}
+
+/* Header masque en mode inline */
+.ai-controls--inline .ai-controls__header {
+  display: none;
+}
+
+/* ================================================
+   ELEMENT: ai-chip
+   Chips pour le mode Inline - style pilule
+   ================================================ */
+
+/* === BASE - Chip de base === */
+.ai-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ai-spacing-xs, 4px);
+  padding: 6px 12px;
+  background: var(--ai-neutral-100, #ffffff);
+  border: 1px solid var(--ai-neutral-300, #d4d4d4);
+  border-radius: var(--ai-radius-full, 9999px);
+  font-family: var(--ai-font-family);
+  font-size: var(--ai-font-size-xs, 12px);
+  color: var(--ai-neutral-700, #404040);
+  cursor: pointer;
+  transition: all var(--ai-transition-fast, 150ms ease);
+  white-space: nowrap;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.ai-chip:hover {
+  background: var(--ai-neutral-200, #f5f5f5);
+  border-color: var(--ai-neutral-400, #a3a3a3);
+}
+
+.ai-chip:focus {
+  outline: 2px solid var(--ai-accent, #0a66c2);
+  outline-offset: 2px;
+}
+
+.ai-chip:active {
+  transform: scale(0.98);
+}
+
+/* === MODIFIER: Chip action primaire (Generer) === */
+.ai-chip--primary {
+  background: var(--ai-primary, #FFD700);
+  border-color: var(--ai-primary-hover, #E6C200);
+  color: var(--ai-neutral-900, #171717);
+  font-weight: var(--ai-font-weight-semibold, 600);
+}
+
+.ai-chip--primary:hover {
+  background: var(--ai-primary-hover, #E6C200);
+  border-color: var(--ai-primary-hover, #E6C200);
+}
+
+/* === MODIFIER: Chip action secondaire === */
+.ai-chip--secondary {
+  background: var(--ai-neutral-100, #ffffff);
+  border-color: var(--ai-neutral-400, #a3a3a3);
+  color: var(--ai-neutral-700, #404040);
+}
+
+.ai-chip--secondary:hover {
+  background: var(--ai-neutral-200, #f5f5f5);
+  border-color: var(--ai-neutral-500, #737373);
+}
+
+/* === MODIFIER: Chip toggle actif === */
+.ai-chip--active {
+  background: var(--ai-secondary, #22c55e);
+  border-color: var(--ai-secondary, #22c55e);
+  color: white;
+}
+
+.ai-chip--active:hover {
+  background: var(--ai-secondary-hover, #16a34a);
+  border-color: var(--ai-secondary-hover, #16a34a);
+}
+
+/* === MODIFIER: Chip toggle inactif === */
+.ai-chip--inactive {
+  background: var(--ai-neutral-100, #ffffff);
+  border-color: var(--ai-neutral-300, #d4d4d4);
+  color: var(--ai-neutral-600, #525252);
+}
+
+.ai-chip--inactive:hover {
+  background: var(--ai-neutral-200, #f5f5f5);
+  border-color: var(--ai-neutral-400, #a3a3a3);
+}
+
+/* === MODIFIER: Chip locked (feature premium) === */
+.ai-chip--locked {
+  opacity: 0.6;
+  cursor: not-allowed;
+  background: var(--ai-neutral-100, #ffffff);
+  border-color: var(--ai-neutral-300, #d4d4d4);
+  color: var(--ai-neutral-500, #737373);
+}
+
+.ai-chip--locked:hover {
+  opacity: 0.7;
+  /* Pas de changement de couleur significatif */
+}
+
+/* === MODIFIER: Chip danger (Blacklist) === */
+.ai-chip--danger {
+  color: var(--ai-danger, #E74C3C);
+  border-color: var(--ai-danger, #E74C3C);
+  background: var(--ai-neutral-100, #ffffff);
+}
+
+.ai-chip--danger:hover {
+  background: rgba(231, 76, 60, 0.1);
+  border-color: var(--ai-danger, #E74C3C);
+}
+
+.ai-chip--danger.ai-chip--active {
+  background: var(--ai-danger, #E74C3C);
+  border-color: var(--ai-danger, #E74C3C);
+  color: white;
+}
+
+.ai-chip--danger.ai-chip--active:hover {
+  background: var(--ai-danger-hover, #c0392b);
+  border-color: var(--ai-danger-hover, #c0392b);
+}
+
+/* === ELEMENTS: Icone et Label du chip === */
+.ai-chip__icon {
+  font-size: 14px;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.ai-chip__label {
+  font-size: var(--ai-font-size-xs, 12px);
+  line-height: 1.2;
+}
+
+.ai-chip__lock {
+  font-size: 10px;
+  margin-left: 2px;
+}
+
+.ai-chip__check {
+  font-size: 10px;
+  margin-left: 2px;
+  color: inherit;
+}
+
+/* ================================================
+   RESPONSIVE - Wrap automatique sur 2 lignes
+   ================================================ */
+
+/* Le flex-wrap gere automatiquement le passage a 2 lignes */
+.ai-controls--inline {
+  /* Les chips s'adaptent a l'espace disponible */
+  justify-content: flex-start;
+}
+
+/* Sur les petits ecrans, reduire le padding des chips */
+@media (max-width: 400px) {
+  .ai-chip {
+    padding: 4px 8px;
+    font-size: 11px;
+  }
+
+  .ai-chip__icon {
+    font-size: 12px;
+  }
+}
+
+/* ================================================
+   ETATS INTERACTIFS
+   ================================================ */
+
+/* Focus-within pour accessibilite */
+.ai-controls--inline:focus-within {
+  outline: none;
+}
+
+/* Disabled state */
+.ai-chip[disabled],
+.ai-chip[aria-disabled="true"] {
+  pointer-events: none;
+  opacity: 0.5;
+}
+
+/* ================================================
+   MODES NEGATIF ET REPLY
+   ================================================ */
+
+/* Mode negatif - couleurs inversees pour le primary */
+.ai-chip.negative.ai-chip--primary {
+  background: var(--ai-danger, #E74C3C);
+  border-color: var(--ai-danger, #E74C3C);
+  color: white;
+}
+
+.ai-chip.negative.ai-chip--primary:hover {
+  background: var(--ai-danger-hover, #c0392b);
+  border-color: var(--ai-danger-hover, #c0392b);
+}
+
+/* Mode reply - indicateur visuel subtil */
+.ai-chip.reply-mode {
+  /* Pas de changement visuel significatif, juste un marqueur semantique */
+}
+
+/* ================================================
+   REDUCED MOTION
+   Support prefers-reduced-motion
+   ================================================ */
+
+@media (prefers-reduced-motion: reduce) {
+  .ai-chip {
+    transition: none;
+  }
+
+  .ai-chip:active {
+    transform: none;
+  }
+}
+
+/* ================================================
+   LEGACY COMPATIBILITY
+   Support pour la migration depuis l'ancien fallback inline
+   ================================================ */
+
+/* Les anciens styles de fallback inline sont remplaces */
+.ai-controls--inline .ai-controls__toggles,
+.ai-controls--inline .ai-controls__actions {
+  /* Ces elements ne sont pas utilises dans le vrai mode inline */
+  /* Le mode inline utilise directement des chips dans le container */
+  display: none;
+}
+
+/* ========== FIN LAYOUT ai-controls--inline ========== */

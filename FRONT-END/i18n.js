@@ -148,6 +148,10 @@ class I18n {
         tagAuthorSuccess: '{name} sera mentionné dans le commentaire',
         modeAdaptedToSpace: 'Mode adapté à l\'espace',
 
+        // V3 Story 7.7 — Mode Inline
+        personalisation: 'Style',
+        personalisationTooltip: 'Personnaliser le style et les émotions du commentaire',
+
         // V3 Story 2.1 — Blacklist
         addToBlacklist: 'Blacklister',
         addToBlacklistTooltip: 'Ajoute l\'auteur du post à votre blacklist',
@@ -334,6 +338,10 @@ class I18n {
         randomGenerate: 'Random generate',
         tagAuthorSuccess: '{name} will be mentioned in the comment',
         modeAdaptedToSpace: 'Mode adapted to space',
+
+        // V3 Story 7.7 — Mode Inline
+        personalisation: 'Style',
+        personalisationTooltip: 'Customize style and emotions of the comment',
 
         // V3 Story 2.1 — Blacklist
         addToBlacklist: 'Blacklist',

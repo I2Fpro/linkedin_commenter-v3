@@ -1875,21 +1875,27 @@
 
 /* ================================================
    MODIFIER: ai-controls--inline
-   Mode Inline - Fallback compact pour viewports etroits
-   Note: Utilise comme fallback temporaire depuis expanded
+   Mode Inline - Chips horizontaux avec wrap
+   Story: 7.7 - Implementation Mode Inline
+   Source: GIT/FRONT-END/styles/layouts/ai-controls--inline.css
    ================================================ */
 
 .ai-controls--inline {
-  display: flex;
-  flex-direction: row;
-  flex-wrap: wrap;
+  display: flex !important;
+  flex-direction: row !important;
   align-items: center;
-  gap: var(--ai-spacing-sm);
-  padding: var(--ai-spacing-sm);
-  margin-top: var(--ai-spacing-sm);
-  background: var(--ai-neutral-100, #ffffff);
-  border: 2px solid var(--ai-secondary-light, #86efac);
-  border-radius: var(--ai-radius-md);
+  gap: var(--ai-spacing-sm, 8px);
+  flex-wrap: wrap;
+  padding: var(--ai-spacing-sm, 8px) 0;
+  margin-top: var(--ai-spacing-sm, 8px);
+  justify-content: flex-start;
+}
+
+/* Force les chips a rester inline */
+.ai-controls--inline > .ai-chip {
+  flex: 0 0 auto;
+  width: auto !important;
+  max-width: none;
 }
 
 /* Header masque en mode inline */
@@ -1897,39 +1903,217 @@
   display: none;
 }
 
-/* Toggles sur une ligne en mode inline */
-.ai-controls--inline .ai-controls__toggles {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--ai-spacing-xs);
-  padding: 0;
-  flex: 1;
-}
-
-/* Toggles compacts en mode inline - labels masques */
-.ai-controls--inline .ai-toggle {
-  min-width: 32px;
-  padding: var(--ai-spacing-xs);
-}
-
-.ai-controls--inline .ai-toggle__label {
+/* Legacy elements masques en mode inline UNIQUEMENT si chips presents */
+/* Note: Ne pas cacher .ai-controls__grid car le fallback viewport l'utilise */
+.ai-controls--inline .ai-controls__toggles,
+.ai-controls--inline .ai-controls__actions {
   display: none;
 }
 
-/* Actions inline */
-.ai-controls--inline .ai-controls__actions {
+/* Grille en mode inline (fallback viewport) - layout horizontal au lieu de grid */
+.ai-controls--inline .ai-controls__grid {
   display: flex;
-  gap: var(--ai-spacing-xs);
-  padding: 0;
-  border: none;
+  flex-wrap: wrap;
+  gap: var(--ai-spacing-sm, 8px);
+  padding: var(--ai-spacing-sm, 8px) 0;
 }
 
-.ai-controls--inline .ai-controls__actions .ai-button--primary {
-  flex: 0 0 auto;
-  padding: var(--ai-spacing-xs) var(--ai-spacing-sm);
+/* Cards plus compactes en mode inline (style pilule) */
+.ai-controls--inline .ai-card {
+  padding: 6px 12px;
+  font-size: var(--ai-font-size-xs, 12px);
+  border-radius: var(--ai-radius-full, 9999px);
 }
 
-/* ========== FIN LAYOUT ai-controls--expanded ========== */
+/* ================================================
+   ELEMENT: ai-chip
+   Chips pour le mode Inline - style pilule
+   ================================================ */
+
+/* === BASE - Chip de base === */
+.ai-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ai-spacing-xs, 4px);
+  padding: 6px 12px;
+  background: var(--ai-neutral-100, #ffffff);
+  border: 1px solid var(--ai-neutral-300, #d4d4d4);
+  border-radius: var(--ai-radius-full, 9999px);
+  font-family: var(--ai-font-family);
+  font-size: var(--ai-font-size-xs, 12px);
+  color: var(--ai-neutral-700, #404040);
+  cursor: pointer;
+  transition: all var(--ai-transition-fast, 150ms ease);
+  white-space: nowrap;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.ai-chip:hover {
+  background: var(--ai-neutral-200, #f5f5f5);
+  border-color: var(--ai-neutral-400, #a3a3a3);
+}
+
+.ai-chip:focus {
+  outline: 2px solid var(--ai-accent, #0a66c2);
+  outline-offset: 2px;
+}
+
+.ai-chip:active {
+  transform: scale(0.98);
+}
+
+/* === MODIFIER: Chip action primaire (Generer) === */
+.ai-chip--primary {
+  background: var(--ai-primary, #FFD700);
+  border-color: var(--ai-primary-hover, #E6C200);
+  color: var(--ai-neutral-900, #171717);
+  font-weight: var(--ai-font-weight-semibold, 600);
+}
+
+.ai-chip--primary:hover {
+  background: var(--ai-primary-hover, #E6C200);
+  border-color: var(--ai-primary-hover, #E6C200);
+}
+
+/* === MODIFIER: Chip action secondaire === */
+.ai-chip--secondary {
+  background: var(--ai-neutral-100, #ffffff);
+  border-color: var(--ai-neutral-400, #a3a3a3);
+  color: var(--ai-neutral-700, #404040);
+}
+
+.ai-chip--secondary:hover {
+  background: var(--ai-neutral-200, #f5f5f5);
+  border-color: var(--ai-neutral-500, #737373);
+}
+
+/* === MODIFIER: Chip toggle actif === */
+.ai-chip--active {
+  background: var(--ai-secondary, #22c55e);
+  border-color: var(--ai-secondary, #22c55e);
+  color: white;
+}
+
+.ai-chip--active:hover {
+  background: var(--ai-secondary-hover, #16a34a);
+  border-color: var(--ai-secondary-hover, #16a34a);
+}
+
+/* === MODIFIER: Chip toggle inactif === */
+.ai-chip--inactive {
+  background: var(--ai-neutral-100, #ffffff);
+  border-color: var(--ai-neutral-300, #d4d4d4);
+  color: var(--ai-neutral-600, #525252);
+}
+
+.ai-chip--inactive:hover {
+  background: var(--ai-neutral-200, #f5f5f5);
+  border-color: var(--ai-neutral-400, #a3a3a3);
+}
+
+/* === MODIFIER: Chip locked (feature premium) === */
+.ai-chip--locked {
+  opacity: 0.6;
+  cursor: not-allowed;
+  background: var(--ai-neutral-100, #ffffff);
+  border-color: var(--ai-neutral-300, #d4d4d4);
+  color: var(--ai-neutral-500, #737373);
+}
+
+.ai-chip--locked:hover {
+  opacity: 0.7;
+}
+
+/* === MODIFIER: Chip danger (Blacklist) === */
+.ai-chip--danger {
+  color: var(--ai-danger, #E74C3C);
+  border-color: var(--ai-danger, #E74C3C);
+  background: var(--ai-neutral-100, #ffffff);
+}
+
+.ai-chip--danger:hover {
+  background: rgba(231, 76, 60, 0.1);
+  border-color: var(--ai-danger, #E74C3C);
+}
+
+.ai-chip--danger.ai-chip--active {
+  background: var(--ai-danger, #E74C3C);
+  border-color: var(--ai-danger, #E74C3C);
+  color: white;
+}
+
+.ai-chip--danger.ai-chip--active:hover {
+  background: var(--ai-danger-hover, #c0392b);
+  border-color: var(--ai-danger-hover, #c0392b);
+}
+
+/* === ELEMENTS: Icone, Label, Lock, Check du chip === */
+.ai-chip__icon {
+  font-size: 14px;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.ai-chip__label {
+  font-size: var(--ai-font-size-xs, 12px);
+  line-height: 1.2;
+}
+
+.ai-chip__lock {
+  font-size: 10px;
+  margin-left: 2px;
+}
+
+.ai-chip__check {
+  font-size: 10px;
+  margin-left: 2px;
+  color: inherit;
+}
+
+/* === RESPONSIVE - Petits ecrans === */
+@media (max-width: 400px) {
+  .ai-chip {
+    padding: 4px 8px;
+    font-size: 11px;
+  }
+
+  .ai-chip__icon {
+    font-size: 12px;
+  }
+}
+
+/* === ETATS NEGATIF ET REPLY === */
+.ai-chip.negative.ai-chip--primary {
+  background: var(--ai-danger, #E74C3C);
+  border-color: var(--ai-danger, #E74C3C);
+  color: white;
+}
+
+.ai-chip.negative.ai-chip--primary:hover {
+  background: var(--ai-danger-hover, #c0392b);
+  border-color: var(--ai-danger-hover, #c0392b);
+}
+
+/* === DISABLED === */
+.ai-chip[disabled],
+.ai-chip[aria-disabled="true"] {
+  pointer-events: none;
+  opacity: 0.5;
+}
+
+/* === REDUCED MOTION === */
+@media (prefers-reduced-motion: reduce) {
+  .ai-chip {
+    transition: none;
+  }
+
+  .ai-chip:active {
+    transform: none;
+  }
+}
+
+/* ========== FIN LAYOUT ai-controls--inline ========== */
 
 /* Styles pour les éléments ajoutés à LinkedIn */
 
