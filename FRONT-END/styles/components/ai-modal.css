@@ -197,7 +197,7 @@
 
 .ai-modal--warning .ai-modal__header {
   background: var(--ai-state-warning);
-  border-bottom: 2px solid #cc9900;
+  border-bottom: 2px solid var(--ai-state-warning-dark);
 }
 
 .ai-modal--warning .ai-modal__title {

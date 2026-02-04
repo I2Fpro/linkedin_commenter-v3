@@ -16,6 +16,7 @@
   --ai-danger-hover: #C0392B;
   --ai-danger-dark: #962d22;       /* Rouge fonce - hover reply-mode negative */
   --ai-accent-dark: #1976D2;       /* Bleu fonce - hover reply-mode */
+  --ai-accent-gradient: #0a66c2;   /* Bleu LinkedIn - endpoint gradients (Story 7.5) */
   --ai-secondary-light: #86efac;   /* Vert clair - etat added mode negatif */
 
   /* === NEUTRES === */
@@ -45,6 +46,8 @@
   --ai-state-inactive: var(--ai-neutral-400);
   --ai-state-locked: var(--ai-neutral-500);
   --ai-state-warning: #F39C12;
+  --ai-state-warning-dark: #cc9900;
+  --ai-state-warning-gradient: #d97706;  /* Orange fonce - endpoint gradients (Story 7.5) */
   --ai-state-error: var(--ai-danger);
 
   /* === ESPACEMENTS === */
@@ -953,7 +956,7 @@
 
 .ai-modal--warning .ai-modal__header {
   background: var(--ai-state-warning);
-  border-bottom: 2px solid #cc9900;
+  border-bottom: 2px solid var(--ai-state-warning-dark);
 }
 
 .ai-modal--warning .ai-modal__title {
@@ -1146,56 +1149,63 @@
 
 /* ========== FIN COMPOSANT ai-modal ========== */
 
-/* ========== TOAST NOTIFICATIONS ========== */
+/* ================================================
+   COMPOSANT: ai-toast
+   Convention: BEM (Block Element Modifier)
+   Story: 7.5 - Refactoring Toasts vers BEM
+   Source: GIT/FRONT-END/styles/components/ai-toast.css
 
-/* Container pour tous les toasts */
+   Purpose: Feedback non-bloquant
+   Variants: --success (vert), --info (bleu), --warning (orange), --error (rouge)
+   Position: Bottom-right
+   Duration: 3s (success/info), 5s (warning), persistant (error)
+   Stacking: Max 3 visibles simultanement
+   Hover: Pause le timer
+   ARIA: role="alert" + aria-live="polite"
+
+   Note: Injected directly due to Chrome extension @import limitations
+   ================================================ */
+
+/* === CONTAINER === */
 .ai-toast-container {
   position: fixed;
   bottom: 20px;
   right: 20px;
-  z-index: 2147483647; /* Maximum z-index pour être au-dessus de tout */
+  z-index: 2147483647;
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  pointer-events: none; /* Permet les clics à travers le container */
+  gap: var(--ai-spacing-sm);
+  pointer-events: none;
+  /* ARIA: aria-live="polite" est ajoute par JS */
 }
 
-/* Toast individuel */
+/* === BLOCK - Toast individuel === */
 .ai-toast {
-  pointer-events: auto; /* Réactive les événements sur le toast lui-même */
+  pointer-events: auto;
   display: flex;
   align-items: center;
-  gap: 12px;
-  background: #ffffff;
-  color: #333333;
+  gap: var(--ai-spacing-sm);
+  background: var(--ai-neutral-100);
+  color: var(--ai-neutral-700);
   padding: 14px 18px;
-  border-radius: 8px;
-  border-left: 4px solid #0077b5;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15), 0 2px 4px rgba(0, 0, 0, 0.1);
+  border-radius: var(--ai-radius-md);
+  border-left: 4px solid var(--ai-accent);
+  box-shadow: var(--ai-shadow-md);
   min-width: 300px;
   max-width: 400px;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-  font-size: 14px;
+  font-family: var(--ai-font-family);
+  font-size: var(--ai-font-size-md);
   line-height: 1.4;
   opacity: 0;
   transform: translateY(20px);
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all var(--ai-transition-normal) cubic-bezier(0.4, 0, 0.2, 1);
+  /* ARIA: role="alert" est ajoute par JS */
 }
 
-/* Animation d'entrée */
-.ai-toast.ai-toast-show {
-  opacity: 1;
-  transform: translateY(0);
-}
+/* === ELEMENTS === */
 
-/* Animation de sortie */
-.ai-toast.ai-toast-hide {
-  opacity: 0;
-  transform: translateY(20px) scale(0.95);
-}
-
-/* Icône du toast */
-.ai-toast-icon {
+/* Icone emoji (BEM) */
+.ai-toast__icon {
   font-size: 20px;
   flex-shrink: 0;
   display: flex;
@@ -1205,20 +1215,47 @@
   height: 24px;
 }
 
-/* Message du toast */
-.ai-toast-message {
+/* Conteneur message + action (BEM) */
+.ai-toast__content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ai-spacing-sm);
   flex: 1;
-  color: #333333;
-  font-weight: 400;
+}
+
+/* Message texte (BEM) */
+.ai-toast__message {
+  flex: 1;
+  color: var(--ai-neutral-700);
+  font-weight: var(--ai-font-weight-normal);
   word-break: break-word;
 }
 
-/* Bouton de fermeture */
-.ai-toast-close {
+/* Bouton d'action optionnel (BEM) */
+.ai-toast__action {
+  background: linear-gradient(135deg, var(--ai-accent) 0%, var(--ai-accent-gradient) 100%);
+  color: var(--ai-neutral-100);
+  border: none;
+  padding: 6px 12px;
+  border-radius: var(--ai-radius-sm);
+  cursor: pointer;
+  font-size: var(--ai-font-size-xs);
+  font-weight: var(--ai-font-weight-medium);
+  transition: all var(--ai-transition-fast);
+  align-self: flex-start;
+}
+
+.ai-toast__action:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 6px rgba(10, 102, 194, 0.4);
+}
+
+/* Bouton de fermeture (BEM) */
+.ai-toast__close {
   flex-shrink: 0;
   background: none;
   border: none;
-  color: #666666;
+  color: var(--ai-neutral-400);
   font-size: 24px;
   line-height: 1;
   cursor: pointer;
@@ -1229,56 +1266,213 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: color 0.2s ease;
+  transition: color var(--ai-transition-fast);
+  opacity: 0.6;
+}
+
+.ai-toast__close:hover {
+  color: var(--ai-neutral-700);
+  opacity: 1;
+}
+
+.ai-toast__close:focus {
+  outline: 2px solid var(--ai-accent);
+  outline-offset: 2px;
+}
+
+/* === MODIFIERS - Animation states === */
+
+/* Animation d'entree (BEM) */
+.ai-toast--show {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Animation de sortie (BEM) */
+.ai-toast--hide {
+  opacity: 0;
+  transform: translateY(20px) scale(0.95);
+}
+
+/* === MODIFIERS - Type variants === */
+
+/* Success (vert) - BEM */
+.ai-toast--success {
+  border-left-color: var(--ai-secondary);
+}
+
+.ai-toast--success .ai-toast__icon {
+  color: var(--ai-secondary);
+}
+
+/* Info (bleu) - BEM */
+.ai-toast--info {
+  border-left-color: var(--ai-accent);
+}
+
+.ai-toast--info .ai-toast__icon {
+  color: var(--ai-accent);
+}
+
+/* Warning (orange) - BEM */
+.ai-toast--warning {
+  border-left-color: var(--ai-state-warning);
+}
+
+.ai-toast--warning .ai-toast__icon {
+  color: var(--ai-state-warning);
+}
+
+.ai-toast--warning .ai-toast__action {
+  background: linear-gradient(135deg, var(--ai-state-warning) 0%, var(--ai-state-warning-gradient) 100%);
+}
+
+.ai-toast--warning .ai-toast__action:hover {
+  box-shadow: 0 2px 6px rgba(245, 158, 11, 0.4);
+}
+
+/* Error (rouge) - BEM */
+.ai-toast--error {
+  border-left-color: var(--ai-danger);
+}
+
+.ai-toast--error .ai-toast__icon {
+  color: var(--ai-danger);
+}
+
+/* === HOVER STATE === */
+.ai-toast:hover {
+  box-shadow: var(--ai-shadow-lg);
+  transform: translateY(-2px);
+}
+
+/* Toast en hover ne doit pas transformer pendant --show */
+.ai-toast--show:hover {
+  transform: translateY(-2px);
+}
+
+/* === REDUCED MOTION === */
+@media (prefers-reduced-motion: reduce) {
+  .ai-toast {
+    transition: opacity 0.1s ease !important;
+    transform: none !important;
+  }
+
+  .ai-toast--show,
+  .ai-toast.ai-toast-show {
+    opacity: 1;
+    transform: none !important;
+  }
+
+  .ai-toast--hide,
+  .ai-toast.ai-toast-hide {
+    opacity: 0;
+    transform: none !important;
+  }
+
+  .ai-toast:hover {
+    transform: none !important;
+  }
+}
+
+/* === COMPATIBILITY SELECTORS - Migration progressive ===
+   Ces selecteurs permettent d'utiliser les anciennes classes
+   avec le nouveau bloc .ai-toast pendant la migration.
+   Seront supprimes apres migration complete.
+   ========================================================= */
+
+/* Animation states compatibility (anciennes classes) */
+.ai-toast.ai-toast-show {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.ai-toast.ai-toast-hide {
+  opacity: 0;
+  transform: translateY(20px) scale(0.95);
+}
+
+/* Type variants compatibility (anciennes classes → design tokens) */
+.ai-toast.ai-toast-success,
+.ai-toast-success {
+  border-left-color: var(--ai-secondary);
+}
+
+.ai-toast.ai-toast-error,
+.ai-toast-error {
+  border-left-color: var(--ai-danger);
+}
+
+.ai-toast.ai-toast-warning,
+.ai-toast-warning {
+  border-left-color: var(--ai-state-warning);
+}
+
+.ai-toast.ai-toast-info,
+.ai-toast-info {
+  border-left-color: var(--ai-accent);
+}
+
+/* Elements compatibility (anciennes classes sans __ BEM) */
+.ai-toast-icon {
+  font-size: 20px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+}
+
+.ai-toast-content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ai-spacing-sm);
+  flex: 1;
+}
+
+.ai-toast-message {
+  flex: 1;
+  color: var(--ai-neutral-700);
+  font-weight: var(--ai-font-weight-normal);
+  word-break: break-word;
+}
+
+.ai-toast-close {
+  flex-shrink: 0;
+  background: none;
+  border: none;
+  color: var(--ai-neutral-400);
+  font-size: 24px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0;
+  margin: 0;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color var(--ai-transition-fast);
   opacity: 0.6;
 }
 
 .ai-toast-close:hover {
-  color: #333333;
+  color: var(--ai-neutral-700);
   opacity: 1;
 }
 
-/* Variantes de couleurs selon le type */
-.ai-toast-success {
-  border-left-color: #2ecc71;
-}
-
-.ai-toast-error {
-  border-left-color: #e74c3c;
-}
-
-.ai-toast-warning {
-  border-left-color: #f39c12;
-}
-
-.ai-toast-info {
-  border-left-color: #0077b5;
-}
-
-/* Animation au survol */
-.ai-toast:hover {
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2), 0 3px 6px rgba(0, 0, 0, 0.15);
-  transform: translateY(-2px);
-}
-
-/* V3 Story 4.1 — Toast avec bouton d'action */
-.ai-toast-content {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  flex: 1;
-}
-
+/* Action button compatibility */
 .ai-toast-action {
-  background: linear-gradient(135deg, #0077b5 0%, #0a66c2 100%);
-  color: white;
+  background: linear-gradient(135deg, var(--ai-accent) 0%, var(--ai-accent-gradient) 100%);
+  color: var(--ai-neutral-100);
   border: none;
   padding: 6px 12px;
-  border-radius: 4px;
+  border-radius: var(--ai-radius-sm);
   cursor: pointer;
-  font-size: 12px;
-  font-weight: 500;
-  transition: all 0.2s ease;
+  font-size: var(--ai-font-size-xs);
+  font-weight: var(--ai-font-weight-medium);
+  transition: all var(--ai-transition-fast);
   align-self: flex-start;
 }
 
@@ -1287,15 +1481,455 @@
   box-shadow: 0 2px 6px rgba(10, 102, 194, 0.4);
 }
 
-.ai-toast-warning .ai-toast-action {
-  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+.ai-toast-warning .ai-toast-action,
+.ai-toast--warning .ai-toast-action {
+  background: linear-gradient(135deg, var(--ai-state-warning) 0%, var(--ai-state-warning-gradient) 100%);
 }
 
-.ai-toast-warning .ai-toast-action:hover {
+.ai-toast-warning .ai-toast-action:hover,
+.ai-toast--warning .ai-toast-action:hover {
   box-shadow: 0 2px 6px rgba(245, 158, 11, 0.4);
 }
 
-/* ========== FIN TOAST NOTIFICATIONS ========== */
+/* ========== FIN COMPOSANT ai-toast ========== */
+
+/* ================================================
+   LAYOUT: ai-controls (Conteneur principal)
+   Convention: BEM (Block Element Modifier)
+   Story: 7.6 - Implementation Mode Expanded
+   Source: GIT/FRONT-END/styles/layouts/ai-controls--expanded.css
+
+   Purpose: Conteneur principal des controles AI
+   Modes: expanded (card), inline (compact), compact (icones)
+   Note: Injected directly due to Chrome extension @import limitations
+   ================================================ */
+
+/* === BASE - Proprietes communes a tous les modes === */
+.ai-controls {
+  display: flex;
+  flex-direction: column;
+  font-family: var(--ai-font-family);
+  position: relative;
+  z-index: 2147483647;
+  box-sizing: border-box;
+}
+
+.ai-controls *,
+.ai-controls *::before,
+.ai-controls *::after {
+  box-sizing: border-box;
+}
+
+/* ================================================
+   MODIFIER: ai-controls--expanded
+   Mode Expanded - Card panel avec tous les controles visibles
+   Cible: Nouveaux utilisateurs, decouverte V3
+   ================================================ */
+
+.ai-controls--expanded {
+  background: var(--ai-neutral-100, #ffffff);
+  border: 2px solid var(--ai-secondary-light, #86efac);
+  border-radius: var(--ai-radius-lg);
+  padding: var(--ai-spacing-lg);
+  margin-top: var(--ai-spacing-sm);
+  box-shadow: var(--ai-shadow-md);
+  gap: var(--ai-spacing-md);
+}
+
+/* === ELEMENT: Header avec titre et badge === */
+.ai-controls__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: var(--ai-spacing-md);
+}
+
+.ai-controls__title {
+  font-size: var(--ai-font-size-md);
+  font-weight: var(--ai-font-weight-bold);
+  color: var(--ai-neutral-900, #121218);
+  margin: 0;
+}
+
+.ai-controls__title::before {
+  content: '✨ ';
+}
+
+/* === ELEMENT: Badge (PREMIUM, FREE, etc.) === */
+.ai-controls__badge {
+  display: inline-flex;
+  align-items: center;
+  padding: var(--ai-spacing-xs) var(--ai-spacing-sm);
+  border-radius: var(--ai-radius-sm);
+  font-size: var(--ai-font-size-xs);
+  font-weight: var(--ai-font-weight-bold);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.ai-controls__badge--premium {
+  background: linear-gradient(135deg, var(--ai-primary) 0%, var(--ai-primary-hover) 100%);
+  color: var(--ai-neutral-900);
+}
+
+.ai-controls__badge--free {
+  background: var(--ai-neutral-600);
+  color: var(--ai-text-secondary);
+}
+
+/* === ELEMENT: Zone des toggles enrichissement === */
+.ai-controls__toggles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--ai-spacing-sm);
+  padding: var(--ai-spacing-sm) 0;
+}
+
+/* === MODE EXPANDED: Toggles en grille 2x2 avec cards === */
+.ai-controls--expanded .ai-controls__toggles {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--ai-spacing-md);
+  padding: var(--ai-spacing-md) 0;
+}
+
+.ai-controls--expanded .ai-controls__toggles .ai-toggle {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-width: 80px;
+  min-height: 80px;
+  padding: var(--ai-spacing-md);
+  background: var(--ai-secondary-light);
+  border: 2px solid transparent;
+  border-radius: var(--ai-radius-lg);
+  cursor: pointer;
+  transition: all var(--ai-transition-fast);
+}
+
+.ai-controls--expanded .ai-controls__toggles .ai-toggle:hover {
+  background: #a7f3d0;
+  border-color: var(--ai-secondary);
+  transform: translateY(-2px);
+}
+
+.ai-controls--expanded .ai-controls__toggles .ai-toggle.ai-toggle--active {
+  background: var(--ai-secondary);
+  border-color: var(--ai-secondary-hover);
+}
+
+.ai-controls--expanded .ai-controls__toggles .ai-toggle.ai-toggle--locked {
+  background: var(--ai-neutral-200, #e5e5e5);
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.ai-controls--expanded .ai-controls__toggles .ai-toggle__icon {
+  font-size: 28px;
+  margin-bottom: var(--ai-spacing-xs);
+}
+
+.ai-controls--expanded .ai-controls__toggles .ai-toggle__label {
+  display: block;
+  font-size: var(--ai-font-size-sm);
+  font-weight: var(--ai-font-weight-medium);
+  color: var(--ai-neutral-900);
+  text-align: center;
+}
+
+.ai-controls--expanded .ai-controls__toggles .ai-toggle__lock {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  font-size: 12px;
+}
+
+.ai-controls--expanded .ai-controls__toggles .ai-toggle {
+  position: relative;
+}
+
+/* === ELEMENT: Zone des actions (boutons Generer/Aleatoire) === */
+.ai-controls__actions {
+  display: flex;
+  gap: var(--ai-spacing-sm);
+  padding-top: var(--ai-spacing-md);
+}
+
+/* Style spécifique du bouton dans le mode expanded */
+.ai-controls--expanded .ai-controls__actions .ai-button--primary {
+  background: var(--ai-primary);
+  color: var(--ai-neutral-900);
+  font-weight: var(--ai-font-weight-bold);
+  padding: var(--ai-spacing-md) var(--ai-spacing-lg);
+  font-size: var(--ai-font-size-md);
+}
+
+.ai-controls--expanded .ai-controls__actions .ai-button--secondary {
+  background: var(--ai-neutral-200, #e5e5e5);
+  color: var(--ai-neutral-900);
+  padding: var(--ai-spacing-md);
+}
+
+/* Bouton Generer prend tout l'espace restant */
+.ai-controls__actions .ai-button--primary {
+  flex: 1;
+}
+
+/* Bouton Aleatoire (dice) taille fixe */
+.ai-controls__actions .ai-button--icon {
+  flex-shrink: 0;
+}
+
+/* ================================================
+   GRILLE UNIFIEE MODE EXPANDED (.ai-controls__grid)
+   Contient toutes les cartes: actions + toggles + blacklist
+   ================================================ */
+
+.ai-controls__grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: var(--ai-spacing-md);
+  padding: var(--ai-spacing-md) 0;
+}
+
+/* ================================================
+   CARTES UNIFIEES (.ai-card)
+   Style commun pour toutes les cartes de la grille
+   ================================================ */
+
+.ai-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-width: 70px;
+  min-height: 70px;
+  padding: var(--ai-spacing-md);
+  border: 2px solid transparent;
+  border-radius: var(--ai-radius-lg);
+  cursor: pointer;
+  transition: all var(--ai-transition-fast);
+  position: relative;
+  font-family: var(--ai-font-family);
+}
+
+.ai-card__icon {
+  font-size: 24px;
+  margin-bottom: var(--ai-spacing-xs);
+  line-height: 1;
+}
+
+.ai-card__label {
+  font-size: var(--ai-font-size-xs);
+  font-weight: var(--ai-font-weight-medium);
+  color: var(--ai-neutral-900);
+  text-align: center;
+  line-height: 1.2;
+}
+
+.ai-card__lock {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  font-size: 10px;
+}
+
+.ai-card__check {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  font-size: 12px;
+  color: var(--ai-success, #22c55e);
+}
+
+/* === CARTE ACTION PRIMAIRE (Generer) === */
+.ai-card--action.ai-card--primary {
+  background: var(--ai-primary);
+  border-color: var(--ai-primary-hover);
+}
+
+.ai-card--action.ai-card--primary:hover {
+  background: var(--ai-primary-hover);
+  transform: translateY(-2px);
+  box-shadow: var(--ai-shadow-md);
+}
+
+.ai-card--action.ai-card--primary .ai-card__label {
+  color: var(--ai-neutral-900);
+  font-weight: var(--ai-font-weight-bold);
+}
+
+/* === CARTE ACTION SECONDAIRE (Prompt, Random) === */
+.ai-card--action.ai-card--secondary {
+  background: var(--ai-neutral-200, #e5e5e5);
+  border-color: var(--ai-neutral-300, #d4d4d4);
+}
+
+.ai-card--action.ai-card--secondary:hover {
+  background: var(--ai-neutral-300, #d4d4d4);
+  transform: translateY(-2px);
+}
+
+/* === CARTE ACTION DANGER (Blacklist) === */
+.ai-card--action.ai-card--danger {
+  background: var(--ai-danger-light, #fecaca);
+  border-color: var(--ai-danger, #E74C3C);
+}
+
+.ai-card--action.ai-card--danger:hover {
+  background: var(--ai-danger);
+  transform: translateY(-2px);
+}
+
+.ai-card--action.ai-card--danger:hover .ai-card__label {
+  color: white;
+}
+
+/* === CARTE TOGGLE INACTIVE === */
+.ai-card--toggle.ai-card--inactive {
+  background: var(--ai-secondary-light, #86efac);
+  border-color: transparent;
+}
+
+.ai-card--toggle.ai-card--inactive:hover {
+  background: #a7f3d0;
+  border-color: var(--ai-secondary);
+  transform: translateY(-2px);
+}
+
+/* === CARTE TOGGLE ACTIVE === */
+.ai-card--toggle.ai-card--active {
+  background: var(--ai-secondary, #22c55e);
+  border-color: var(--ai-secondary-hover, #16a34a);
+}
+
+.ai-card--toggle.ai-card--active .ai-card__label {
+  color: white;
+}
+
+/* === CARTE LOCKED === */
+.ai-card--locked {
+  background: var(--ai-neutral-200, #e5e5e5);
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.ai-card--locked:hover {
+  transform: none;
+}
+
+/* === RESPONSIVE: Grille adaptative === */
+@media (max-width: 500px) {
+  .ai-controls__grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 350px) {
+  .ai-controls__grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* ================================================
+   VIEWPORT RESPONSIVE
+   Attribut data-viewport pour adaptation dynamique
+   ================================================ */
+
+/* Viewport normal et wide - comportement par defaut */
+.ai-controls[data-viewport="normal"],
+.ai-controls[data-viewport="wide"] {
+  /* Styles par defaut appliques */
+}
+
+/* ================================================
+   ETATS INTERACTIFS
+   ================================================ */
+
+/* Hover sur le panel expanded */
+.ai-controls--expanded:hover {
+  box-shadow: var(--ai-shadow-lg);
+}
+
+/* Focus-within pour accessibilite */
+.ai-controls--expanded:focus-within {
+  outline: 2px solid var(--ai-accent);
+  outline-offset: 2px;
+}
+
+/* ================================================
+   REDUCED MOTION
+   Support prefers-reduced-motion
+   ================================================ */
+
+@media (prefers-reduced-motion: reduce) {
+  .ai-controls--expanded {
+    transition: none;
+  }
+
+  .ai-controls--expanded:hover {
+    box-shadow: var(--ai-shadow-md);
+  }
+}
+
+/* ================================================
+   MODIFIER: ai-controls--inline
+   Mode Inline - Fallback compact pour viewports etroits
+   Note: Utilise comme fallback temporaire depuis expanded
+   ================================================ */
+
+.ai-controls--inline {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--ai-spacing-sm);
+  padding: var(--ai-spacing-sm);
+  margin-top: var(--ai-spacing-sm);
+  background: var(--ai-neutral-100, #ffffff);
+  border: 2px solid var(--ai-secondary-light, #86efac);
+  border-radius: var(--ai-radius-md);
+}
+
+/* Header masque en mode inline */
+.ai-controls--inline .ai-controls__header {
+  display: none;
+}
+
+/* Toggles sur une ligne en mode inline */
+.ai-controls--inline .ai-controls__toggles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--ai-spacing-xs);
+  padding: 0;
+  flex: 1;
+}
+
+/* Toggles compacts en mode inline - labels masques */
+.ai-controls--inline .ai-toggle {
+  min-width: 32px;
+  padding: var(--ai-spacing-xs);
+}
+
+.ai-controls--inline .ai-toggle__label {
+  display: none;
+}
+
+/* Actions inline */
+.ai-controls--inline .ai-controls__actions {
+  display: flex;
+  gap: var(--ai-spacing-xs);
+  padding: 0;
+  border: none;
+}
+
+.ai-controls--inline .ai-controls__actions .ai-button--primary {
+  flex: 0 0 auto;
+  padding: var(--ai-spacing-xs) var(--ai-spacing-sm);
+}
+
+/* ========== FIN LAYOUT ai-controls--expanded ========== */
 
 /* Styles pour les éléments ajoutés à LinkedIn */
 

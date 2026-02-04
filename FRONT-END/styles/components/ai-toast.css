@@ -1,0 +1,254 @@
+/* ================================================
+   COMPOSANT: ai-toast
+   Convention: BEM (Block Element Modifier)
+   Story: 7.5 - Refactoring Toasts vers BEM
+
+   Purpose: Feedback non-bloquant
+   Variants: --success (vert), --info (bleu), --warning (orange), --error (rouge)
+   Position: Bottom-right
+   Duration: 3s (success/info), 5s (warning), persistant (error)
+   Stacking: Max 3 visibles simultanement
+   Hover: Pause le timer
+   ARIA: role="alert" + aria-live="polite"
+
+   Note: Ce fichier est une reference/documentation.
+   Les styles sont injectes directement dans content.css
+   car @import ne fonctionne pas dans les extensions Chrome Manifest V3.
+   ================================================ */
+
+/* === CONTAINER === */
+.ai-toast-container {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  z-index: 2147483647;
+  display: flex;
+  flex-direction: column;
+  gap: var(--ai-spacing-sm);
+  pointer-events: none;
+  /* ARIA: aria-live="polite" sur cet element */
+}
+
+/* === BLOCK - Toast individuel === */
+.ai-toast {
+  pointer-events: auto;
+  display: flex;
+  align-items: center;
+  gap: var(--ai-spacing-sm);
+  background: var(--ai-neutral-100);
+  color: var(--ai-neutral-700);
+  padding: 14px 18px;
+  border-radius: var(--ai-radius-md);
+  border-left: 4px solid var(--ai-accent);
+  box-shadow: var(--ai-shadow-md);
+  min-width: 300px;
+  max-width: 400px;
+  font-family: var(--ai-font-family);
+  font-size: var(--ai-font-size-md);
+  line-height: 1.4;
+  opacity: 0;
+  transform: translateY(20px);
+  transition: all var(--ai-transition-normal) cubic-bezier(0.4, 0, 0.2, 1);
+  /* ARIA: role="alert" sur chaque toast */
+}
+
+/* === ELEMENTS === */
+
+/* Icone emoji */
+.ai-toast__icon {
+  font-size: 20px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+}
+
+/* Conteneur message + action */
+.ai-toast__content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ai-spacing-sm);
+  flex: 1;
+}
+
+/* Message texte */
+.ai-toast__message {
+  flex: 1;
+  color: var(--ai-neutral-700);
+  font-weight: var(--ai-font-weight-normal);
+  word-break: break-word;
+}
+
+/* Bouton d'action optionnel (V3 Story 4.1) */
+.ai-toast__action {
+  background: linear-gradient(135deg, var(--ai-accent) 0%, var(--ai-accent-gradient) 100%);
+  color: var(--ai-neutral-100);
+  border: none;
+  padding: 6px 12px;
+  border-radius: var(--ai-radius-sm);
+  cursor: pointer;
+  font-size: var(--ai-font-size-xs);
+  font-weight: var(--ai-font-weight-medium);
+  transition: all var(--ai-transition-fast);
+  align-self: flex-start;
+}
+
+.ai-toast__action:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 6px rgba(10, 102, 194, 0.4);
+}
+
+/* Bouton de fermeture */
+.ai-toast__close {
+  flex-shrink: 0;
+  background: none;
+  border: none;
+  color: var(--ai-neutral-400);
+  font-size: 24px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0;
+  margin: 0;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color var(--ai-transition-fast);
+  opacity: 0.6;
+  /* ARIA: aria-label="Fermer" */
+}
+
+.ai-toast__close:hover {
+  color: var(--ai-neutral-700);
+  opacity: 1;
+}
+
+.ai-toast__close:focus {
+  outline: 2px solid var(--ai-accent);
+  outline-offset: 2px;
+}
+
+/* === MODIFIERS - Animation states === */
+
+/* Animation d'entree */
+.ai-toast--show {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Animation de sortie */
+.ai-toast--hide {
+  opacity: 0;
+  transform: translateY(20px) scale(0.95);
+}
+
+/* === MODIFIERS - Type variants === */
+
+/* Success (vert) */
+.ai-toast--success {
+  border-left-color: var(--ai-secondary);
+}
+
+.ai-toast--success .ai-toast__icon {
+  color: var(--ai-secondary);
+}
+
+/* Info (bleu) */
+.ai-toast--info {
+  border-left-color: var(--ai-accent);
+}
+
+.ai-toast--info .ai-toast__icon {
+  color: var(--ai-accent);
+}
+
+/* Warning (orange) */
+.ai-toast--warning {
+  border-left-color: var(--ai-state-warning);
+}
+
+.ai-toast--warning .ai-toast__icon {
+  color: var(--ai-state-warning);
+}
+
+.ai-toast--warning .ai-toast__action {
+  background: linear-gradient(135deg, var(--ai-state-warning) 0%, var(--ai-state-warning-gradient) 100%);
+}
+
+.ai-toast--warning .ai-toast__action:hover {
+  box-shadow: 0 2px 6px rgba(245, 158, 11, 0.4);
+}
+
+/* Error (rouge) */
+.ai-toast--error {
+  border-left-color: var(--ai-danger);
+}
+
+.ai-toast--error .ai-toast__icon {
+  color: var(--ai-danger);
+}
+
+/* === HOVER STATE === */
+.ai-toast:hover {
+  box-shadow: var(--ai-shadow-lg);
+  transform: translateY(-2px);
+}
+
+/* === REDUCED MOTION === */
+@media (prefers-reduced-motion: reduce) {
+  .ai-toast {
+    transition: opacity 0.1s ease !important;
+    transform: none !important;
+  }
+
+  .ai-toast--show {
+    opacity: 1;
+    transform: none;
+  }
+
+  .ai-toast--hide {
+    opacity: 0;
+    transform: none;
+  }
+
+  .ai-toast:hover {
+    transform: none;
+  }
+}
+
+/* === COMPATIBILITY SELECTORS - Migration progressive ===
+   Ces selecteurs permettent d'utiliser les anciennes classes
+   avec le nouveau bloc .ai-toast pendant la migration.
+   Seront supprimes apres migration complete.
+   ========================================================= */
+
+/* Animation states compatibility */
+.ai-toast.ai-toast-show {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.ai-toast.ai-toast-hide {
+  opacity: 0;
+  transform: translateY(20px) scale(0.95);
+}
+
+/* Type variants compatibility (anciennes classes) */
+.ai-toast.ai-toast-success {
+  border-left-color: var(--ai-secondary);
+}
+
+.ai-toast.ai-toast-error {
+  border-left-color: var(--ai-danger);
+}
+
+.ai-toast.ai-toast-warning {
+  border-left-color: var(--ai-state-warning);
+}
+
+.ai-toast.ai-toast-info {
+  border-left-color: var(--ai-accent);
+}

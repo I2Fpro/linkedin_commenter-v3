@@ -1,0 +1,186 @@
+/* ================================================
+   LAYOUT: ai-controls--expanded (Mode Expanded)
+   Convention: BEM (Block Element Modifier)
+   Story: 7.6 - Implementation Mode Expanded
+
+   Purpose: Interface decouverte pour nouveaux utilisateurs
+   Caracteristiques: Card panel, labels explicites, badge Premium
+   Target: Mode par defaut pour decouvrir V3
+
+   Note: Ce fichier est une source/documentation.
+         Les styles sont injectes dans content.css car
+         les extensions Chrome ne supportent pas @import.
+   ================================================ */
+
+/* ================================================
+   BLOCK: ai-controls
+   Conteneur principal des controles AI
+   Partage entre les 3 modes: expanded, inline, compact
+   ================================================ */
+
+/* === BASE - Proprietes communes a tous les modes === */
+.ai-controls {
+  display: flex;
+  flex-direction: column;
+  font-family: var(--ai-font-family);
+  position: relative;
+  z-index: 2147483647;
+  box-sizing: border-box;
+}
+
+.ai-controls *,
+.ai-controls *::before,
+.ai-controls *::after {
+  box-sizing: border-box;
+}
+
+/* ================================================
+   MODIFIER: ai-controls--expanded
+   Mode Expanded - Card panel avec tous les controles visibles
+   ================================================ */
+
+.ai-controls--expanded {
+  background: var(--ai-bg-card);
+  border-radius: var(--ai-radius-lg);
+  padding: var(--ai-spacing-md);
+  margin-top: var(--ai-spacing-sm);
+  box-shadow: var(--ai-shadow-md);
+  gap: var(--ai-spacing-md);
+}
+
+/* === ELEMENT: Header avec titre et badge === */
+.ai-controls__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: var(--ai-spacing-sm);
+  border-bottom: 1px solid var(--ai-neutral-600);
+}
+
+.ai-controls__title {
+  font-size: var(--ai-font-size-md);
+  font-weight: var(--ai-font-weight-bold);
+  color: var(--ai-text-primary);
+  margin: 0;
+}
+
+/* === ELEMENT: Badge (PREMIUM, FREE, etc.) === */
+.ai-controls__badge {
+  display: inline-flex;
+  align-items: center;
+  padding: var(--ai-spacing-xs) var(--ai-spacing-sm);
+  border-radius: var(--ai-radius-sm);
+  font-size: var(--ai-font-size-xs);
+  font-weight: var(--ai-font-weight-bold);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.ai-controls__badge--premium {
+  background: linear-gradient(135deg, var(--ai-primary) 0%, var(--ai-primary-hover) 100%);
+  color: var(--ai-neutral-900);
+}
+
+.ai-controls__badge--free {
+  background: var(--ai-neutral-600);
+  color: var(--ai-text-secondary);
+}
+
+/* === ELEMENT: Zone des toggles enrichissement === */
+.ai-controls__toggles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--ai-spacing-sm);
+  padding: var(--ai-spacing-sm) 0;
+}
+
+/* Toggles dans le mode expanded ont des labels toujours visibles */
+.ai-controls--expanded .ai-controls__toggles .ai-toggle {
+  min-width: auto;
+}
+
+.ai-controls--expanded .ai-controls__toggles .ai-toggle__label {
+  display: inline-block;
+}
+
+/* === ELEMENT: Zone des actions (boutons Generer/Aleatoire) === */
+.ai-controls__actions {
+  display: flex;
+  gap: var(--ai-spacing-sm);
+  padding-top: var(--ai-spacing-sm);
+  border-top: 1px solid var(--ai-neutral-600);
+}
+
+/* Bouton Generer prend tout l'espace restant */
+.ai-controls__actions .ai-button--primary {
+  flex: 1;
+}
+
+/* Bouton Aleatoire (dice) taille fixe */
+.ai-controls__actions .ai-button--icon {
+  flex-shrink: 0;
+}
+
+/* ================================================
+   VIEWPORT RESPONSIVE
+   Attribut data-viewport pour adaptation dynamique
+   ================================================ */
+
+/* Viewport normal (>= 500px) - comportement par defaut */
+.ai-controls[data-viewport="normal"],
+.ai-controls[data-viewport="wide"] {
+  /* Styles par defaut */
+}
+
+/* Viewport etroit (< 500px) - masque le mode expanded */
+/* Note: Le fallback vers inline est gere par JS, pas CSS */
+.ai-controls--expanded[data-viewport="narrow"] {
+  /* Ce selecteur ne devrait jamais matcher car
+     JS bascule vers --inline quand viewport < 500px */
+}
+
+/* ================================================
+   ETATS INTERACTIFS
+   ================================================ */
+
+/* Hover sur le panel expanded */
+.ai-controls--expanded:hover {
+  box-shadow: var(--ai-shadow-lg);
+}
+
+/* Focus-within pour accessibilite */
+.ai-controls--expanded:focus-within {
+  outline: 2px solid var(--ai-accent);
+  outline-offset: 2px;
+}
+
+/* ================================================
+   REDUCED MOTION
+   Support prefers-reduced-motion
+   ================================================ */
+
+@media (prefers-reduced-motion: reduce) {
+  .ai-controls--expanded {
+    transition: none;
+  }
+
+  .ai-controls--expanded:hover {
+    box-shadow: var(--ai-shadow-md);
+  }
+}
+
+/* ================================================
+   LEGACY COMPATIBILITY
+   Support pour la migration progressive depuis
+   l'ancien .ai-buttons-wrapper
+   ================================================ */
+
+/* Permet aux anciens styles de coexister */
+.ai-buttons-wrapper.ai-controls--expanded {
+  /* Surcharge les styles de ai-buttons-wrapper */
+  display: flex;
+  flex-direction: column;
+  flex-wrap: nowrap;
+}
+
+/* ========== FIN LAYOUT ai-controls--expanded ========== */

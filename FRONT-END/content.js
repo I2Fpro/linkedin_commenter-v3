@@ -60,7 +60,38 @@
       blacklistWarningTitle: 'Attention',
       blacklistWarningMessage: 'Vous avez choisi d\'éviter {name}. Voulez-vous quand même générer un commentaire ?',
       blacklistWarningYes: 'Générer quand même',
-      blacklistWarningNo: 'Annuler'
+      blacklistWarningNo: 'Annuler',
+      // V3 Story 7.6 — Mode Expanded toggles
+      quoteToggle: 'Citation',
+      quoteToggleActive: 'Citation activée',
+      quoteToggleInactive: 'Citation désactivée',
+      quoteUpgradeRequired: 'Passez en Premium pour utiliser les citations contextuelles',
+      tagAuthor: 'Tag auteur',
+      tagAuthorTooltip: 'Mentionne l\'auteur du post',
+      tagAuthorUpgradeRequired: 'Passez en Premium pour taguer l\'auteur',
+      tagAuthorSuccess: '{name} sera mentionné dans le commentaire',
+      authorNotFound: 'Impossible de trouver l\'auteur du post',
+      webSearchToggle: 'Source web',
+      webSearchToggleTooltip: 'Recherche des infos sur le web',
+      webSearchUpgradeRequired: 'Passez en Premium pour la recherche web',
+      contextToggle: 'Contexte',
+      contextToggleTooltip: 'Prend en compte les commentaires existants',
+      contextUpgradeRequired: 'Passez en Premium pour le contexte',
+      generateComment: 'Générer le commentaire',
+      randomGenerate: 'Générer aléatoire',
+      modeAdaptedToSpace: 'Mode adapté à l\'espace',
+      // V3 Story 7.6 — Mode Expanded - News & Blacklist
+      newsToggle: 'News',
+      newsToggleTooltip: 'Enrichit avec les actualités LinkedIn',
+      newsUpgradeRequired: 'Passez en MEDIUM ou supérieur pour les actualités',
+      addToBlacklist: 'Blacklister',
+      addToBlacklistTooltip: 'Ajoute l\'auteur à votre blacklist',
+      blacklistUpgradeRequired: 'La blacklist est réservée aux abonnés Premium',
+      viewBlacklist: 'Ma liste',
+      viewBlacklistTooltip: 'Voir ma blacklist',
+      blacklistAddSuccess: '{name} a été ajouté à votre blacklist',
+      personalisation: 'Style',
+      personalisationTooltip: 'Choisir émotion et style de langage'
     },
     en: {
       generate: '✨ Generate',
@@ -98,7 +129,38 @@
       blacklistWarningTitle: 'Warning',
       blacklistWarningMessage: 'You chose to avoid {name}. Do you still want to generate a comment?',
       blacklistWarningYes: 'Generate anyway',
-      blacklistWarningNo: 'Cancel'
+      blacklistWarningNo: 'Cancel',
+      // V3 Story 7.6 — Mode Expanded toggles
+      quoteToggle: 'Quote',
+      quoteToggleActive: 'Quote enabled',
+      quoteToggleInactive: 'Quote disabled',
+      quoteUpgradeRequired: 'Upgrade to Premium for contextual quotes',
+      tagAuthor: 'Tag author',
+      tagAuthorTooltip: 'Mention the post author',
+      tagAuthorUpgradeRequired: 'Upgrade to Premium to tag author',
+      tagAuthorSuccess: '{name} will be mentioned in the comment',
+      authorNotFound: 'Could not find the post author',
+      webSearchToggle: 'Web source',
+      webSearchToggleTooltip: 'Search web for info',
+      webSearchUpgradeRequired: 'Upgrade to Premium for web search',
+      contextToggle: 'Context',
+      contextToggleTooltip: 'Consider existing comments',
+      contextUpgradeRequired: 'Upgrade to Premium for context',
+      generateComment: 'Generate comment',
+      randomGenerate: 'Random generate',
+      modeAdaptedToSpace: 'Mode adapted to space',
+      // V3 Story 7.6 — Mode Expanded - News & Blacklist
+      newsToggle: 'News',
+      newsToggleTooltip: 'Enriches with LinkedIn news',
+      newsUpgradeRequired: 'Upgrade to MEDIUM or higher for news',
+      addToBlacklist: 'Blacklist',
+      addToBlacklistTooltip: 'Add author to your blacklist',
+      blacklistUpgradeRequired: 'Blacklist is reserved for Premium subscribers',
+      viewBlacklist: 'My list',
+      viewBlacklistTooltip: 'View my blacklist',
+      blacklistAddSuccess: '{name} has been added to your blacklist',
+      personalisation: 'Style',
+      personalisationTooltip: 'Choose emotion and language style'
     }
   };
 
@@ -837,8 +899,462 @@
     }
   }
 
+  // ================================================
+  // V3 Story 7.6 — UI Mode Constants
+  // ================================================
+  const UI_MODE_KEY = 'ui_mode';
+  const DEFAULT_UI_MODE = 'expanded';
+
+  // ================================================
+  // V3 Story 7.6 — Get/Set UI Mode Preference
+  // ================================================
+  async function getUIMode() {
+    return new Promise((resolve) => {
+      chrome.storage.sync.get(UI_MODE_KEY, (result) => {
+        resolve(result[UI_MODE_KEY] || DEFAULT_UI_MODE);
+      });
+    });
+  }
+
+  async function setUIMode(mode) {
+    return new Promise((resolve) => {
+      chrome.storage.sync.set({ [UI_MODE_KEY]: mode }, () => {
+        resolve();
+      });
+    });
+  }
+
+  // ================================================
+  // V3 Story 7.6 — Create Expanded Mode Controls
+  // Creates the card panel UI for new user discovery
+  // ================================================
+  function createExpandedModeControls(commentBox, userPlan, isNegative, isReplyToComment) {
+    const isPremium = userPlan === 'PREMIUM';
+    const isMediumPlus = userPlan === 'MEDIUM' || userPlan === 'PREMIUM';
+
+    // Container principal
+    const container = document.createElement('div');
+    container.className = 'ai-controls ai-controls--expanded';
+    container.setAttribute('data-viewport', 'normal');
+    container.setAttribute('role', 'region');
+    container.setAttribute('aria-label', 'AI Comment Generator');
+
+    // === HEADER ===
+    const header = document.createElement('div');
+    header.className = 'ai-controls__header';
+
+    const title = document.createElement('span');
+    title.className = 'ai-controls__title';
+    title.textContent = 'AI Commenter';
+
+    const badge = document.createElement('span');
+    badge.className = isPremium ? 'ai-controls__badge ai-controls__badge--premium' : 'ai-controls__badge ai-controls__badge--free';
+    badge.textContent = isPremium ? 'PREMIUM' : (isMediumPlus ? 'MEDIUM' : 'FREE');
+
+    header.appendChild(title);
+    header.appendChild(badge);
+    container.appendChild(header);
+
+    // === GRILLE UNIFIEE ===
+    const grid = document.createElement('div');
+    grid.className = 'ai-controls__grid';
+
+    // Helper pour creer une carte d'action (bouton principal)
+    const createActionCard = (icon, labelKey, onClick, variant = 'primary') => {
+      const card = document.createElement('button');
+      card.type = 'button';
+      card.className = `ai-card ai-card--action ai-card--${variant}`;
+      if (isNegative) card.classList.add('negative');
+      if (isReplyToComment) card.classList.add('reply-mode');
+      card.innerHTML = `<span class="ai-card__icon">${icon}</span><span class="ai-card__label">${t(labelKey)}</span>`;
+      card.setAttribute('aria-label', t(labelKey));
+      card.onclick = onClick;
+      return card;
+    };
+
+    // Helper pour creer une carte toggle (enrichissement)
+    const createToggleCard = (icon, labelKey, dataAttr, ariaLabelKey, lockedMessageKey, requiredPlan = 'PREMIUM') => {
+      const card = document.createElement('button');
+      card.type = 'button';
+      card.setAttribute('aria-pressed', 'false');
+
+      // Determiner si l'utilisateur a acces
+      const hasAccess = requiredPlan === 'MEDIUM' ? isMediumPlus : isPremium;
+
+      if (!hasAccess) {
+        card.className = 'ai-card ai-card--toggle ai-card--locked';
+        card.setAttribute('aria-disabled', 'true');
+        card.setAttribute('aria-label', t(ariaLabelKey) + ' (Premium)');
+        card.innerHTML = `<span class="ai-card__icon">${icon}</span><span class="ai-card__label">${t(labelKey)}</span><span class="ai-card__lock">🔒</span>`;
+      } else {
+        card.className = 'ai-card ai-card--toggle ai-card--inactive';
+        card.setAttribute('aria-label', t(ariaLabelKey));
+        card.innerHTML = `<span class="ai-card__icon">${icon}</span><span class="ai-card__label">${t(labelKey)}</span>`;
+      }
+
+      if (isNegative) card.classList.add('negative');
+      if (isReplyToComment) card.classList.add('reply-mode');
+
+      card.onclick = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+
+        if (!hasAccess) {
+          showPremiumUpgradePrompt(t(lockedMessageKey));
+          return;
+        }
+
+        const isActive = commentBox.getAttribute(dataAttr) === 'true';
+        if (isActive) {
+          commentBox.removeAttribute(dataAttr);
+          card.classList.remove('ai-card--active');
+          card.classList.add('ai-card--inactive');
+          card.setAttribute('aria-pressed', 'false');
+          card.innerHTML = `<span class="ai-card__icon">${icon}</span><span class="ai-card__label">${t(labelKey)}</span>`;
+        } else {
+          commentBox.setAttribute(dataAttr, 'true');
+          card.classList.remove('ai-card--inactive');
+          card.classList.add('ai-card--active');
+          card.setAttribute('aria-pressed', 'true');
+          card.innerHTML = `<span class="ai-card__icon">${icon}</span><span class="ai-card__label">${t(labelKey)}</span><span class="ai-card__check">✓</span>`;
+        }
+
+        const storageKey = `toggle_${dataAttr.replace('data-', '')}`;
+        chrome.storage.local.set({ [storageKey]: !isActive });
+      };
+
+      return card;
+    };
+
+    // === CARTES D'ACTION ===
+    const generateCard = createActionCard('✨', 'generate', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      handleGenerateClick(e, commentBox, isReplyToComment);
+    }, 'primary');
+
+    const promptCard = createActionCard('💭', 'withPrompt', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      handlePromptClick(e, commentBox, isReplyToComment);
+    }, 'secondary');
+
+    const randomCard = createActionCard('🎲', 'randomGenerate', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      handleRandomGenerate(e, commentBox, isReplyToComment);
+    }, 'secondary');
+
+    // === CARTES TOGGLE (Enrichissement) ===
+    const quoteCard = createToggleCard('💬', 'quoteToggle', 'data-include-quote', 'quoteToggleTooltip', 'quoteUpgradeRequired');
+    const contextCard = createToggleCard('💭', 'contextToggle', 'data-include-context', 'contextToggleTooltip', 'contextUpgradeRequired');
+    const webCard = createToggleCard('🔍', 'webSearchToggle', 'data-web-search', 'webSearchToggleTooltip', 'webSearchUpgradeRequired');
+    const newsCard = createToggleCard('📰', 'newsToggle', 'data-news-enrichment', 'newsToggleTooltip', 'newsUpgradeRequired', 'MEDIUM');
+
+    // Carte Tag auteur avec logique speciale
+    const tagCard = createToggleCard('👤', 'tagAuthor', 'data-tag-author', 'tagAuthorTooltip', 'tagAuthorUpgradeRequired');
+    tagCard.onclick = async (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+
+      if (!isPremium) {
+        showPremiumUpgradePrompt(t('tagAuthorUpgradeRequired'));
+        return;
+      }
+
+      const currentAuthor = commentBox.getAttribute('data-tag-author');
+      if (currentAuthor) {
+        commentBox.removeAttribute('data-tag-author');
+        tagCard.classList.remove('ai-card--active');
+        tagCard.classList.add('ai-card--inactive');
+        tagCard.setAttribute('aria-pressed', 'false');
+        tagCard.innerHTML = `<span class="ai-card__icon">👤</span><span class="ai-card__label">${t('tagAuthor')}</span>`;
+        return;
+      }
+
+      let postContainer = commentBox.closest('.feed-shared-update-v2, [data-urn], article, [data-id]');
+      if (!postContainer) {
+        let current = commentBox;
+        while (current && !postContainer) {
+          const feedUpdate = current.querySelector('.feed-shared-update-v2');
+          if (feedUpdate) {
+            postContainer = feedUpdate;
+            break;
+          }
+          current = current.parentElement;
+        }
+      }
+
+      const authorInfo = extractPostAuthorInfo(postContainer);
+      if (authorInfo && authorInfo.name) {
+        commentBox.setAttribute('data-tag-author', authorInfo.name);
+        tagCard.classList.remove('ai-card--inactive');
+        tagCard.classList.add('ai-card--active');
+        tagCard.setAttribute('aria-pressed', 'true');
+        tagCard.innerHTML = `<span class="ai-card__icon">👤</span><span class="ai-card__label">${t('tagAuthor')}</span><span class="ai-card__check">✓</span>`;
+        window.toastNotification.success(t('tagAuthorSuccess').replace('{name}', authorInfo.name));
+      } else {
+        window.toastNotification.warning(t('authorNotFound'));
+      }
+    };
+
+    // === CARTES BLACKLIST ===
+    const addBlacklistCard = document.createElement('button');
+    addBlacklistCard.type = 'button';
+    addBlacklistCard.className = isPremium ? 'ai-card ai-card--action ai-card--danger' : 'ai-card ai-card--action ai-card--locked';
+    if (isNegative) addBlacklistCard.classList.add('negative');
+    if (isReplyToComment) addBlacklistCard.classList.add('reply-mode');
+    addBlacklistCard.innerHTML = isPremium
+      ? `<span class="ai-card__icon">🚫</span><span class="ai-card__label">${t('addToBlacklist')}</span>`
+      : `<span class="ai-card__icon">🚫</span><span class="ai-card__label">${t('addToBlacklist')}</span><span class="ai-card__lock">🔒</span>`;
+    addBlacklistCard.setAttribute('aria-label', t('addToBlacklistTooltip'));
+
+    addBlacklistCard.onclick = async (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+
+      if (!isPremium) {
+        showPremiumUpgradePrompt(t('blacklistUpgradeRequired'));
+        return;
+      }
+
+      let postContainer = commentBox.closest('.feed-shared-update-v2, [data-urn], article, [data-id]');
+      if (!postContainer) {
+        let current = commentBox;
+        while (current && !postContainer) {
+          const feedUpdate = current.querySelector('.feed-shared-update-v2');
+          if (feedUpdate) {
+            postContainer = feedUpdate;
+            break;
+          }
+          current = current.parentElement;
+        }
+      }
+
+      const authorInfo = extractPostAuthorInfo(postContainer);
+      if (!authorInfo || !authorInfo.name) {
+        window.toastNotification.warning(t('authorNotFound'));
+        return;
+      }
+
+      chrome.runtime.sendMessage({
+        action: 'addToBlacklist',
+        blockedName: authorInfo.name,
+        blockedProfileUrl: authorInfo.url || null
+      }, (response) => {
+        if (response && response.success) {
+          window.toastNotification.success(t('blacklistAddSuccess').replace('{name}', authorInfo.name));
+        } else {
+          window.toastNotification.error(t('error'));
+        }
+      });
+    };
+
+    const viewBlacklistCard = document.createElement('button');
+    viewBlacklistCard.type = 'button';
+    viewBlacklistCard.className = isPremium ? 'ai-card ai-card--action ai-card--secondary' : 'ai-card ai-card--action ai-card--locked';
+    if (isNegative) viewBlacklistCard.classList.add('negative');
+    if (isReplyToComment) viewBlacklistCard.classList.add('reply-mode');
+    viewBlacklistCard.innerHTML = isPremium
+      ? `<span class="ai-card__icon">📋</span><span class="ai-card__label">${t('viewBlacklist')}</span>`
+      : `<span class="ai-card__icon">📋</span><span class="ai-card__label">${t('viewBlacklist')}</span><span class="ai-card__lock">🔒</span>`;
+    viewBlacklistCard.setAttribute('aria-label', t('viewBlacklistTooltip'));
+
+    viewBlacklistCard.onclick = (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+
+      if (!isPremium) {
+        showPremiumUpgradePrompt(t('blacklistUpgradeRequired'));
+        return;
+      }
+
+      showBlacklistModal();
+    };
+
+    // === CARTE PERSONNALISATION (Émotions/Styles) ===
+    const personalisationCard = document.createElement('button');
+    personalisationCard.type = 'button';
+    personalisationCard.className = 'ai-card ai-card--action ai-card--secondary';
+    if (isNegative) personalisationCard.classList.add('negative');
+    if (isReplyToComment) personalisationCard.classList.add('reply-mode');
+    personalisationCard.innerHTML = `<span class="ai-card__icon">⚙️</span><span class="ai-card__label">${t('personalisation')}</span>`;
+    personalisationCard.setAttribute('aria-label', t('personalisationTooltip'));
+
+    personalisationCard.onclick = (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      toggleEmotionsPanel(container, commentBox);
+    };
+
+    // === ASSEMBLER LA GRILLE ===
+    // Ligne 1: Actions principales
+    grid.appendChild(generateCard);
+    grid.appendChild(promptCard);
+    grid.appendChild(randomCard);
+    grid.appendChild(personalisationCard);
+    // Ligne 2: Enrichissements
+    grid.appendChild(quoteCard);
+    grid.appendChild(tagCard);
+    grid.appendChild(contextCard);
+    grid.appendChild(webCard);
+    grid.appendChild(newsCard);
+    // Ligne 3: Blacklist
+    grid.appendChild(addBlacklistCard);
+    grid.appendChild(viewBlacklistCard);
+
+    container.appendChild(grid);
+
+    // Stocker les references aux elements
+    container._elements = {
+      generateCard,
+      promptCard,
+      randomCard,
+      personalisationCard,
+      quoteCard,
+      tagCard,
+      contextCard,
+      webCard,
+      newsCard,
+      addBlacklistCard,
+      viewBlacklistCard
+    };
+
+    return container;
+  }
+
+  // ================================================
+  // V3 Story 7.6 — Handle Random Generate
+  // Randomizes toggle states before generating
+  // ================================================
+  function handleRandomGenerate(e, commentBox, isReplyToComment) {
+    // Randomiser les toggles premium
+    const randomBool = () => Math.random() > 0.5;
+
+    chrome.storage.local.get(['user_plan'], (result) => {
+      const userPlan = result.user_plan || 'FREE';
+      if (userPlan === 'PREMIUM') {
+        // Randomiser les etats des toggles
+        if (randomBool()) {
+          commentBox.setAttribute('data-include-quote', 'true');
+        } else {
+          commentBox.removeAttribute('data-include-quote');
+        }
+        if (randomBool()) {
+          commentBox.setAttribute('data-include-context', 'true');
+        } else {
+          commentBox.removeAttribute('data-include-context');
+        }
+        if (randomBool()) {
+          commentBox.setAttribute('data-web-search', 'true');
+        } else {
+          commentBox.removeAttribute('data-web-search');
+        }
+        // Tag auteur: on ne randomise pas car necessite extraction
+      }
+
+      // Lancer la generation
+      handleGenerateClick(e, commentBox, isReplyToComment);
+    });
+  }
+
+  // ================================================
+  // V3 Story 7.6 — Viewport Detection with ResizeObserver
+  // Detects narrow viewports and triggers fallback to inline mode
+  // ================================================
+  // V3 Story 7.6 - TEMP: seuil abaissé pour tests (original: 500)
+  const VIEWPORT_NARROW = 300;  // < 300px → force inline
+  const VIEWPORT_WIDE = 500;    // > 500px → wide mode
+
+  // Store active observers for cleanup
+  const activeResizeObservers = new WeakMap();
+
+  function setupViewportDetection(containerElement, controlsElement, commentBox) {
+    if (!containerElement || !controlsElement) return null;
+
+    // Cleanup existing observer if any
+    const existingObserver = activeResizeObservers.get(controlsElement);
+    if (existingObserver) {
+      existingObserver.disconnect();
+    }
+
+    let hasTriggeredFallback = false;
+
+    const resizeObserver = new ResizeObserver(entries => {
+      for (const entry of entries) {
+        const width = entry.contentRect.width;
+        let viewport = 'normal';
+
+        if (width < VIEWPORT_NARROW) {
+          viewport = 'narrow';
+          // Fallback automatique si mode expanded et pas encore fait
+          if (controlsElement.classList.contains('ai-controls--expanded') && !hasTriggeredFallback) {
+            hasTriggeredFallback = true;
+            // Basculer temporairement vers mode inline
+            switchToInlineMode(controlsElement, commentBox);
+            window.toastNotification.info(t('modeAdaptedToSpace'));
+          }
+        } else if (width > VIEWPORT_WIDE) {
+          viewport = 'wide';
+          // Restaurer le mode expanded si on etait en fallback
+          if (hasTriggeredFallback && !controlsElement.classList.contains('ai-controls--expanded')) {
+            hasTriggeredFallback = false;
+            // Restaurer le mode expanded
+            controlsElement.classList.remove('ai-controls--inline');
+            controlsElement.classList.add('ai-controls--expanded');
+          }
+        } else {
+          // Viewport normal - restaurer si necessaire
+          if (hasTriggeredFallback && !controlsElement.classList.contains('ai-controls--expanded')) {
+            hasTriggeredFallback = false;
+            controlsElement.classList.remove('ai-controls--inline');
+            controlsElement.classList.add('ai-controls--expanded');
+          }
+        }
+
+        controlsElement.dataset.viewport = viewport;
+      }
+    });
+
+    resizeObserver.observe(containerElement);
+    activeResizeObservers.set(controlsElement, resizeObserver);
+
+    return resizeObserver;
+  }
+
+  // ================================================
+  // V3 Story 7.6 — Switch to Inline Mode (fallback)
+  // Note: Ce fallback est temporaire, ne modifie pas la preference
+  // ================================================
+  function switchToInlineMode(controlsElement, commentBox) {
+    // Changer les classes CSS
+    controlsElement.classList.remove('ai-controls--expanded');
+    controlsElement.classList.add('ai-controls--inline');
+
+    // Masquer les labels des toggles pour le mode inline
+    const toggleLabels = controlsElement.querySelectorAll('.ai-toggle__label');
+    toggleLabels.forEach(label => {
+      label.style.display = 'none';
+    });
+
+    // Marquer le commentBox comme etant en mode fallback
+    commentBox.setAttribute('data-ai-viewport-fallback', 'true');
+  }
+
+  // ================================================
+  // V3 Story 7.6 — Cleanup function for observers
+  // Call when removing controls from DOM
+  // ================================================
+  function cleanupViewportObserver(controlsElement) {
+    const observer = activeResizeObservers.get(controlsElement);
+    if (observer) {
+      observer.disconnect();
+      activeResizeObservers.delete(controlsElement);
+    }
+  }
+
   // Ajouter les boutons
-  function addButtonsToCommentBox(commentBox) {
+  async function addButtonsToCommentBox(commentBox) {
     // Triple vérification stricte avec verrouillage immédiat
     if (hasAIButtons(commentBox)) {
       return;
@@ -848,19 +1364,45 @@
     // Cela empêche les race conditions entre événements concurrents
     commentBox.setAttribute('data-ai-buttons-pending', 'true');
 
-    const buttonsWrapper = document.createElement('div');
-    buttonsWrapper.className = 'ai-buttons-wrapper';
-
     // S'assurer que le parent a un positionnement relatif
     const parent = commentBox.parentElement;
     if (parent && getComputedStyle(parent).position === 'static') {
       parent.style.position = 'relative';
     }
 
+    // V3 Story 7.6 — Charger le mode UI et le plan utilisateur
+    const uiMode = await getUIMode();
+    const userPlanResult = await new Promise(resolve => {
+      chrome.storage.local.get(['user_plan'], resolve);
+    });
+    const userPlan = userPlanResult.user_plan || 'FREE';
+
     chrome.storage.sync.get(['tone'], function(data) {
       const isNegative = data.tone === 'negatif';
       const isReplyToComment = commentBox.closest('[data-view-name="comment-container"]') !== null ||
                                 commentBox.closest('.comments-comment-entity') !== null;
+
+      // V3 Story 7.6 — Utiliser le mode Expanded si configure
+      if (uiMode === 'expanded') {
+        const expandedControls = createExpandedModeControls(commentBox, userPlan, isNegative, isReplyToComment);
+
+        // Setup viewport detection (Story 7.6 Task 5)
+        setupViewportDetection(parent, expandedControls, commentBox);
+
+        parent.appendChild(expandedControls);
+
+        // Retirer le marqueur "en cours" et marquer comme "ajouté"
+        commentBox.removeAttribute('data-ai-buttons-pending');
+        commentBox.setAttribute('data-ai-buttons-added', 'true');
+        commentBox.setAttribute('data-ai-ui-mode', 'expanded');
+
+        updateButtonsState(expandedControls, isAuthenticated);
+        return;
+      }
+
+      // Mode Legacy (inline / compact) — code existant
+      const buttonsWrapper = document.createElement('div');
+      buttonsWrapper.className = 'ai-buttons-wrapper';
 
       // Bouton Générer
       const generateButton = document.createElement('button');
@@ -2144,7 +2686,8 @@
         floatingClose.className = 'ai-modal__close ai-modal__close--floating';
         floatingClose.setAttribute('aria-label', 'Fermer');
         floatingClose.innerHTML = '×';
-        floatingClose.addEventListener('click', () => closeModalBEM(popup));
+        // IMPORTANT: Utiliser modalParts.cleanup() pour proper cleanup (focus trap, ESC handler, focus restoration)
+        floatingClose.addEventListener('click', () => modalParts.cleanup());
         modalParts.container.appendChild(floatingClose);
 
         // Ajouter les options de commentaires dans le body
@@ -3506,6 +4049,28 @@
         currentCommentLanguage = message.settings.commentLanguage;
       }
       updateAllButtonsText();
+    } else if (message.action === 'uiModeChanged') {
+      // V3 Story 7.6 - Réinitialiser l'UI quand le mode change
+      console.log('🎨 Mode UI changé depuis popup:', message.uiMode);
+
+      // Supprimer tous les contrôles existants (nouveaux ET legacy)
+      document.querySelectorAll('.ai-controls, .ai-buttons-wrapper, .ai-button-container').forEach(el => el.remove());
+
+      // Réinitialiser les marqueurs sur toutes les zones de commentaire
+      document.querySelectorAll('[data-ai-buttons-added], [data-ai-buttons-pending], [data-ai-ui-mode]').forEach(el => {
+        el.removeAttribute('data-ai-buttons-added');
+        el.removeAttribute('data-ai-buttons-pending');
+        el.removeAttribute('data-ai-ui-mode');
+      });
+
+      // Réinjecter les boutons sur les zones de commentaire actives
+      setTimeout(() => {
+        document.querySelectorAll('[contenteditable="true"], [role="textbox"], .ql-editor').forEach(commentBox => {
+          if (!commentBox.classList.contains('ql-clipboard') && commentBox.offsetParent !== null) {
+            addButtonsToCommentBox(commentBox);
+          }
+        });
+      }, 100);
     }
   });
 

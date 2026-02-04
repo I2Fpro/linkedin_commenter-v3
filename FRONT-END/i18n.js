@@ -142,6 +142,11 @@ class I18n {
         webSearchUpgradeRequired: 'La recherche web est réservée aux abonnés Premium',
         webSearchFallbackMessage: 'Aucune source web trouvée — génération classique utilisée',
 
+        // V3 Story 7.6 — Mode Expanded
+        randomGenerate: 'Générer aléatoire',
+        tagAuthorSuccess: '{name} sera mentionné dans le commentaire',
+        modeAdaptedToSpace: 'Mode adapté à l\'espace',
+
         // V3 Story 2.1 — Blacklist
         addToBlacklist: 'Blacklister',
         addToBlacklistTooltip: 'Ajoute l\'auteur du post à votre blacklist',
@@ -322,6 +327,11 @@ class I18n {
         webSearchToggleInactive: 'Web search disabled',
         webSearchUpgradeRequired: 'Web search is reserved for Premium subscribers',
         webSearchFallbackMessage: 'No web source found — classic generation used',
+
+        // V3 Story 7.6 — Mode Expanded
+        randomGenerate: 'Random generate',
+        tagAuthorSuccess: '{name} will be mentioned in the comment',
+        modeAdaptedToSpace: 'Mode adapted to space',
 
         // V3 Story 2.1 — Blacklist
         addToBlacklist: 'Blacklist',

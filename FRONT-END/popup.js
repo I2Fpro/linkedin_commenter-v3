@@ -9,6 +9,7 @@ document.addEventListener('DOMContentLoaded', async function() {
   const TONES = ['professionnel', 'soutenu', 'amical', 'expert', 'informatif', 'negatif'];
   const LENGTHS = [7, 15, 30];
   const GENERATIONS = [1, 2, 3];
+  const UI_MODES = ['expanded', 'inline', 'compact', 'legacy'];  // V3 Story 7.6 - Modes UI
 
   // ==================== STATE ====================
   let currentState = {
@@ -19,6 +20,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     optionsCount: 2,
     newsEnrichmentMode: 'title-only',
     autoCloseEmotionsPanel: false,
+    uiMode: 'expanded',  // V3 Story 7.6 - Mode UI (expanded, inline, compact, legacy)
     isAuthenticated: false,
     userData: null,
     planData: null,
@@ -88,6 +90,11 @@ document.addEventListener('DOMContentLoaded', async function() {
   const generationsPrev = document.getElementById('generationsPrev');
   const generationsNext = document.getElementById('generationsNext');
   const generationsValue = document.getElementById('generationsValue');
+
+  // V3 Story 7.6 - Mode UI selector
+  const uiModePrev = document.getElementById('uiModePrev');
+  const uiModeNext = document.getElementById('uiModeNext');
+  const uiModeValue = document.getElementById('uiModeValue');
 
   // ==================== VÉRIFICATION API CONFIG ====================
   if (typeof API_CONFIG === 'undefined') {
@@ -628,6 +635,30 @@ document.addEventListener('DOMContentLoaded', async function() {
     }
   });
 
+  // ==================== MODE UI (V3 Story 7.6 - temporaire pour tests) ====================
+
+  if (uiModePrev) {
+    uiModePrev.addEventListener('click', () => {
+      const currentIndex = UI_MODES.indexOf(currentState.uiMode);
+      const newIndex = (currentIndex - 1 + UI_MODES.length) % UI_MODES.length;
+      currentState.uiMode = UI_MODES[newIndex];
+      updateUIModeDisplay();
+      saveUIMode();
+      console.log('🎨 Mode UI changé:', currentState.uiMode);
+    });
+  }
+
+  if (uiModeNext) {
+    uiModeNext.addEventListener('click', () => {
+      const currentIndex = UI_MODES.indexOf(currentState.uiMode);
+      const newIndex = (currentIndex + 1) % UI_MODES.length;
+      currentState.uiMode = UI_MODES[newIndex];
+      updateUIModeDisplay();
+      saveUIMode();
+      console.log('🎨 Mode UI changé:', currentState.uiMode);
+    });
+  }
+
   // ==================== UPGRADE ====================
 
   upgradeBtn.addEventListener('click', () => {
@@ -703,6 +734,42 @@ document.addEventListener('DOMContentLoaded', async function() {
 
   function updateGenerationsDisplay() {
     generationsValue.textContent = currentState.optionsCount;
+  }
+
+  // V3 Story 7.6 - Mode UI display & save
+  function updateUIModeDisplay() {
+    if (uiModeValue) {
+      const modeLabels = {
+        'expanded': 'Expanded',
+        'inline': 'Inline',
+        'compact': 'Compact',
+        'legacy': 'Legacy'
+      };
+      uiModeValue.textContent = modeLabels[currentState.uiMode] || currentState.uiMode;
+    }
+  }
+
+  function saveUIMode() {
+    chrome.storage.sync.set({ ui_mode: currentState.uiMode }, () => {
+      console.log('💾 Mode UI sauvegardé:', currentState.uiMode);
+      // Notifier les content scripts du changement
+      chrome.tabs.query({ url: "*://*.linkedin.com/*" }, function(tabs) {
+        if (chrome.runtime.lastError) {
+          console.warn('⚠️ Erreur lors de la recherche des tabs:', chrome.runtime.lastError.message);
+          return;
+        }
+        tabs.forEach(tab => {
+          chrome.tabs.sendMessage(tab.id, {
+            action: 'uiModeChanged',
+            uiMode: currentState.uiMode
+          }, (response) => {
+            if (chrome.runtime.lastError) {
+              console.warn('⚠️ Erreur lors de l\'envoi au tab:', chrome.runtime.lastError.message);
+            }
+          });
+        });
+      });
+    });
   }
 
   function updateAutoCloseDisplay() {
@@ -1108,7 +1175,8 @@ document.addEventListener('DOMContentLoaded', async function() {
         'commentLanguage',
         'interfaceLanguage',
         'newsEnrichmentMode',
-        'autoCloseEmotionsPanel'
+        'autoCloseEmotionsPanel',
+        'ui_mode'  // V3 Story 7.6
       ], function(data) {
         if (data.tone) currentState.tone = data.tone;
         if (data.length) currentState.length = data.length;
@@ -1126,6 +1194,12 @@ document.addEventListener('DOMContentLoaded', async function() {
         if (data.autoCloseEmotionsPanel !== undefined) {
           currentState.autoCloseEmotionsPanel = data.autoCloseEmotionsPanel;
         }
+        // V3 Story 7.6 - Mode UI
+        if (data.ui_mode) {
+          currentState.uiMode = data.ui_mode;
+        } else {
+          currentState.uiMode = 'expanded';  // default
+        }
 
         // Mettre à jour tous les affichages
         updateLanguageDisplay();
@@ -1134,6 +1208,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         updateLengthDisplay();
         updateGenerationsDisplay();
         updateAutoCloseDisplay();
+        updateUIModeDisplay();  // V3 Story 7.6
         updateTooltips();
 
         console.log('✅ Paramètres chargés:', currentState);
