@@ -82,6 +82,28 @@
   --ai-font-weight-normal: 400;
   --ai-font-weight-medium: 500;
   --ai-font-weight-bold: 600;
+
+  /* === EMOTIONS - Couleurs de base (Story 7.13) === */
+  --ai-emotion-admiration: #FFD700;    /* Jaune/Or */
+  --ai-emotion-inspiration: #E91E63;   /* Magenta/Rose */
+  --ai-emotion-curiosity: #00BCD4;     /* Cyan */
+  --ai-emotion-gratitude: #4CAF50;     /* Vert */
+  --ai-emotion-empathy: #9C27B0;       /* Violet */
+  --ai-emotion-skepticism: #FF5722;    /* Orange/Rouge */
+
+  /* === EMOTIONS - Modificateurs d'intensite === */
+  --ai-intensity-light: 0.4;
+  --ai-intensity-medium: 0.7;
+  --ai-intensity-strong: 1.0;
+
+  /* === STYLES DE LANGAGE - Couleurs (Story 7.14) === */
+  --ai-style-oral: #64B5F6;           /* Bleu clair - conversationnel */
+  --ai-style-professional: #78909C;   /* Gris-bleu - serieux */
+  --ai-style-storytelling: #AB47BC;   /* Violet - narratif */
+  --ai-style-poetic: #F06292;         /* Rose - creatif */
+  --ai-style-humoristic: #FFD54F;     /* Jaune - drole */
+  --ai-style-impactful: #FF7043;      /* Orange - marketing */
+  --ai-style-benevolent: #81C784;     /* Vert clair - positif */
 }
 
 /* ================================================
@@ -2594,6 +2616,356 @@ body.ai-modal-active .ai-controls {
   box-shadow: 0 2px 4px rgba(231, 76, 60, 0.3);
 }
 
+/* ================================================
+   COMPOSANT: ai-emotion-wheel
+   Convention: BEM (Block Element Modifier)
+   Story: 7.13 - Roue Chromatique des Emotions
+   Description: Selecteur circulaire d'emotion et intensite
+   ================================================ */
+
+/* === BLOCK - Conteneur principal de la roue === */
+.ai-emotion-wheel {
+  position: absolute;
+  z-index: 2147483647;
+  width: 220px;
+  height: 220px;
+  pointer-events: none;
+  opacity: 0;
+  transform: scale(0);
+  transform-origin: center center;
+  transition: opacity var(--ai-transition-fast), transform var(--ai-transition-fast);
+  filter: drop-shadow(0 8px 24px rgba(0, 0, 0, 0.25));
+}
+
+.ai-emotion-wheel--open {
+  pointer-events: auto;
+  opacity: 1;
+  transform: scale(1);
+}
+
+.ai-emotion-wheel--closing {
+  opacity: 0;
+  transform: scale(0);
+  transition: opacity 150ms ease-in, transform 150ms ease-in;
+}
+
+/* Respect prefers-reduced-motion */
+@media (prefers-reduced-motion: reduce) {
+  .ai-emotion-wheel {
+    transition: none;
+  }
+  .ai-emotion-wheel--open {
+    transform: scale(1);
+  }
+  .ai-emotion-wheel--closing {
+    transition: none;
+  }
+}
+
+/* === ELEMENT - SVG de la roue === */
+.ai-emotion-wheel__svg {
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+/* === ELEMENT - Zone cliquable (section) === */
+.ai-emotion-wheel__zone {
+  cursor: pointer;
+  transition: all var(--ai-transition-fast);
+  stroke: rgba(255, 255, 255, 0.3);
+  stroke-width: 1;
+}
+
+.ai-emotion-wheel__zone:hover {
+  filter: brightness(1.15);
+  stroke: rgba(255, 255, 255, 0.8);
+  stroke-width: 2;
+}
+
+.ai-emotion-wheel__zone:focus {
+  outline: none;
+  stroke: var(--ai-neutral-100);
+  stroke-width: 3;
+}
+
+.ai-emotion-wheel__zone--selected {
+  stroke: var(--ai-neutral-100);
+  stroke-width: 3;
+  filter: brightness(1.1);
+}
+
+/* Focus clavier (Story 7.13 - Task 6) */
+.ai-emotion-wheel__zone--focused {
+  stroke: var(--ai-accent);
+  stroke-width: 3;
+  filter: brightness(1.2);
+  animation: ai-wheel-focus-pulse 1s ease-in-out infinite;
+}
+
+@keyframes ai-wheel-focus-pulse {
+  0%, 100% { stroke-width: 3; }
+  50% { stroke-width: 4; }
+}
+
+/* === ELEMENT - Centre de la roue (bouton retour) === */
+.ai-emotion-wheel__center {
+  cursor: pointer;
+  transition: all var(--ai-transition-fast);
+}
+
+.ai-emotion-wheel__center:hover {
+  filter: brightness(1.1);
+}
+
+.ai-emotion-wheel__center-bg {
+  fill: var(--ai-neutral-700);
+  stroke: var(--ai-neutral-500);
+  stroke-width: 2;
+}
+
+.ai-emotion-wheel__center-icon {
+  fill: var(--ai-text-primary);
+  font-size: 24px;
+  dominant-baseline: central;
+  text-anchor: middle;
+  pointer-events: none;
+}
+
+/* === ELEMENT - Tooltip de la roue === */
+.ai-emotion-wheel__tooltip {
+  position: absolute;
+  z-index: 2147483648;
+  padding: 6px 10px;
+  background: var(--ai-neutral-800);
+  color: var(--ai-text-primary);
+  border-radius: var(--ai-radius-sm);
+  font-size: var(--ai-font-size-xs);
+  font-weight: var(--ai-font-weight-medium);
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transform: translateY(4px);
+  transition: opacity var(--ai-transition-fast), transform var(--ai-transition-fast);
+  box-shadow: var(--ai-shadow-md);
+}
+
+.ai-emotion-wheel__tooltip--visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* === MODIFIER - Couleurs des emotions === */
+.ai-emotion-wheel__zone[data-emotion="admiration"] { fill: var(--ai-emotion-admiration); }
+.ai-emotion-wheel__zone[data-emotion="inspiration"] { fill: var(--ai-emotion-inspiration); }
+.ai-emotion-wheel__zone[data-emotion="curiosity"] { fill: var(--ai-emotion-curiosity); }
+.ai-emotion-wheel__zone[data-emotion="gratitude"] { fill: var(--ai-emotion-gratitude); }
+.ai-emotion-wheel__zone[data-emotion="empathy"] { fill: var(--ai-emotion-empathy); }
+.ai-emotion-wheel__zone[data-emotion="skepticism"] { fill: var(--ai-emotion-skepticism); }
+
+/* === MODIFIER - Opacite par intensite === */
+.ai-emotion-wheel__zone[data-intensity="low"] { opacity: var(--ai-intensity-light); }
+.ai-emotion-wheel__zone[data-intensity="medium"] { opacity: var(--ai-intensity-medium); }
+.ai-emotion-wheel__zone[data-intensity="high"] { opacity: var(--ai-intensity-strong); }
+
+/* === MODIFIER - Bouton avec emotion selectionnee === */
+.ai-button--emotion-selected {
+  position: relative;
+}
+
+.ai-button--emotion-selected::before {
+  content: '';
+  position: absolute;
+  inset: -3px;
+  border-radius: calc(var(--ai-radius-md) + 3px);
+  padding: 2px;
+  background: var(--emotion-color, var(--ai-primary));
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+/* Couleurs du bouton selon emotion */
+.ai-button--emotion-admiration { --emotion-color: var(--ai-emotion-admiration); }
+.ai-button--emotion-inspiration { --emotion-color: var(--ai-emotion-inspiration); }
+.ai-button--emotion-curiosity { --emotion-color: var(--ai-emotion-curiosity); }
+.ai-button--emotion-gratitude { --emotion-color: var(--ai-emotion-gratitude); }
+.ai-button--emotion-empathy { --emotion-color: var(--ai-emotion-empathy); }
+.ai-button--emotion-skepticism { --emotion-color: var(--ai-emotion-skepticism); }
+
+/* ================================================
+   COMPOSANT: ai-style-wheel
+   Convention: BEM (Block Element Modifier)
+   Story: 7.14 - Roue Chromatique des Styles de Langage
+   Description: Selecteur circulaire de style de langage (7 styles)
+   ================================================ */
+
+/* === BLOCK - Conteneur principal de la roue === */
+.ai-style-wheel {
+  position: absolute;
+  z-index: 2147483647;
+  width: 180px;
+  height: 180px;
+  pointer-events: none;
+  opacity: 0;
+  transform: scale(0);
+  transform-origin: center center;
+  transition: opacity var(--ai-transition-fast), transform var(--ai-transition-fast);
+  filter: drop-shadow(0 8px 24px rgba(0, 0, 0, 0.25));
+}
+
+.ai-style-wheel--open {
+  pointer-events: auto;
+  opacity: 1;
+  transform: scale(1);
+}
+
+.ai-style-wheel--closing {
+  opacity: 0;
+  transform: scale(0);
+  transition: opacity 150ms ease-in, transform 150ms ease-in;
+}
+
+/* Respect prefers-reduced-motion */
+@media (prefers-reduced-motion: reduce) {
+  .ai-style-wheel {
+    transition: none;
+  }
+  .ai-style-wheel--open {
+    transform: scale(1);
+  }
+  .ai-style-wheel--closing {
+    transition: none;
+  }
+}
+
+/* === ELEMENT - SVG de la roue === */
+.ai-style-wheel__svg {
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+/* === ELEMENT - Zone cliquable (section) === */
+.ai-style-wheel__zone {
+  cursor: pointer;
+  transition: all var(--ai-transition-fast);
+  stroke: rgba(255, 255, 255, 0.3);
+  stroke-width: 1;
+}
+
+.ai-style-wheel__zone:hover {
+  filter: brightness(1.15);
+  stroke: rgba(255, 255, 255, 0.8);
+  stroke-width: 2;
+}
+
+.ai-style-wheel__zone:focus {
+  outline: none;
+  stroke: var(--ai-neutral-100);
+  stroke-width: 3;
+}
+
+.ai-style-wheel__zone--selected {
+  stroke: var(--ai-neutral-100);
+  stroke-width: 3;
+  filter: brightness(1.1);
+}
+
+/* Focus clavier (Story 7.14 - Task 8) */
+.ai-style-wheel__zone--focused {
+  stroke: var(--ai-accent);
+  stroke-width: 3;
+  filter: brightness(1.2);
+  animation: ai-wheel-focus-pulse 1s ease-in-out infinite;
+}
+
+/* === ELEMENT - Centre de la roue (bouton retour) === */
+.ai-style-wheel__center {
+  cursor: pointer;
+  transition: all var(--ai-transition-fast);
+}
+
+.ai-style-wheel__center:hover {
+  filter: brightness(1.1);
+}
+
+.ai-style-wheel__center-bg {
+  fill: var(--ai-neutral-700);
+  stroke: var(--ai-neutral-500);
+  stroke-width: 2;
+}
+
+.ai-style-wheel__center-icon {
+  fill: var(--ai-text-primary);
+  font-size: 20px;
+  dominant-baseline: central;
+  text-anchor: middle;
+  pointer-events: none;
+}
+
+/* === ELEMENT - Tooltip de la roue === */
+.ai-style-wheel__tooltip {
+  position: absolute;
+  z-index: 2147483648;
+  padding: 6px 10px;
+  background: var(--ai-neutral-800);
+  color: var(--ai-text-primary);
+  border-radius: var(--ai-radius-sm);
+  font-size: var(--ai-font-size-xs);
+  font-weight: var(--ai-font-weight-medium);
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transform: translateY(4px);
+  transition: opacity var(--ai-transition-fast), transform var(--ai-transition-fast);
+  box-shadow: var(--ai-shadow-md);
+}
+
+.ai-style-wheel__tooltip--visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* === MODIFIER - Couleurs des styles === */
+.ai-style-wheel__zone[data-style="oral"] { fill: var(--ai-style-oral); }
+.ai-style-wheel__zone[data-style="professional"] { fill: var(--ai-style-professional); }
+.ai-style-wheel__zone[data-style="storytelling"] { fill: var(--ai-style-storytelling); }
+.ai-style-wheel__zone[data-style="poetic"] { fill: var(--ai-style-poetic); }
+.ai-style-wheel__zone[data-style="humoristic"] { fill: var(--ai-style-humoristic); }
+.ai-style-wheel__zone[data-style="impactful"] { fill: var(--ai-style-impactful); }
+.ai-style-wheel__zone[data-style="benevolent"] { fill: var(--ai-style-benevolent); }
+
+/* === MODIFIER - Bouton avec style selectionne === */
+.ai-button--style-selected {
+  position: relative;
+}
+
+.ai-button--style-selected::before {
+  content: '';
+  position: absolute;
+  inset: -3px;
+  border-radius: calc(var(--ai-radius-md) + 3px);
+  padding: 2px;
+  background: var(--style-color, var(--ai-primary));
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+/* Couleurs du bouton selon style */
+.ai-button--style-oral { --style-color: var(--ai-style-oral); }
+.ai-button--style-professional { --style-color: var(--ai-style-professional); }
+.ai-button--style-storytelling { --style-color: var(--ai-style-storytelling); }
+.ai-button--style-poetic { --style-color: var(--ai-style-poetic); }
+.ai-button--style-humoristic { --style-color: var(--ai-style-humoristic); }
+.ai-button--style-impactful { --style-color: var(--ai-style-impactful); }
+.ai-button--style-benevolent { --style-color: var(--ai-style-benevolent); }
+
 /* Styles pour le conteneur de la matrice d'émotions */
 .ai-emotions-container {
   position: absolute;
@@ -2807,15 +3179,21 @@ body.ai-modal-active .ai-controls {
   box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.5), 0 4px 8px rgba(239, 68, 68, 0.3);
 }
 
-/* Séparateur et titre pour les styles de langage */
+/* Séparateur et titre pour les styles de langage
+   Story 7.14 - Masques (pas supprimes) car remplaces par la roue des styles */
 .ai-styles-separator {
+  display: none !important; /* Story 7.14 - Masque */
+  /* Anciennes proprietes conservees pour rollback:
   width: 100%;
   height: 1px;
   background: linear-gradient(90deg, transparent, rgba(59, 130, 246, 0.3), transparent);
   margin: 16px 0 12px 0;
+  */
 }
 
 .ai-styles-title {
+  display: none !important; /* Story 7.14 - Masque */
+  /* Anciennes proprietes conservees pour rollback:
   text-align: center;
   font-size: 13px;
   font-weight: 600;
@@ -2823,15 +3201,21 @@ body.ai-modal-active .ai-controls {
   margin-bottom: 12px;
   text-transform: uppercase;
   letter-spacing: 0.5px;
+  */
 }
 
-/* Conteneur des styles de langage */
+/* Conteneur des styles de langage
+   Story 7.14 - Masque (pas supprime) car remplace par la roue des styles
+   Conserve pour rollback si necessaire */
 .ai-styles-container {
+  display: none !important; /* Story 7.14 - Masque, remplace par roue des styles */
+  /* Anciennes proprietes conservees pour rollback:
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
   justify-content: center;
   padding: 0 8px 8px 8px;
+  */
 }
 
 /* Boutons de style */

@@ -47,6 +47,11 @@
       gratitude: 'Gratitude',
       empathy: 'Empathie',
       skepticism: 'Scepticisme\nbienveillant',
+      // Intensites (Story 7.13)
+      intensityLow: 'Faible',
+      intensityMedium: 'Moyen',
+      intensityHigh: 'Fort',
+      intensity: 'Intensité',
       // Styles de langage
       oral: 'Oral /\nConversationnel',
       professional: 'Professionnel',
@@ -75,13 +80,13 @@
       webSearchToggle: 'Source web',
       webSearchToggleTooltip: 'Recherche des infos sur le web',
       webSearchUpgradeRequired: 'Passez en Premium pour la recherche web',
-      contextToggle: 'Contexte',
+      contextToggle: 'Contexte comm.',
       contextToggleTooltip: 'Prend en compte les commentaires existants',
       contextUpgradeRequired: 'Passez en Premium pour le contexte',
       generateComment: 'Générer le commentaire',
       randomGenerate: 'Générer aléatoire',
       // Mode Inline - News & Blacklist
-      newsToggle: 'News',
+      newsToggle: 'News LinkedIn',
       newsToggleTooltip: 'Enrichit avec les actualités LinkedIn',
       newsUpgradeRequired: 'Passez en MEDIUM ou supérieur pour les actualités',
       addToBlacklist: 'Blacklister',
@@ -102,9 +107,9 @@
       optionsTooltip: 'Options',
       optionsAriaLabel: 'Ouvrir le menu des options',
       quoteToggleAriaLabel: 'Activer ou désactiver la citation',
-      contextToggleAriaLabel: 'Activer ou désactiver le contexte',
+      contextToggleAriaLabel: 'Activer le contexte des commentaires',
       webSearchToggleAriaLabel: 'Activer ou désactiver la recherche web',
-      newsToggleAriaLabel: 'Activer ou désactiver les actualités',
+      newsToggleAriaLabel: 'Activer les actualités LinkedIn',
       tagAuthorAriaLabel: 'Activer ou désactiver le tag auteur',
       addToBlacklistAriaLabel: 'Ajouter cet auteur à la blacklist',
       viewBlacklistAriaLabel: 'Voir ma blacklist',
@@ -134,6 +139,11 @@
       gratitude: 'Gratitude',
       empathy: 'Empathy',
       skepticism: 'Benevolent\nskepticism',
+      // Intensities (Story 7.13)
+      intensityLow: 'Low',
+      intensityMedium: 'Medium',
+      intensityHigh: 'High',
+      intensity: 'Intensity',
       // Styles de langage
       oral: 'Oral /\nConversational',
       professional: 'Professional',
@@ -162,13 +172,13 @@
       webSearchToggle: 'Web source',
       webSearchToggleTooltip: 'Search web for info',
       webSearchUpgradeRequired: 'Upgrade to Premium for web search',
-      contextToggle: 'Context',
+      contextToggle: 'Comment ctx',
       contextToggleTooltip: 'Consider existing comments',
       contextUpgradeRequired: 'Upgrade to Premium for context',
       generateComment: 'Generate comment',
       randomGenerate: 'Random generate',
       // Inline Mode - News & Blacklist
-      newsToggle: 'News',
+      newsToggle: 'News LinkedIn',
       newsToggleTooltip: 'Enriches with LinkedIn news',
       newsUpgradeRequired: 'Upgrade to MEDIUM or higher for news',
       addToBlacklist: 'Blacklist',
@@ -189,9 +199,9 @@
       optionsTooltip: 'Options',
       optionsAriaLabel: 'Open options menu',
       quoteToggleAriaLabel: 'Toggle quote on or off',
-      contextToggleAriaLabel: 'Toggle context on or off',
+      contextToggleAriaLabel: 'Toggle comment context',
       webSearchToggleAriaLabel: 'Toggle web search on or off',
-      newsToggleAriaLabel: 'Toggle news on or off',
+      newsToggleAriaLabel: 'Toggle LinkedIn news',
       tagAuthorAriaLabel: 'Toggle author tag on or off',
       addToBlacklistAriaLabel: 'Add this author to blacklist',
       viewBlacklistAriaLabel: 'View my blacklist',
@@ -687,6 +697,975 @@
     return false;
   }
 
+  // ================================================
+  // EMOTION WHEEL (Story 7.13)
+  // Roue chromatique interactive pour selection emotion/intensite
+  // ================================================
+
+  // Configuration des emotions avec leurs couleurs
+  const EMOTION_WHEEL_CONFIG = {
+    emotions: [
+      { key: 'admiration', color: '#FFD700', emoji: '🌟' },
+      { key: 'inspiration', color: '#E91E63', emoji: '💡' },
+      { key: 'curiosity', color: '#00BCD4', emoji: '🤔' },
+      { key: 'gratitude', color: '#4CAF50', emoji: '🙏' },
+      { key: 'empathy', color: '#9C27B0', emoji: '❤️' },
+      { key: 'skepticism', color: '#FF5722', emoji: '🧐' }
+    ],
+    intensities: [
+      { key: 'low', labelKey: 'intensityLow', opacity: 0.4 },
+      { key: 'medium', labelKey: 'intensityMedium', opacity: 0.7 },
+      { key: 'high', labelKey: 'intensityHigh', opacity: 1.0 }
+    ],
+    // Dimensions SVG
+    size: 220,
+    centerRadius: 30,
+    ringWidth: 28
+  };
+
+  // ================================================
+  // STYLE WHEEL (Story 7.14)
+  // Roue chromatique interactive pour selection du style de langage
+  // ================================================
+
+  // Configuration des styles de langage avec leurs couleurs
+  const STYLE_WHEEL_CONFIG = {
+    styles: [
+      { key: 'oral', color: '#64B5F6', emoji: '🗣️' },
+      { key: 'professional', color: '#78909C', emoji: '💼' },
+      { key: 'storytelling', color: '#AB47BC', emoji: '📖' },
+      { key: 'poetic', color: '#F06292', emoji: '🎨' },
+      { key: 'humoristic', color: '#FFD54F', emoji: '😂' },
+      { key: 'impactful', color: '#FF7043', emoji: '⚡' },
+      { key: 'benevolent', color: '#81C784', emoji: '🤝' }
+    ],
+    // Dimensions SVG (legerement plus petit que emotion wheel - pas d'anneaux)
+    size: 180,
+    centerRadius: 25,
+    outerRadius: 80
+  };
+
+  // Calcul d'un arc SVG (secteur de camembert)
+  function describeArc(cx, cy, innerRadius, outerRadius, startAngle, endAngle) {
+    const startRad = (startAngle - 90) * Math.PI / 180;
+    const endRad = (endAngle - 90) * Math.PI / 180;
+
+    const x1 = cx + outerRadius * Math.cos(startRad);
+    const y1 = cy + outerRadius * Math.sin(startRad);
+    const x2 = cx + outerRadius * Math.cos(endRad);
+    const y2 = cy + outerRadius * Math.sin(endRad);
+    const x3 = cx + innerRadius * Math.cos(endRad);
+    const y3 = cy + innerRadius * Math.sin(endRad);
+    const x4 = cx + innerRadius * Math.cos(startRad);
+    const y4 = cy + innerRadius * Math.sin(startRad);
+
+    const largeArc = endAngle - startAngle > 180 ? 1 : 0;
+
+    return [
+      'M', x1, y1,
+      'A', outerRadius, outerRadius, 0, largeArc, 1, x2, y2,
+      'L', x3, y3,
+      'A', innerRadius, innerRadius, 0, largeArc, 0, x4, y4,
+      'Z'
+    ].join(' ');
+  }
+
+  // Creation du SVG de la roue
+  function createEmotionWheelSVG(commentBox, onSelect, onClose, onReset) {
+    const { size, centerRadius, ringWidth, emotions, intensities } = EMOTION_WHEEL_CONFIG;
+    const cx = size / 2;
+    const cy = size / 2;
+    const sectionAngle = 360 / emotions.length; // 60 degres par emotion
+
+    // Creer le conteneur
+    const container = document.createElement('div');
+    container.className = 'ai-emotion-wheel';
+    container.setAttribute('role', 'listbox');
+    container.setAttribute('aria-label', t('personalisationAriaLabel') || 'Selectionner emotion et intensite');
+    container.setAttribute('tabindex', '0');
+
+    // Creer le SVG
+    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    svg.setAttribute('class', 'ai-emotion-wheel__svg');
+    svg.setAttribute('viewBox', `0 0 ${size} ${size}`);
+    svg.setAttribute('width', size);
+    svg.setAttribute('height', size);
+
+    // Creer le groupe principal
+    const mainGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+
+    // Creer les zones pour chaque emotion et intensite
+    emotions.forEach((emotion, emotionIndex) => {
+      const startAngle = emotionIndex * sectionAngle;
+      const endAngle = startAngle + sectionAngle;
+
+      // 3 anneaux d'intensite (du centre vers l'exterieur)
+      intensities.forEach((intensity, intensityIndex) => {
+        const innerR = centerRadius + (intensityIndex * ringWidth);
+        const outerR = innerR + ringWidth;
+
+        const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        path.setAttribute('class', 'ai-emotion-wheel__zone');
+        path.setAttribute('d', describeArc(cx, cy, innerR, outerR, startAngle, endAngle));
+        path.setAttribute('data-emotion', emotion.key);
+        path.setAttribute('data-intensity', intensity.key);
+        path.setAttribute('role', 'option');
+        path.setAttribute('aria-label', `${t(emotion.key)} - ${t(intensity.labelKey)}`);
+        path.setAttribute('tabindex', '-1');
+
+        // Couleur avec opacite
+        path.style.fill = emotion.color;
+        path.style.opacity = intensity.opacity;
+
+        // Evenements
+        path.addEventListener('click', (e) => {
+          e.stopPropagation();
+          onSelect(emotion.key, intensity.key);
+        });
+
+        path.addEventListener('mouseenter', () => {
+          showWheelTooltip(container, emotion, intensity, path);
+        });
+
+        path.addEventListener('mouseleave', () => {
+          hideWheelTooltip(container);
+        });
+
+        mainGroup.appendChild(path);
+      });
+    });
+
+    // Cercle central (fermeture/annulation)
+    const centerGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+    centerGroup.setAttribute('class', 'ai-emotion-wheel__center');
+    centerGroup.style.cursor = 'pointer';
+
+    const centerCircle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+    centerCircle.setAttribute('class', 'ai-emotion-wheel__center-bg');
+    centerCircle.setAttribute('cx', cx);
+    centerCircle.setAttribute('cy', cy);
+    centerCircle.setAttribute('r', centerRadius - 2);
+
+    const centerText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+    centerText.setAttribute('class', 'ai-emotion-wheel__center-icon');
+    centerText.setAttribute('x', cx);
+    centerText.setAttribute('y', cy);
+    centerText.textContent = '✨';
+
+    centerGroup.appendChild(centerCircle);
+    centerGroup.appendChild(centerText);
+    // Story 7.13 - Clic sur le centre = reset a l'etat neutre (aucune emotion)
+    centerGroup.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (onReset) {
+        onReset();
+      } else {
+        onClose();
+      }
+    });
+
+    svg.appendChild(mainGroup);
+    svg.appendChild(centerGroup);
+    container.appendChild(svg);
+
+    // Creer le tooltip
+    const tooltip = document.createElement('div');
+    tooltip.className = 'ai-emotion-wheel__tooltip';
+    container.appendChild(tooltip);
+
+    return container;
+  }
+
+  // Afficher le tooltip de la roue
+  function showWheelTooltip(wheelContainer, emotion, intensity, pathElement) {
+    const tooltip = wheelContainer.querySelector('.ai-emotion-wheel__tooltip');
+    if (!tooltip) return;
+
+    const emotionLabel = t(emotion.key) || emotion.key;
+    const intensityLabelText = t(intensity.labelKey) || intensity.key;
+    const intensityLabel = `${t('intensity')} ${intensityLabelText.toLowerCase()}`;
+
+    tooltip.textContent = `${emotionLabel} - ${intensityLabel}`;
+    tooltip.classList.add('ai-emotion-wheel__tooltip--visible');
+
+    // Story 7.13 - Mettre a jour l'icone centrale avec l'emoji de l'emotion survolee
+    const centerIcon = wheelContainer.querySelector('.ai-emotion-wheel__center-icon');
+    if (centerIcon) {
+      centerIcon.textContent = emotion.emoji;
+    }
+
+    // Positionner le tooltip au-dessus de la zone survolee
+    const wheelRect = wheelContainer.getBoundingClientRect();
+    const pathRect = pathElement.getBoundingClientRect();
+
+    const tooltipX = pathRect.left + pathRect.width / 2 - wheelRect.left;
+    const tooltipY = pathRect.top - wheelRect.top - 8;
+
+    tooltip.style.left = `${tooltipX}px`;
+    tooltip.style.top = `${tooltipY}px`;
+    tooltip.style.transform = 'translate(-50%, -100%)';
+  }
+
+  // Masquer le tooltip de la roue
+  function hideWheelTooltip(wheelContainer) {
+    const tooltip = wheelContainer.querySelector('.ai-emotion-wheel__tooltip');
+    if (tooltip) {
+      tooltip.classList.remove('ai-emotion-wheel__tooltip--visible');
+    }
+    // Story 7.13 - Restaurer l'icone centrale par defaut
+    const centerIcon = wheelContainer.querySelector('.ai-emotion-wheel__center-icon');
+    if (centerIcon) {
+      centerIcon.textContent = '✨';
+    }
+  }
+
+  // Reference globale a la roue ouverte
+  let activeEmotionWheel = null;
+
+  // Afficher/masquer la roue d'emotions autour d'un bouton
+  function toggleEmotionWheel(triggerButton, commentBox) {
+    // Story 7.14 - AC #7: Fermer la roue des styles si ouverte (exclusivite)
+    if (activeStyleWheel) {
+      closeStyleWheel();
+    }
+
+    // Si une roue d'emotions est deja ouverte, la fermer
+    if (activeEmotionWheel) {
+      closeEmotionWheel();
+      return;
+    }
+
+    // Callback de selection
+    const handleSelect = (emotionKey, intensityKey) => {
+      // Stocker dans le commentBox
+      commentBox.setAttribute('data-selected-emotion', emotionKey);
+      commentBox.setAttribute('data-selected-intensity', intensityKey);
+
+      // Sauvegarder dans chrome.storage
+      chrome.storage.sync.set({
+        emotion_wheel_selection: { emotion: emotionKey, intensity: intensityKey }
+      });
+
+      // Mettre a jour le bouton
+      updateButtonWithEmotion(triggerButton, emotionKey, intensityKey);
+
+      // Log
+      console.log('Emotion selectionnee:', emotionKey, 'Intensite:', intensityKey);
+
+      // Track
+      if (phClient) {
+        try {
+          phClient.trackEmotionSelected(emotionKey, intensityKey);
+        } catch (e) {
+          console.warn('PostHog tracking failed:', e);
+        }
+      }
+
+      // Fermer la roue
+      closeEmotionWheel();
+    };
+
+    // Callback de fermeture
+    const handleClose = () => {
+      closeEmotionWheel();
+    };
+
+    // Story 7.13 - Callback de reset (clic sur le centre = emotion neutre)
+    const handleReset = () => {
+      // Supprimer les attributs d'emotion du commentBox
+      commentBox.removeAttribute('data-selected-emotion');
+      commentBox.removeAttribute('data-selected-intensity');
+
+      // Supprimer de chrome.storage
+      chrome.storage.sync.remove('emotion_wheel_selection');
+
+      // Remettre le bouton a l'etat par defaut
+      resetButtonToDefault(triggerButton, commentBox);
+
+      // Log
+      console.log('Emotion resetee a neutre');
+
+      // Fermer la roue
+      closeEmotionWheel();
+    };
+
+    // Creer la roue
+    const wheel = createEmotionWheelSVG(commentBox, handleSelect, handleClose, handleReset);
+    activeEmotionWheel = wheel;
+
+    // Mettre a jour aria-expanded
+    triggerButton.setAttribute('aria-expanded', 'true');
+    wheel._triggerButton = triggerButton;
+
+    // Positionner la roue centree sur le bouton
+    const buttonRect = triggerButton.getBoundingClientRect();
+    const wheelSize = EMOTION_WHEEL_CONFIG.size;
+
+    // Position absolue dans le viewport
+    wheel.style.position = 'fixed';
+    wheel.style.left = `${buttonRect.left + buttonRect.width / 2 - wheelSize / 2}px`;
+    wheel.style.top = `${buttonRect.top + buttonRect.height / 2 - wheelSize / 2}px`;
+
+    // Verifier les debordements viewport
+    requestAnimationFrame(() => {
+      const wheelRect = wheel.getBoundingClientRect();
+
+      // Ajuster si deborde a droite
+      if (wheelRect.right > window.innerWidth - 10) {
+        wheel.style.left = `${window.innerWidth - wheelSize - 10}px`;
+      }
+      // Ajuster si deborde a gauche
+      if (wheelRect.left < 10) {
+        wheel.style.left = '10px';
+      }
+      // Ajuster si deborde en bas
+      if (wheelRect.bottom > window.innerHeight - 10) {
+        wheel.style.top = `${window.innerHeight - wheelSize - 10}px`;
+      }
+      // Ajuster si deborde en haut
+      if (wheelRect.top < 10) {
+        wheel.style.top = '10px';
+      }
+    });
+
+    // Ajouter au document
+    document.body.appendChild(wheel);
+
+    // Animer l'ouverture
+    requestAnimationFrame(() => {
+      wheel.classList.add('ai-emotion-wheel--open');
+    });
+
+    // Fermer au clic en dehors
+    const closeOnOutsideClick = (e) => {
+      if (!wheel.contains(e.target) && e.target !== triggerButton) {
+        closeEmotionWheel();
+        document.removeEventListener('click', closeOnOutsideClick);
+      }
+    };
+    setTimeout(() => {
+      document.addEventListener('click', closeOnOutsideClick);
+    }, 10);
+
+    // Story 7.13 - Task 6: Navigation clavier complete
+    const { emotions, intensities } = EMOTION_WHEEL_CONFIG;
+    let focusedEmotionIndex = 0;
+    let focusedIntensityIndex = 1; // Medium par defaut
+
+    // Fonction pour mettre a jour le focus visuel
+    const updateFocus = () => {
+      // Retirer le focus de toutes les zones
+      wheel.querySelectorAll('.ai-emotion-wheel__zone').forEach(zone => {
+        zone.classList.remove('ai-emotion-wheel__zone--focused');
+      });
+
+      // Ajouter le focus a la zone courante
+      const focusedZone = wheel.querySelector(
+        `.ai-emotion-wheel__zone[data-emotion="${emotions[focusedEmotionIndex].key}"][data-intensity="${intensities[focusedIntensityIndex].key}"]`
+      );
+      if (focusedZone) {
+        focusedZone.classList.add('ai-emotion-wheel__zone--focused');
+        // Afficher le tooltip
+        showWheelTooltip(wheel, emotions[focusedEmotionIndex], intensities[focusedIntensityIndex], focusedZone);
+      }
+    };
+
+    const handleKeydown = (e) => {
+      switch (e.key) {
+        case 'Escape':
+          closeEmotionWheel();
+          triggerButton.focus();
+          break;
+
+        case 'ArrowLeft':
+          e.preventDefault();
+          focusedEmotionIndex = (focusedEmotionIndex - 1 + emotions.length) % emotions.length;
+          updateFocus();
+          break;
+
+        case 'ArrowRight':
+          e.preventDefault();
+          focusedEmotionIndex = (focusedEmotionIndex + 1) % emotions.length;
+          updateFocus();
+          break;
+
+        case 'ArrowUp':
+          e.preventDefault();
+          // Plus d'intensite (vers l'exterieur)
+          focusedIntensityIndex = Math.min(focusedIntensityIndex + 1, intensities.length - 1);
+          updateFocus();
+          break;
+
+        case 'ArrowDown':
+          e.preventDefault();
+          // Moins d'intensite (vers le centre)
+          focusedIntensityIndex = Math.max(focusedIntensityIndex - 1, 0);
+          updateFocus();
+          break;
+
+        case 'Enter':
+        case ' ':
+          e.preventDefault();
+          handleSelect(emotions[focusedEmotionIndex].key, intensities[focusedIntensityIndex].key);
+          triggerButton.focus();
+          break;
+
+        default:
+          break;
+      }
+    };
+    document.addEventListener('keydown', handleKeydown);
+
+    // Focus initial sur la roue
+    wheel.focus();
+
+    // Stocker les handlers pour cleanup
+    wheel._closeHandlers = { click: closeOnOutsideClick, keydown: handleKeydown };
+  }
+
+  // Fermer la roue d'emotions
+  function closeEmotionWheel() {
+    if (!activeEmotionWheel) return;
+
+    const wheel = activeEmotionWheel;
+
+    // Cleanup handlers
+    if (wheel._closeHandlers) {
+      document.removeEventListener('click', wheel._closeHandlers.click);
+      document.removeEventListener('keydown', wheel._closeHandlers.keydown);
+    }
+
+    // Mettre a jour aria-expanded sur le bouton declencheur
+    if (wheel._triggerButton) {
+      wheel._triggerButton.setAttribute('aria-expanded', 'false');
+    }
+
+    // Animation de fermeture
+    wheel.classList.remove('ai-emotion-wheel--open');
+    wheel.classList.add('ai-emotion-wheel--closing');
+
+    setTimeout(() => {
+      wheel.remove();
+    }, 150);
+
+    activeEmotionWheel = null;
+  }
+
+  // Mettre a jour l'apparence du bouton avec l'emotion selectionnee
+  function updateButtonWithEmotion(button, emotionKey, intensityKey) {
+    // Trouver l'emotion dans la config
+    const emotion = EMOTION_WHEEL_CONFIG.emotions.find(e => e.key === emotionKey);
+    if (!emotion) return;
+
+    // Retirer les classes d'emotion precedentes
+    EMOTION_WHEEL_CONFIG.emotions.forEach(e => {
+      button.classList.remove(`ai-button--emotion-${e.key}`);
+    });
+    button.classList.remove('ai-button--emotion-selected');
+
+    // Ajouter les nouvelles classes
+    button.classList.add('ai-button--emotion-selected');
+    button.classList.add(`ai-button--emotion-${emotionKey}`);
+
+    // Mettre a jour le label du bouton
+    const labelSpan = button.querySelector('.ai-button__label');
+    if (labelSpan) {
+      labelSpan.textContent = t(emotionKey) || emotionKey;
+    }
+
+    // Mettre a jour l'icone avec l'emoji de l'emotion
+    const iconSpan = button.querySelector('.ai-button__icon');
+    if (iconSpan) {
+      iconSpan.textContent = emotion.emoji;
+    }
+  }
+
+  // Remettre le bouton a son etat par defaut (apres generation)
+  function resetButtonToDefault(button, commentBox) {
+    // Retirer les classes d'emotion
+    EMOTION_WHEEL_CONFIG.emotions.forEach(e => {
+      button.classList.remove(`ai-button--emotion-${e.key}`);
+    });
+    button.classList.remove('ai-button--emotion-selected');
+
+    // Remettre le label par defaut
+    const labelSpan = button.querySelector('.ai-button__label');
+    if (labelSpan) {
+      labelSpan.textContent = t('generate');
+    }
+
+    // Remettre l'icone par defaut
+    const iconSpan = button.querySelector('.ai-button__icon');
+    if (iconSpan) {
+      iconSpan.textContent = '✨';
+    }
+
+    // Retirer les attributs d'emotion du commentBox
+    if (commentBox) {
+      commentBox.removeAttribute('data-selected-emotion');
+      commentBox.removeAttribute('data-selected-intensity');
+    }
+
+    console.log('Bouton reset a l\'etat par defaut');
+  }
+
+  // ================================================
+  // STYLE WHEEL FUNCTIONS (Story 7.14)
+  // ================================================
+
+  // Reference globale a la roue de style ouverte
+  let activeStyleWheel = null;
+
+  // Calcul d'un secteur simple pour la roue des styles (un seul anneau)
+  function describeStyleArc(cx, cy, innerRadius, outerRadius, startAngle, endAngle) {
+    const startRad = (startAngle - 90) * Math.PI / 180;
+    const endRad = (endAngle - 90) * Math.PI / 180;
+
+    const x1 = cx + outerRadius * Math.cos(startRad);
+    const y1 = cy + outerRadius * Math.sin(startRad);
+    const x2 = cx + outerRadius * Math.cos(endRad);
+    const y2 = cy + outerRadius * Math.sin(endRad);
+    const x3 = cx + innerRadius * Math.cos(endRad);
+    const y3 = cy + innerRadius * Math.sin(endRad);
+    const x4 = cx + innerRadius * Math.cos(startRad);
+    const y4 = cy + innerRadius * Math.sin(startRad);
+
+    const largeArc = endAngle - startAngle > 180 ? 1 : 0;
+
+    return [
+      'M', x1, y1,
+      'A', outerRadius, outerRadius, 0, largeArc, 1, x2, y2,
+      'L', x3, y3,
+      'A', innerRadius, innerRadius, 0, largeArc, 0, x4, y4,
+      'Z'
+    ].join(' ');
+  }
+
+  // Creation du SVG de la roue des styles
+  function createStyleWheelSVG(commentBox, onSelect, onClose, onReset) {
+    const { size, centerRadius, outerRadius, styles } = STYLE_WHEEL_CONFIG;
+    const cx = size / 2;
+    const cy = size / 2;
+    const sectionAngle = 360 / styles.length; // ~51.4 degres par style (7 sections)
+
+    // Creer le conteneur
+    const container = document.createElement('div');
+    container.className = 'ai-style-wheel';
+    container.setAttribute('role', 'listbox');
+    container.setAttribute('aria-label', t('languageStyle') || 'Selectionner le style de langage');
+    container.setAttribute('tabindex', '0');
+
+    // Creer le SVG
+    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    svg.setAttribute('class', 'ai-style-wheel__svg');
+    svg.setAttribute('viewBox', `0 0 ${size} ${size}`);
+    svg.setAttribute('width', size);
+    svg.setAttribute('height', size);
+
+    // Creer le groupe principal
+    const mainGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+
+    // Creer les zones pour chaque style (un seul anneau, pas d'intensites)
+    styles.forEach((style, styleIndex) => {
+      const startAngle = styleIndex * sectionAngle;
+      const endAngle = startAngle + sectionAngle;
+
+      const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+      path.setAttribute('class', 'ai-style-wheel__zone');
+      path.setAttribute('d', describeStyleArc(cx, cy, centerRadius, outerRadius, startAngle, endAngle));
+      path.setAttribute('data-style', style.key);
+      path.setAttribute('role', 'option');
+      path.setAttribute('aria-label', t(style.key) || style.key);
+      path.setAttribute('tabindex', '-1');
+
+      // Couleur du style
+      path.style.fill = style.color;
+
+      // Evenements
+      path.addEventListener('click', (e) => {
+        e.stopPropagation();
+        onSelect(style.key);
+      });
+
+      path.addEventListener('mouseenter', () => {
+        showStyleWheelTooltip(container, style, path);
+      });
+
+      path.addEventListener('mouseleave', () => {
+        hideStyleWheelTooltip(container);
+      });
+
+      mainGroup.appendChild(path);
+    });
+
+    // Cercle central (fermeture/reset)
+    const centerGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+    centerGroup.setAttribute('class', 'ai-style-wheel__center');
+    centerGroup.style.cursor = 'pointer';
+
+    const centerCircle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+    centerCircle.setAttribute('class', 'ai-style-wheel__center-bg');
+    centerCircle.setAttribute('cx', cx);
+    centerCircle.setAttribute('cy', cy);
+    centerCircle.setAttribute('r', centerRadius - 2);
+
+    const centerText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+    centerText.setAttribute('class', 'ai-style-wheel__center-icon');
+    centerText.setAttribute('x', cx);
+    centerText.setAttribute('y', cy);
+    centerText.textContent = '🎨';
+
+    centerGroup.appendChild(centerCircle);
+    centerGroup.appendChild(centerText);
+    // Story 7.14 - Clic sur le centre = reset au style par defaut (professional)
+    centerGroup.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (onReset) {
+        onReset();
+      } else {
+        onClose();
+      }
+    });
+
+    svg.appendChild(mainGroup);
+    svg.appendChild(centerGroup);
+    container.appendChild(svg);
+
+    // Creer le tooltip
+    const tooltip = document.createElement('div');
+    tooltip.className = 'ai-style-wheel__tooltip';
+    container.appendChild(tooltip);
+
+    return container;
+  }
+
+  // Afficher le tooltip de la roue des styles
+  function showStyleWheelTooltip(wheelContainer, style, pathElement) {
+    const tooltip = wheelContainer.querySelector('.ai-style-wheel__tooltip');
+    if (!tooltip) return;
+
+    const styleLabel = t(style.key) || style.key;
+    tooltip.textContent = styleLabel;
+    tooltip.classList.add('ai-style-wheel__tooltip--visible');
+
+    // Story 7.14 - Mettre a jour l'icone centrale avec l'emoji du style survole
+    const centerIcon = wheelContainer.querySelector('.ai-style-wheel__center-icon');
+    if (centerIcon) {
+      centerIcon.textContent = style.emoji;
+    }
+
+    // Positionner le tooltip au-dessus de la zone survolee
+    const wheelRect = wheelContainer.getBoundingClientRect();
+    const pathRect = pathElement.getBoundingClientRect();
+
+    const tooltipX = pathRect.left + pathRect.width / 2 - wheelRect.left;
+    const tooltipY = pathRect.top - wheelRect.top - 8;
+
+    tooltip.style.left = `${tooltipX}px`;
+    tooltip.style.top = `${tooltipY}px`;
+    tooltip.style.transform = 'translate(-50%, -100%)';
+  }
+
+  // Masquer le tooltip de la roue des styles
+  function hideStyleWheelTooltip(wheelContainer) {
+    const tooltip = wheelContainer.querySelector('.ai-style-wheel__tooltip');
+    if (tooltip) {
+      tooltip.classList.remove('ai-style-wheel__tooltip--visible');
+    }
+    // Story 7.14 - Restaurer l'icone centrale par defaut
+    const centerIcon = wheelContainer.querySelector('.ai-style-wheel__center-icon');
+    if (centerIcon) {
+      centerIcon.textContent = '🎨';
+    }
+  }
+
+  // Afficher/masquer la roue de styles autour d'un bouton
+  function toggleStyleWheel(triggerButton, commentBox) {
+    // Story 7.14 - AC #7: Fermer la roue des emotions si ouverte (exclusivite)
+    if (activeEmotionWheel) {
+      closeEmotionWheel();
+    }
+
+    // Si une roue de style est deja ouverte, la fermer
+    if (activeStyleWheel) {
+      closeStyleWheel();
+      return;
+    }
+
+    // Callback de selection
+    const handleSelect = (styleKey) => {
+      // Stocker dans le commentBox
+      commentBox.setAttribute('data-selected-style', styleKey);
+
+      // Sauvegarder dans chrome.storage
+      chrome.storage.sync.set({
+        style_wheel_selection: { style: styleKey }
+      });
+
+      // Mettre a jour le bouton
+      updateButtonWithStyle(triggerButton, styleKey);
+
+      // Log
+      console.log('Style selectionne:', styleKey);
+
+      // Track
+      if (phClient) {
+        try {
+          phClient.trackStyleSelected(styleKey);
+        } catch (e) {
+          console.warn('PostHog tracking failed:', e);
+        }
+      }
+
+      // Fermer la roue
+      closeStyleWheel();
+    };
+
+    // Callback de fermeture
+    const handleClose = () => {
+      closeStyleWheel();
+    };
+
+    // Story 7.14 - Callback de reset (clic sur le centre = style par defaut)
+    const handleReset = () => {
+      // Remettre au style par defaut (professional)
+      const defaultStyle = 'professional';
+      commentBox.setAttribute('data-selected-style', defaultStyle);
+
+      // Sauvegarder dans chrome.storage
+      chrome.storage.sync.set({
+        style_wheel_selection: { style: defaultStyle }
+      });
+
+      // Remettre le bouton a l'etat par defaut avec style professional
+      updateButtonWithStyle(triggerButton, defaultStyle);
+
+      // Log
+      console.log('Style reset a professional');
+
+      // Fermer la roue
+      closeStyleWheel();
+    };
+
+    // Creer la roue
+    const wheel = createStyleWheelSVG(commentBox, handleSelect, handleClose, handleReset);
+    activeStyleWheel = wheel;
+
+    // Mettre a jour aria-expanded
+    triggerButton.setAttribute('aria-expanded', 'true');
+    wheel._triggerButton = triggerButton;
+
+    // Positionner la roue centree sur le bouton
+    const buttonRect = triggerButton.getBoundingClientRect();
+    const wheelSize = STYLE_WHEEL_CONFIG.size;
+
+    // Position absolue dans le viewport
+    wheel.style.position = 'fixed';
+    wheel.style.left = `${buttonRect.left + buttonRect.width / 2 - wheelSize / 2}px`;
+    wheel.style.top = `${buttonRect.top + buttonRect.height / 2 - wheelSize / 2}px`;
+
+    // Verifier les debordements viewport
+    requestAnimationFrame(() => {
+      const wheelRect = wheel.getBoundingClientRect();
+
+      // Ajuster si deborde a droite
+      if (wheelRect.right > window.innerWidth - 10) {
+        wheel.style.left = `${window.innerWidth - wheelSize - 10}px`;
+      }
+      // Ajuster si deborde a gauche
+      if (wheelRect.left < 10) {
+        wheel.style.left = '10px';
+      }
+      // Ajuster si deborde en bas
+      if (wheelRect.bottom > window.innerHeight - 10) {
+        wheel.style.top = `${window.innerHeight - wheelSize - 10}px`;
+      }
+      // Ajuster si deborde en haut
+      if (wheelRect.top < 10) {
+        wheel.style.top = '10px';
+      }
+    });
+
+    // Ajouter au document
+    document.body.appendChild(wheel);
+
+    // Animer l'ouverture
+    requestAnimationFrame(() => {
+      wheel.classList.add('ai-style-wheel--open');
+    });
+
+    // Fermer au clic en dehors
+    const closeOnOutsideClick = (e) => {
+      if (!wheel.contains(e.target) && e.target !== triggerButton) {
+        closeStyleWheel();
+        document.removeEventListener('click', closeOnOutsideClick);
+      }
+    };
+    setTimeout(() => {
+      document.addEventListener('click', closeOnOutsideClick);
+    }, 10);
+
+    // Story 7.14 - Task 8: Navigation clavier
+    const { styles } = STYLE_WHEEL_CONFIG;
+    let focusedStyleIndex = 0;
+
+    // Fonction pour mettre a jour le focus visuel
+    const updateFocus = () => {
+      // Retirer le focus de toutes les zones
+      wheel.querySelectorAll('.ai-style-wheel__zone').forEach(zone => {
+        zone.classList.remove('ai-style-wheel__zone--focused');
+      });
+
+      // Ajouter le focus a la zone courante
+      const focusedZone = wheel.querySelector(
+        `.ai-style-wheel__zone[data-style="${styles[focusedStyleIndex].key}"]`
+      );
+      if (focusedZone) {
+        focusedZone.classList.add('ai-style-wheel__zone--focused');
+        // Afficher le tooltip
+        showStyleWheelTooltip(wheel, styles[focusedStyleIndex], focusedZone);
+      }
+    };
+
+    const handleKeydown = (e) => {
+      switch (e.key) {
+        case 'Escape':
+          closeStyleWheel();
+          triggerButton.focus();
+          break;
+
+        case 'ArrowLeft':
+          e.preventDefault();
+          focusedStyleIndex = (focusedStyleIndex - 1 + styles.length) % styles.length;
+          updateFocus();
+          break;
+
+        case 'ArrowRight':
+          e.preventDefault();
+          focusedStyleIndex = (focusedStyleIndex + 1) % styles.length;
+          updateFocus();
+          break;
+
+        case 'ArrowUp':
+        case 'ArrowDown':
+          // Pas de mouvement vertical (pas d'anneaux d'intensite)
+          e.preventDefault();
+          break;
+
+        case 'Enter':
+        case ' ':
+          e.preventDefault();
+          handleSelect(styles[focusedStyleIndex].key);
+          triggerButton.focus();
+          break;
+
+        default:
+          break;
+      }
+    };
+    document.addEventListener('keydown', handleKeydown);
+
+    // Focus initial sur la roue
+    wheel.focus();
+
+    // Stocker les handlers pour cleanup
+    wheel._closeHandlers = { click: closeOnOutsideClick, keydown: handleKeydown };
+  }
+
+  // Fermer la roue de styles
+  function closeStyleWheel() {
+    if (!activeStyleWheel) return;
+
+    const wheel = activeStyleWheel;
+
+    // Cleanup handlers
+    if (wheel._closeHandlers) {
+      document.removeEventListener('click', wheel._closeHandlers.click);
+      document.removeEventListener('keydown', wheel._closeHandlers.keydown);
+    }
+
+    // Mettre a jour aria-expanded sur le bouton declencheur
+    if (wheel._triggerButton) {
+      wheel._triggerButton.setAttribute('aria-expanded', 'false');
+    }
+
+    // Animation de fermeture
+    wheel.classList.remove('ai-style-wheel--open');
+    wheel.classList.add('ai-style-wheel--closing');
+
+    setTimeout(() => {
+      wheel.remove();
+    }, 150);
+
+    activeStyleWheel = null;
+  }
+
+  // Mettre a jour l'apparence du bouton avec le style selectionne
+  function updateButtonWithStyle(button, styleKey) {
+    // Trouver le style dans la config
+    const style = STYLE_WHEEL_CONFIG.styles.find(s => s.key === styleKey);
+    if (!style) return;
+
+    // Retirer les classes de style precedentes
+    STYLE_WHEEL_CONFIG.styles.forEach(s => {
+      button.classList.remove(`ai-button--style-${s.key}`);
+    });
+    button.classList.remove('ai-button--style-selected');
+
+    // Ajouter les nouvelles classes
+    button.classList.add('ai-button--style-selected');
+    button.classList.add(`ai-button--style-${styleKey}`);
+
+    // Mettre a jour le label du bouton
+    const labelSpan = button.querySelector('.ai-chip__label');
+    if (labelSpan) {
+      // Utiliser un label court (tronque si necessaire)
+      const shortLabel = getShortStyleLabel(styleKey);
+      labelSpan.textContent = shortLabel;
+    }
+
+    // Mettre a jour l'icone avec l'emoji du style
+    const iconSpan = button.querySelector('.ai-chip__icon');
+    if (iconSpan) {
+      iconSpan.textContent = style.emoji;
+    }
+  }
+
+  // Obtenir un label court pour le style (pour affichage compact)
+  function getShortStyleLabel(styleKey) {
+    const shortLabels = {
+      oral: 'Oral',
+      professional: 'Pro',
+      storytelling: 'Story',
+      poetic: 'Créatif',
+      humoristic: 'Humour',
+      impactful: 'Impact',
+      benevolent: 'Positif'
+    };
+    return shortLabels[styleKey] || styleKey;
+  }
+
+  // Remettre le bouton de style a son etat par defaut
+  function resetStyleButtonToDefault(button) {
+    // Retirer les classes de style
+    STYLE_WHEEL_CONFIG.styles.forEach(s => {
+      button.classList.remove(`ai-button--style-${s.key}`);
+    });
+    button.classList.remove('ai-button--style-selected');
+
+    // Remettre le label par defaut
+    const labelSpan = button.querySelector('.ai-chip__label');
+    if (labelSpan) {
+      labelSpan.textContent = t('personalisation') || 'Style';
+    }
+
+    // Remettre l'icone par defaut
+    const iconSpan = button.querySelector('.ai-chip__icon');
+    if (iconSpan) {
+      iconSpan.textContent = '🎨';
+    }
+  }
+
   // Fonction pour afficher/masquer le panneau d'émotions
   function toggleEmotionsPanel(buttonsWrapper, commentBox) {
     // Vérifier si le panneau existe déjà
@@ -1076,11 +2055,46 @@
     };
 
     // === CHIPS D'ACTION ===
-    const generateChip = createActionChip('✨', 'generate', (e) => {
+    // Story 7.13 - Le bouton generate ouvre la roue si aucune emotion selectionnee,
+    // sinon lance la generation
+    const generateChip = document.createElement('button');
+    generateChip.type = 'button';
+    generateChip.className = 'ai-button ai-button--primary';
+    if (isNegative) generateChip.classList.add('ai-button--negative');
+    if (isReplyToComment) generateChip.classList.add('ai-button--reply-mode');
+    generateChip.innerHTML = `<span class="ai-button__icon">✨</span><span class="ai-button__label">${t('generate')}</span>`;
+    generateChip.setAttribute('aria-label', t('generateAriaLabel') || t('generate'));
+    generateChip.setAttribute('aria-expanded', 'false');
+
+    generateChip.onclick = (e) => {
       e.preventDefault();
       e.stopPropagation();
-      handleGenerateClick(e, commentBox, isReplyToComment);
-    }, 'primary');
+
+      const hasEmotionSelected = commentBox.hasAttribute('data-selected-emotion');
+
+      if (hasEmotionSelected) {
+        // Emotion deja selectionnee → lancer la generation
+        handleGenerateClick(e, commentBox, isReplyToComment);
+      } else {
+        // Pas d'emotion → ouvrir la roue
+        toggleEmotionWheel(generateChip, commentBox);
+      }
+    };
+
+    // Story 7.13 - Task 5: Charger la selection sauvegardee depuis chrome.storage
+    chrome.storage.sync.get(['emotion_wheel_selection'], (result) => {
+      if (result.emotion_wheel_selection) {
+        const { emotion, intensity } = result.emotion_wheel_selection;
+        if (emotion && intensity) {
+          // Appliquer au commentBox
+          commentBox.setAttribute('data-selected-emotion', emotion);
+          commentBox.setAttribute('data-selected-intensity', intensity);
+          // Mettre a jour l'apparence du bouton
+          updateButtonWithEmotion(generateChip, emotion, intensity);
+          console.log('Emotion restauree depuis storage:', emotion, intensity);
+        }
+      }
+    });
 
     const promptChip = createActionChip('💭', 'withPrompt', (e) => {
       e.preventDefault();
@@ -1094,11 +2108,41 @@
       handleRandomGenerate(e, commentBox, isReplyToComment);
     }, 'secondary');
 
-    const styleChip = createActionChip('⚙️', 'personalisation', (e) => {
+    // Story 7.13 - Chip Emotion : ouvre la roue des emotions
+    const emotionChip = createActionChip('✨', 'personalisation', (e) => {
       e.preventDefault();
       e.stopPropagation();
-      toggleEmotionsPanel(container, commentBox);
+      // Story 7.13 - Ouvrir la roue chromatique des emotions centree sur le bouton generate
+      toggleEmotionWheel(generateChip, commentBox);
     }, 'secondary');
+
+    // Story 7.14 - Chip Style : ouvre la roue des styles de langage
+    const styleChip = document.createElement('button');
+    styleChip.type = 'button';
+    styleChip.className = 'ai-chip ai-chip--secondary';
+    styleChip.setAttribute('data-chip-type', 'style');
+    styleChip.setAttribute('aria-label', t('languageStyle') || 'Style de langage');
+    styleChip.setAttribute('aria-haspopup', 'true');
+    styleChip.setAttribute('aria-expanded', 'false');
+    styleChip.innerHTML = `<span class="ai-chip__icon">🎨</span><span class="ai-chip__label">${t('languageStyle') || 'Style'}</span>`;
+    styleChip.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      // Story 7.14 - Ouvrir la roue chromatique des styles
+      toggleStyleWheel(styleChip, commentBox);
+    });
+
+    // Story 7.14 - Charger la selection de style sauvegardee
+    chrome.storage.sync.get(['style_wheel_selection'], (data) => {
+      if (data.style_wheel_selection && data.style_wheel_selection.style) {
+        const savedStyle = data.style_wheel_selection.style;
+        commentBox.setAttribute('data-selected-style', savedStyle);
+        updateButtonWithStyle(styleChip, savedStyle);
+      } else {
+        // Style par defaut: professional
+        commentBox.setAttribute('data-selected-style', 'professional');
+      }
+    });
 
     // === CHIPS TOGGLE (Enrichissement) ===
     const quoteChip = createToggleChip('💬', 'quoteToggle', 'data-include-quote', 'quoteToggleTooltip', 'quoteUpgradeRequired');
@@ -1228,7 +2272,8 @@
     container.appendChild(generateChip);
     container.appendChild(promptChip);
     container.appendChild(randomChip);
-    container.appendChild(styleChip);
+    container.appendChild(emotionChip);
+    container.appendChild(styleChip);  // Story 7.14 - Nouveau chip style de langage
     // Toggles enrichissement
     container.appendChild(quoteChip);
     container.appendChild(tagChip);
@@ -1244,7 +2289,8 @@
       generateChip,
       promptChip,
       randomChip,
-      styleChip,
+      emotionChip,
+      styleChip,  // Story 7.14 - Nouveau chip style de langage
       quoteChip,
       tagChip,
       contextChip,
@@ -2045,10 +3091,14 @@
 
     // Trouver l'element texte selon le type de bouton
     let labelElement = null;
+    const isAiButton = button && button.classList.contains('ai-button');
     if (isCard) {
       labelElement = button.querySelector('.ai-card__label');
     } else if (isChip) {
       labelElement = button.querySelector('.ai-chip__label');
+    } else if (isAiButton) {
+      // Story 7.13 - Fix: chercher .ai-button__label, pas le premier span
+      labelElement = button.querySelector('.ai-button__label');
     } else {
       labelElement = button.querySelector('span');
     }
@@ -2223,14 +3273,22 @@
               console.warn('PostHog tracking failed:', e);
             }
           }
+
+          // Story 7.13 — Reset bouton apres generation reussie
+          if (button.classList.contains('ai-button')) {
+            resetButtonToDefault(button, commentBox);
+          }
         }
 
         button.disabled = false;
         button.classList.remove('loading');
-        if (isIconBtn) {
-          button.textContent = originalContent;
-        } else if (labelElement) {
-          labelElement.textContent = originalContent;
+        // Ne restaurer le texte original QUE si pas un ai-button (qui a ete reset)
+        if (!button.classList.contains('ai-button')) {
+          if (isIconBtn) {
+            button.textContent = originalContent;
+          } else if (labelElement) {
+            labelElement.textContent = originalContent;
+          }
         }
       });
 
@@ -2723,6 +3781,12 @@
     return emotionLabels[emotionKey] || emotionKey;
   }
 
+  // Story 7.13 - Recuperer l'emoji d'une emotion depuis EMOTION_WHEEL_CONFIG
+  function getEmotionEmoji(emotionKey) {
+    const emotion = EMOTION_WHEEL_CONFIG.emotions.find(e => e.key === emotionKey);
+    return emotion ? emotion.emoji : '😊';
+  }
+
   // Mapper les styles vers leurs labels
   function getStyleLabel(styleKey) {
     const styleLabels = {
@@ -2798,7 +3862,8 @@
         const emotionMeta = document.createElement('span');
         emotionMeta.className = 'ai-meta-item meta-emotion';
         emotionMeta.title = 'Émotion';
-        emotionMeta.innerHTML = `😊 ${getEmotionLabel(metadata.emotion)}`;
+        // Story 7.13 - Utiliser l'emoji specifique de l'emotion
+        emotionMeta.innerHTML = `${getEmotionEmoji(metadata.emotion)} ${getEmotionLabel(metadata.emotion)}`;
         metaContainer.appendChild(emotionMeta);
       }
 
