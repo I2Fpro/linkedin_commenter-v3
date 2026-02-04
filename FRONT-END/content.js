@@ -61,7 +61,7 @@
       blacklistWarningMessage: 'Vous avez choisi d\'éviter {name}. Voulez-vous quand même générer un commentaire ?',
       blacklistWarningYes: 'Générer quand même',
       blacklistWarningNo: 'Annuler',
-      // V3 Story 7.6 — Mode Expanded toggles
+      // Mode Inline - Toggles enrichissement
       quoteToggle: 'Citation',
       quoteToggleActive: 'Citation activée',
       quoteToggleInactive: 'Citation désactivée',
@@ -80,8 +80,7 @@
       contextUpgradeRequired: 'Passez en Premium pour le contexte',
       generateComment: 'Générer le commentaire',
       randomGenerate: 'Générer aléatoire',
-      modeAdaptedToSpace: 'Mode adapté à l\'espace',
-      // V3 Story 7.6 — Mode Expanded - News & Blacklist
+      // Mode Inline - News & Blacklist
       newsToggle: 'News',
       newsToggleTooltip: 'Enrichit avec les actualités LinkedIn',
       newsUpgradeRequired: 'Passez en MEDIUM ou supérieur pour les actualités',
@@ -93,7 +92,7 @@
       blacklistAddSuccess: '{name} a été ajouté à votre blacklist',
       personalisation: 'Style',
       personalisationTooltip: 'Choisir émotion et style de langage',
-      // V3 Story 7.8 — Mode Compact tooltips & ARIA labels
+      // Tooltips & ARIA labels
       generateTooltip: 'Générer un commentaire',
       generateAriaLabel: 'Générer un commentaire pour ce post',
       randomTooltip: 'Génération aléatoire',
@@ -149,7 +148,7 @@
       blacklistWarningMessage: 'You chose to avoid {name}. Do you still want to generate a comment?',
       blacklistWarningYes: 'Generate anyway',
       blacklistWarningNo: 'Cancel',
-      // V3 Story 7.6 — Mode Expanded toggles
+      // Inline Mode - Enrichment toggles
       quoteToggle: 'Quote',
       quoteToggleActive: 'Quote enabled',
       quoteToggleInactive: 'Quote disabled',
@@ -168,8 +167,7 @@
       contextUpgradeRequired: 'Upgrade to Premium for context',
       generateComment: 'Generate comment',
       randomGenerate: 'Random generate',
-      modeAdaptedToSpace: 'Mode adapted to space',
-      // V3 Story 7.6 — Mode Expanded - News & Blacklist
+      // Inline Mode - News & Blacklist
       newsToggle: 'News',
       newsToggleTooltip: 'Enriches with LinkedIn news',
       newsUpgradeRequired: 'Upgrade to MEDIUM or higher for news',
@@ -181,7 +179,7 @@
       blacklistAddSuccess: '{name} has been added to your blacklist',
       personalisation: 'Style',
       personalisationTooltip: 'Choose emotion and language style',
-      // V3 Story 7.8 — Mode Compact tooltips & ARIA labels
+      // Tooltips & ARIA labels
       generateTooltip: 'Generate a comment',
       generateAriaLabel: 'Generate a comment for this post',
       randomTooltip: 'Random generation',
@@ -594,18 +592,16 @@
 
   // Mettre à jour l'état des boutons
   function updateButtonsState(wrapper, authenticated) {
-    // V3 Story 7.7 Fix: Support both legacy buttons and inline chips
-    // V3 Story 7.8 Fix: Support compact mode icon buttons
+    // Support both legacy buttons and inline chips
     const buttons = wrapper.querySelectorAll('.ai-button, .ai-generate-button');
     const chips = wrapper.querySelectorAll('.ai-chip');
-    const iconBtns = wrapper.querySelectorAll('.ai-icon-btn');
 
     // Handle legacy buttons
     buttons.forEach(button => {
       button.disabled = !authenticated;
     });
 
-    // Handle inline chips (Story 7.7)
+    // Handle inline chips
     chips.forEach(chip => {
       if (!authenticated) {
         // Disable chip if not already locked (preserve locked state for premium features)
@@ -620,25 +616,6 @@
         if (!chip.classList.contains('ai-chip--locked')) {
           chip.style.opacity = '';
           chip.style.pointerEvents = '';
-        }
-      }
-    });
-
-    // Handle compact mode icon buttons (Story 7.8)
-    iconBtns.forEach(btn => {
-      if (!authenticated) {
-        // Disable icon button if not already locked (preserve locked state for premium features)
-        if (!btn.classList.contains('ai-icon-btn--locked')) {
-          btn.setAttribute('data-auth-disabled', 'true');
-          btn.style.opacity = '0.5';
-          btn.style.pointerEvents = 'none';
-        }
-      } else {
-        // Re-enable icon button (unless it's locked for premium)
-        btn.removeAttribute('data-auth-disabled');
-        if (!btn.classList.contains('ai-icon-btn--locked')) {
-          btn.style.opacity = '';
-          btn.style.pointerEvents = '';
         }
       }
     });
@@ -984,331 +961,7 @@
   }
 
   // ================================================
-  // V3 Story 7.6 — UI Mode Constants
-  // ================================================
-  const UI_MODE_KEY = 'ui_mode';
-  const DEFAULT_UI_MODE = 'expanded';
-
-  // ================================================
-  // V3 Story 7.6 — Get/Set UI Mode Preference
-  // ================================================
-  async function getUIMode() {
-    return new Promise((resolve) => {
-      chrome.storage.sync.get(UI_MODE_KEY, (result) => {
-        resolve(result[UI_MODE_KEY] || DEFAULT_UI_MODE);
-      });
-    });
-  }
-
-  async function setUIMode(mode) {
-    return new Promise((resolve) => {
-      chrome.storage.sync.set({ [UI_MODE_KEY]: mode }, () => {
-        resolve();
-      });
-    });
-  }
-
-  // ================================================
-  // V3 Story 7.6 — Create Expanded Mode Controls
-  // Creates the card panel UI for new user discovery
-  // ================================================
-  function createExpandedModeControls(commentBox, userPlan, isNegative, isReplyToComment) {
-    const isPremium = userPlan === 'PREMIUM';
-    const isMediumPlus = userPlan === 'MEDIUM' || userPlan === 'PREMIUM';
-
-    // Container principal
-    const container = document.createElement('div');
-    container.className = 'ai-controls ai-controls--expanded';
-    container.setAttribute('data-viewport', 'normal');
-    container.setAttribute('role', 'region');
-    container.setAttribute('aria-label', 'AI Comment Generator');
-
-    // === HEADER ===
-    const header = document.createElement('div');
-    header.className = 'ai-controls__header';
-
-    const title = document.createElement('span');
-    title.className = 'ai-controls__title';
-    title.textContent = 'AI Commenter';
-
-    const badge = document.createElement('span');
-    badge.className = isPremium ? 'ai-controls__badge ai-controls__badge--premium' : 'ai-controls__badge ai-controls__badge--free';
-    badge.textContent = isPremium ? 'PREMIUM' : (isMediumPlus ? 'MEDIUM' : 'FREE');
-
-    header.appendChild(title);
-    header.appendChild(badge);
-    container.appendChild(header);
-
-    // === GRILLE UNIFIEE ===
-    const grid = document.createElement('div');
-    grid.className = 'ai-controls__grid';
-
-    // Helper pour creer une carte d'action (bouton principal)
-    const createActionCard = (icon, labelKey, onClick, variant = 'primary') => {
-      const card = document.createElement('button');
-      card.type = 'button';
-      card.className = `ai-card ai-card--action ai-card--${variant}`;
-      if (isNegative) card.classList.add('negative');
-      if (isReplyToComment) card.classList.add('reply-mode');
-      card.innerHTML = `<span class="ai-card__icon">${icon}</span><span class="ai-card__label">${t(labelKey)}</span>`;
-      card.setAttribute('aria-label', t(labelKey));
-      card.onclick = onClick;
-      return card;
-    };
-
-    // Helper pour creer une carte toggle (enrichissement)
-    const createToggleCard = (icon, labelKey, dataAttr, ariaLabelKey, lockedMessageKey, requiredPlan = 'PREMIUM') => {
-      const card = document.createElement('button');
-      card.type = 'button';
-      card.setAttribute('aria-pressed', 'false');
-
-      // Determiner si l'utilisateur a acces
-      const hasAccess = requiredPlan === 'MEDIUM' ? isMediumPlus : isPremium;
-
-      if (!hasAccess) {
-        card.className = 'ai-card ai-card--toggle ai-card--locked';
-        card.setAttribute('aria-disabled', 'true');
-        card.setAttribute('aria-label', t(ariaLabelKey) + ' (Premium)');
-        card.innerHTML = `<span class="ai-card__icon">${icon}</span><span class="ai-card__label">${t(labelKey)}</span><span class="ai-card__lock">🔒</span>`;
-      } else {
-        card.className = 'ai-card ai-card--toggle ai-card--inactive';
-        card.setAttribute('aria-label', t(ariaLabelKey));
-        card.innerHTML = `<span class="ai-card__icon">${icon}</span><span class="ai-card__label">${t(labelKey)}</span>`;
-      }
-
-      if (isNegative) card.classList.add('negative');
-      if (isReplyToComment) card.classList.add('reply-mode');
-
-      card.onclick = (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-
-        if (!hasAccess) {
-          showPremiumUpgradePrompt(t(lockedMessageKey));
-          return;
-        }
-
-        const isActive = commentBox.getAttribute(dataAttr) === 'true';
-        if (isActive) {
-          commentBox.removeAttribute(dataAttr);
-          card.classList.remove('ai-card--active');
-          card.classList.add('ai-card--inactive');
-          card.setAttribute('aria-pressed', 'false');
-          card.innerHTML = `<span class="ai-card__icon">${icon}</span><span class="ai-card__label">${t(labelKey)}</span>`;
-        } else {
-          commentBox.setAttribute(dataAttr, 'true');
-          card.classList.remove('ai-card--inactive');
-          card.classList.add('ai-card--active');
-          card.setAttribute('aria-pressed', 'true');
-          card.innerHTML = `<span class="ai-card__icon">${icon}</span><span class="ai-card__label">${t(labelKey)}</span><span class="ai-card__check">✓</span>`;
-        }
-
-        const storageKey = `toggle_${dataAttr.replace('data-', '')}`;
-        chrome.storage.local.set({ [storageKey]: !isActive });
-      };
-
-      return card;
-    };
-
-    // === CARTES D'ACTION ===
-    const generateCard = createActionCard('✨', 'generate', (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      handleGenerateClick(e, commentBox, isReplyToComment);
-    }, 'primary');
-
-    const promptCard = createActionCard('💭', 'withPrompt', (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      handlePromptClick(e, commentBox, isReplyToComment);
-    }, 'secondary');
-
-    const randomCard = createActionCard('🎲', 'randomGenerate', (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      handleRandomGenerate(e, commentBox, isReplyToComment);
-    }, 'secondary');
-
-    // === CARTES TOGGLE (Enrichissement) ===
-    const quoteCard = createToggleCard('💬', 'quoteToggle', 'data-include-quote', 'quoteToggleTooltip', 'quoteUpgradeRequired');
-    const contextCard = createToggleCard('💭', 'contextToggle', 'data-include-context', 'contextToggleTooltip', 'contextUpgradeRequired');
-    const webCard = createToggleCard('🔍', 'webSearchToggle', 'data-web-search', 'webSearchToggleTooltip', 'webSearchUpgradeRequired');
-    const newsCard = createToggleCard('📰', 'newsToggle', 'data-news-enrichment', 'newsToggleTooltip', 'newsUpgradeRequired', 'MEDIUM');
-
-    // Carte Tag auteur avec logique speciale
-    const tagCard = createToggleCard('👤', 'tagAuthor', 'data-tag-author', 'tagAuthorTooltip', 'tagAuthorUpgradeRequired');
-    tagCard.onclick = async (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-
-      if (!isPremium) {
-        showPremiumUpgradePrompt(t('tagAuthorUpgradeRequired'));
-        return;
-      }
-
-      const currentAuthor = commentBox.getAttribute('data-tag-author');
-      if (currentAuthor) {
-        commentBox.removeAttribute('data-tag-author');
-        tagCard.classList.remove('ai-card--active');
-        tagCard.classList.add('ai-card--inactive');
-        tagCard.setAttribute('aria-pressed', 'false');
-        tagCard.innerHTML = `<span class="ai-card__icon">👤</span><span class="ai-card__label">${t('tagAuthor')}</span>`;
-        return;
-      }
-
-      let postContainer = commentBox.closest('.feed-shared-update-v2, [data-urn], article, [data-id]');
-      if (!postContainer) {
-        let current = commentBox;
-        while (current && !postContainer) {
-          const feedUpdate = current.querySelector('.feed-shared-update-v2');
-          if (feedUpdate) {
-            postContainer = feedUpdate;
-            break;
-          }
-          current = current.parentElement;
-        }
-      }
-
-      const authorInfo = extractPostAuthorInfo(postContainer);
-      if (authorInfo && authorInfo.name) {
-        commentBox.setAttribute('data-tag-author', authorInfo.name);
-        tagCard.classList.remove('ai-card--inactive');
-        tagCard.classList.add('ai-card--active');
-        tagCard.setAttribute('aria-pressed', 'true');
-        tagCard.innerHTML = `<span class="ai-card__icon">👤</span><span class="ai-card__label">${t('tagAuthor')}</span><span class="ai-card__check">✓</span>`;
-        window.toastNotification.success(t('tagAuthorSuccess').replace('{name}', authorInfo.name));
-      } else {
-        window.toastNotification.warning(t('authorNotFound'));
-      }
-    };
-
-    // === CARTES BLACKLIST ===
-    const addBlacklistCard = document.createElement('button');
-    addBlacklistCard.type = 'button';
-    addBlacklistCard.className = isPremium ? 'ai-card ai-card--action ai-card--danger' : 'ai-card ai-card--action ai-card--locked';
-    if (isNegative) addBlacklistCard.classList.add('negative');
-    if (isReplyToComment) addBlacklistCard.classList.add('reply-mode');
-    addBlacklistCard.innerHTML = isPremium
-      ? `<span class="ai-card__icon">🚫</span><span class="ai-card__label">${t('addToBlacklist')}</span>`
-      : `<span class="ai-card__icon">🚫</span><span class="ai-card__label">${t('addToBlacklist')}</span><span class="ai-card__lock">🔒</span>`;
-    addBlacklistCard.setAttribute('aria-label', t('addToBlacklistTooltip'));
-
-    addBlacklistCard.onclick = async (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-
-      if (!isPremium) {
-        showPremiumUpgradePrompt(t('blacklistUpgradeRequired'));
-        return;
-      }
-
-      let postContainer = commentBox.closest('.feed-shared-update-v2, [data-urn], article, [data-id]');
-      if (!postContainer) {
-        let current = commentBox;
-        while (current && !postContainer) {
-          const feedUpdate = current.querySelector('.feed-shared-update-v2');
-          if (feedUpdate) {
-            postContainer = feedUpdate;
-            break;
-          }
-          current = current.parentElement;
-        }
-      }
-
-      const authorInfo = extractPostAuthorInfo(postContainer);
-      if (!authorInfo || !authorInfo.name) {
-        window.toastNotification.warning(t('authorNotFound'));
-        return;
-      }
-
-      chrome.runtime.sendMessage({
-        action: 'addToBlacklist',
-        blockedName: authorInfo.name,
-        blockedProfileUrl: authorInfo.url || null
-      }, (response) => {
-        if (response && response.success) {
-          window.toastNotification.success(t('blacklistAddSuccess').replace('{name}', authorInfo.name));
-        } else {
-          window.toastNotification.error(t('error'));
-        }
-      });
-    };
-
-    const viewBlacklistCard = document.createElement('button');
-    viewBlacklistCard.type = 'button';
-    viewBlacklistCard.className = isPremium ? 'ai-card ai-card--action ai-card--secondary' : 'ai-card ai-card--action ai-card--locked';
-    if (isNegative) viewBlacklistCard.classList.add('negative');
-    if (isReplyToComment) viewBlacklistCard.classList.add('reply-mode');
-    viewBlacklistCard.innerHTML = isPremium
-      ? `<span class="ai-card__icon">📋</span><span class="ai-card__label">${t('viewBlacklist')}</span>`
-      : `<span class="ai-card__icon">📋</span><span class="ai-card__label">${t('viewBlacklist')}</span><span class="ai-card__lock">🔒</span>`;
-    viewBlacklistCard.setAttribute('aria-label', t('viewBlacklistTooltip'));
-
-    viewBlacklistCard.onclick = (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-
-      if (!isPremium) {
-        showPremiumUpgradePrompt(t('blacklistUpgradeRequired'));
-        return;
-      }
-
-      showBlacklistModal();
-    };
-
-    // === CARTE PERSONNALISATION (Émotions/Styles) ===
-    const personalisationCard = document.createElement('button');
-    personalisationCard.type = 'button';
-    personalisationCard.className = 'ai-card ai-card--action ai-card--secondary';
-    if (isNegative) personalisationCard.classList.add('negative');
-    if (isReplyToComment) personalisationCard.classList.add('reply-mode');
-    personalisationCard.innerHTML = `<span class="ai-card__icon">⚙️</span><span class="ai-card__label">${t('personalisation')}</span>`;
-    personalisationCard.setAttribute('aria-label', t('personalisationTooltip'));
-
-    personalisationCard.onclick = (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      toggleEmotionsPanel(container, commentBox);
-    };
-
-    // === ASSEMBLER LA GRILLE ===
-    // Ligne 1: Actions principales
-    grid.appendChild(generateCard);
-    grid.appendChild(promptCard);
-    grid.appendChild(randomCard);
-    grid.appendChild(personalisationCard);
-    // Ligne 2: Enrichissements
-    grid.appendChild(quoteCard);
-    grid.appendChild(tagCard);
-    grid.appendChild(contextCard);
-    grid.appendChild(webCard);
-    grid.appendChild(newsCard);
-    // Ligne 3: Blacklist
-    grid.appendChild(addBlacklistCard);
-    grid.appendChild(viewBlacklistCard);
-
-    container.appendChild(grid);
-
-    // Stocker les references aux elements
-    container._elements = {
-      generateCard,
-      promptCard,
-      randomCard,
-      personalisationCard,
-      quoteCard,
-      tagCard,
-      contextCard,
-      webCard,
-      newsCard,
-      addBlacklistCard,
-      viewBlacklistCard
-    };
-
-    return container;
-  }
-
-  // ================================================
-  // V3 Story 7.7 — Create Inline Mode Controls
+  // Create Inline Mode Controls
   // Creates the chip-based UI for regular users
   // Chips: horizontal layout with labels courts
   // ================================================
@@ -1390,6 +1043,38 @@
       return chip;
     };
 
+    // Helper pour creer un chip d'action avec gestion premium
+    const createPremiumActionChip = (icon, labelKey, ariaLabelKey, onClick, variant = 'secondary', lockedMessageKey = 'premiumRequired') => {
+      const chip = document.createElement('button');
+      chip.type = 'button';
+
+      if (!isPremium) {
+        chip.className = `ai-chip ai-chip--${variant} ai-chip--locked`;
+        chip.setAttribute('aria-disabled', 'true');
+        chip.setAttribute('aria-label', t(ariaLabelKey) + ' (Premium)');
+        chip.innerHTML = `<span class="ai-chip__icon">${icon}</span><span class="ai-chip__label">${t(labelKey)}</span><span class="ai-chip__lock">🔒</span>`;
+      } else {
+        chip.className = `ai-chip ai-chip--${variant}`;
+        chip.setAttribute('aria-label', t(ariaLabelKey));
+        chip.innerHTML = `<span class="ai-chip__icon">${icon}</span><span class="ai-chip__label">${t(labelKey)}</span>`;
+      }
+
+      if (isNegative) chip.classList.add('negative');
+      if (isReplyToComment) chip.classList.add('reply-mode');
+
+      chip.onclick = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (!isPremium) {
+          showPremiumUpgradePrompt(t(lockedMessageKey));
+          return;
+        }
+        onClick(e);
+      };
+
+      return chip;
+    };
+
     // === CHIPS D'ACTION ===
     const generateChip = createActionChip('✨', 'generate', (e) => {
       e.preventDefault();
@@ -1421,7 +1106,10 @@
     const webChip = createToggleChip('🔍', 'webSearchToggle', 'data-web-search', 'webSearchToggleTooltip', 'webSearchUpgradeRequired');
     const newsChip = createToggleChip('📰', 'newsToggle', 'data-news-enrichment', 'newsToggleTooltip', 'newsUpgradeRequired', 'MEDIUM');
 
-    // Chip Tag auteur avec logique speciale
+    // Chip Tag auteur - N'utilise pas createToggleChip car :
+    // 1. Logique async pour detecter l'auteur du post
+    // 2. Stocke une valeur string (nom d'auteur) et non un boolean
+    // 3. Pas de sauvegarde automatique dans chrome.storage
     const tagChip = document.createElement('button');
     tagChip.type = 'button';
     tagChip.setAttribute('aria-pressed', 'false');
@@ -1486,82 +1174,54 @@
     };
 
     // === CHIPS BLACKLIST ===
-    const addBlacklistChip = document.createElement('button');
-    addBlacklistChip.type = 'button';
-    addBlacklistChip.className = isPremium ? 'ai-chip ai-chip--danger' : 'ai-chip ai-chip--danger ai-chip--locked';
-    if (isNegative) addBlacklistChip.classList.add('negative');
-    if (isReplyToComment) addBlacklistChip.classList.add('reply-mode');
-    addBlacklistChip.innerHTML = isPremium
-      ? `<span class="ai-chip__icon">🚫</span><span class="ai-chip__label">${t('addToBlacklist')}</span>`
-      : `<span class="ai-chip__icon">🚫</span><span class="ai-chip__label">${t('addToBlacklist')}</span><span class="ai-chip__lock">🔒</span>`;
-    addBlacklistChip.setAttribute('aria-label', t('addToBlacklistTooltip'));
-    // Fix Code Review: aria-disabled pour accessibilite
-    if (!isPremium) addBlacklistChip.setAttribute('aria-disabled', 'true');
-
-    addBlacklistChip.onclick = async (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-
-      if (!isPremium) {
-        showPremiumUpgradePrompt(t('blacklistUpgradeRequired'));
-        return;
-      }
-
-      let postContainer = commentBox.closest('.feed-shared-update-v2, [data-urn], article, [data-id]');
-      if (!postContainer) {
-        let current = commentBox;
-        while (current && !postContainer) {
-          const feedUpdate = current.querySelector('.feed-shared-update-v2');
-          if (feedUpdate) {
-            postContainer = feedUpdate;
-            break;
+    const addBlacklistChip = createPremiumActionChip(
+      '🚫',
+      'addToBlacklist',
+      'addToBlacklistTooltip',
+      async () => {
+        let postContainer = commentBox.closest('.feed-shared-update-v2, [data-urn], article, [data-id]');
+        if (!postContainer) {
+          let current = commentBox;
+          while (current && !postContainer) {
+            const feedUpdate = current.querySelector('.feed-shared-update-v2');
+            if (feedUpdate) {
+              postContainer = feedUpdate;
+              break;
+            }
+            current = current.parentElement;
           }
-          current = current.parentElement;
         }
-      }
 
-      const authorInfo = extractPostAuthorInfo(postContainer);
-      if (!authorInfo || !authorInfo.name) {
-        window.toastNotification.warning(t('authorNotFound'));
-        return;
-      }
-
-      chrome.runtime.sendMessage({
-        action: 'addToBlacklist',
-        blockedName: authorInfo.name,
-        blockedProfileUrl: authorInfo.url || null
-      }, (response) => {
-        if (response && response.success) {
-          window.toastNotification.success(t('blacklistAddSuccess').replace('{name}', authorInfo.name));
-        } else {
-          window.toastNotification.error(t('error'));
+        const authorInfo = extractPostAuthorInfo(postContainer);
+        if (!authorInfo || !authorInfo.name) {
+          window.toastNotification.warning(t('authorNotFound'));
+          return;
         }
-      });
-    };
 
-    const viewBlacklistChip = document.createElement('button');
-    viewBlacklistChip.type = 'button';
-    viewBlacklistChip.className = isPremium ? 'ai-chip ai-chip--secondary' : 'ai-chip ai-chip--locked';
-    if (isNegative) viewBlacklistChip.classList.add('negative');
-    if (isReplyToComment) viewBlacklistChip.classList.add('reply-mode');
-    viewBlacklistChip.innerHTML = isPremium
-      ? `<span class="ai-chip__icon">📋</span><span class="ai-chip__label">${t('viewBlacklist')}</span>`
-      : `<span class="ai-chip__icon">📋</span><span class="ai-chip__label">${t('viewBlacklist')}</span><span class="ai-chip__lock">🔒</span>`;
-    viewBlacklistChip.setAttribute('aria-label', t('viewBlacklistTooltip'));
-    // Fix Code Review: aria-disabled pour accessibilite
-    if (!isPremium) viewBlacklistChip.setAttribute('aria-disabled', 'true');
+        chrome.runtime.sendMessage({
+          action: 'addToBlacklist',
+          blockedName: authorInfo.name,
+          blockedProfileUrl: authorInfo.url || null
+        }, (response) => {
+          if (response && response.success) {
+            window.toastNotification.success(t('blacklistAddSuccess').replace('{name}', authorInfo.name));
+          } else {
+            window.toastNotification.error(t('error'));
+          }
+        });
+      },
+      'danger',
+      'blacklistUpgradeRequired'
+    );
 
-    viewBlacklistChip.onclick = (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-
-      if (!isPremium) {
-        showPremiumUpgradePrompt(t('blacklistUpgradeRequired'));
-        return;
-      }
-
-      showBlacklistModal();
-    };
+    const viewBlacklistChip = createPremiumActionChip(
+      '📋',
+      'viewBlacklist',
+      'viewBlacklistTooltip',
+      () => showBlacklistModal(),
+      'secondary',
+      'blacklistUpgradeRequired'
+    );
 
     // === ASSEMBLER LES CHIPS ===
     // Actions principales
@@ -1623,350 +1283,7 @@
   }
 
   // ================================================
-  // V3 Story 7.8 — Mode Compact avec boutons icones
-  // Interface minimaliste pour utilisateurs experts
-  // ================================================
-  function createCompactModeControls(commentBox, userPlan, isNegative, isReplyToComment) {
-    const isPremium = userPlan === 'PREMIUM';
-    const isMediumPlus = userPlan === 'MEDIUM' || userPlan === 'PREMIUM';
-
-    // Container principal
-    const container = document.createElement('div');
-    container.className = 'ai-controls ai-controls--compact';
-    container.setAttribute('data-viewport', 'normal');
-    container.setAttribute('role', 'region');
-    container.setAttribute('aria-label', 'AI Comment Generator');
-
-    // Helper pour creer un separateur
-    const createSeparator = () => {
-      const sep = document.createElement('div');
-      sep.className = 'ai-compact-separator';
-      sep.setAttribute('role', 'separator');
-      return sep;
-    };
-
-    // Helper pour creer un bouton icone d'action
-    const createActionIconBtn = (icon, tooltipKey, ariaLabelKey, onClick, variant = 'secondary', showLabel = false, labelKey = null) => {
-      const btn = document.createElement('button');
-      btn.type = 'button';
-      btn.className = `ai-icon-btn ai-icon-btn--${variant}`;
-      if (isNegative) btn.classList.add('negative');
-      if (isReplyToComment) btn.classList.add('reply-mode');
-
-      if (showLabel && labelKey) {
-        btn.innerHTML = `<span>${icon}</span><span>${t(labelKey)}</span>`;
-      } else {
-        btn.textContent = icon;
-      }
-
-      btn.setAttribute('title', t(tooltipKey));
-      btn.setAttribute('aria-label', t(ariaLabelKey));
-      btn.onclick = onClick;
-      return btn;
-    };
-
-    // Helper pour creer un bouton icone toggle
-    const createToggleIconBtn = (icon, tooltipKey, dataAttr, ariaLabelKey, lockedMessageKey, requiredPlan = 'PREMIUM') => {
-      const btn = document.createElement('button');
-      btn.type = 'button';
-      btn.setAttribute('aria-pressed', 'false');
-
-      // Determiner si l'utilisateur a acces
-      const hasAccess = requiredPlan === 'MEDIUM' ? isMediumPlus : isPremium;
-
-      if (!hasAccess) {
-        btn.className = 'ai-icon-btn ai-icon-btn--locked';
-        btn.setAttribute('aria-disabled', 'true');
-        btn.setAttribute('title', t(tooltipKey) + ' (Premium)');
-        btn.setAttribute('aria-label', t(ariaLabelKey) + ' - ' + t('premiumFeature'));
-      } else {
-        btn.className = 'ai-icon-btn ai-icon-btn--inactive';
-        btn.setAttribute('title', t(tooltipKey));
-        btn.setAttribute('aria-label', t(ariaLabelKey));
-      }
-
-      btn.textContent = icon;
-      if (isNegative) btn.classList.add('negative');
-      if (isReplyToComment) btn.classList.add('reply-mode');
-
-      btn.onclick = (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-
-        if (!hasAccess) {
-          showPremiumUpgradePrompt(t(lockedMessageKey));
-          return;
-        }
-
-        const isActive = commentBox.getAttribute(dataAttr) === 'true';
-        if (isActive) {
-          commentBox.removeAttribute(dataAttr);
-          btn.classList.remove('ai-icon-btn--active');
-          btn.classList.add('ai-icon-btn--inactive');
-          btn.setAttribute('aria-pressed', 'false');
-          btn.setAttribute('title', t(tooltipKey));
-        } else {
-          commentBox.setAttribute(dataAttr, 'true');
-          btn.classList.remove('ai-icon-btn--inactive');
-          btn.classList.add('ai-icon-btn--active');
-          btn.setAttribute('aria-pressed', 'true');
-          btn.setAttribute('title', t(tooltipKey) + ' ✓');
-        }
-
-        const storageKey = `toggle_${dataAttr.replace('data-', '')}`;
-        chrome.storage.local.set({ [storageKey]: !isActive });
-      };
-
-      return btn;
-    };
-
-    // === BOUTONS D'ACTION PRINCIPAUX ===
-    const generateBtn = createActionIconBtn('✨', 'generateTooltip', 'generateAriaLabel', (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      handleGenerateClick(e, commentBox, isReplyToComment);
-    }, 'primary');
-
-    const randomBtn = createActionIconBtn('🎲', 'randomTooltip', 'randomAriaLabel', (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      handleRandomGenerate(e, commentBox, isReplyToComment);
-    }, 'secondary');
-
-    const promptBtn = createActionIconBtn('💭', 'promptTooltip', 'promptAriaLabel', (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      handlePromptClick(e, commentBox, isReplyToComment);
-    }, 'secondary');
-
-    // === BOUTONS TOGGLE ENRICHISSEMENT ===
-    const quoteBtn = createToggleIconBtn('💬', 'quoteToggleTooltip', 'data-include-quote', 'quoteToggleAriaLabel', 'quoteUpgradeRequired');
-    const contextBtn = createToggleIconBtn('💭', 'contextToggleTooltip', 'data-include-context', 'contextToggleAriaLabel', 'contextUpgradeRequired');
-    const webBtn = createToggleIconBtn('🔍', 'webSearchToggleTooltip', 'data-web-search', 'webSearchToggleAriaLabel', 'webSearchUpgradeRequired');
-    const newsBtn = createToggleIconBtn('📰', 'newsToggleTooltip', 'data-news-enrichment', 'newsToggleAriaLabel', 'newsUpgradeRequired', 'MEDIUM');
-
-    // Bouton Tag auteur avec logique speciale
-    const tagBtn = document.createElement('button');
-    tagBtn.type = 'button';
-    tagBtn.setAttribute('aria-pressed', 'false');
-
-    if (!isPremium) {
-      tagBtn.className = 'ai-icon-btn ai-icon-btn--locked';
-      tagBtn.setAttribute('aria-disabled', 'true');
-      tagBtn.setAttribute('title', t('tagAuthorTooltip') + ' (Premium)');
-      tagBtn.setAttribute('aria-label', t('tagAuthorAriaLabel') + ' - ' + t('premiumFeature'));
-    } else {
-      tagBtn.className = 'ai-icon-btn ai-icon-btn--inactive';
-      tagBtn.setAttribute('title', t('tagAuthorTooltip'));
-      tagBtn.setAttribute('aria-label', t('tagAuthorAriaLabel'));
-    }
-
-    tagBtn.textContent = '👤';
-    if (isNegative) tagBtn.classList.add('negative');
-    if (isReplyToComment) tagBtn.classList.add('reply-mode');
-
-    tagBtn.onclick = async (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-
-      if (!isPremium) {
-        showPremiumUpgradePrompt(t('tagAuthorUpgradeRequired'));
-        return;
-      }
-
-      const currentAuthor = commentBox.getAttribute('data-tag-author');
-      if (currentAuthor) {
-        commentBox.removeAttribute('data-tag-author');
-        tagBtn.classList.remove('ai-icon-btn--active');
-        tagBtn.classList.add('ai-icon-btn--inactive');
-        tagBtn.setAttribute('aria-pressed', 'false');
-        tagBtn.setAttribute('title', t('tagAuthorTooltip'));
-        return;
-      }
-
-      let postContainer = commentBox.closest('.feed-shared-update-v2, [data-urn], article, [data-id]');
-      if (!postContainer) {
-        let current = commentBox;
-        while (current && !postContainer) {
-          const feedUpdate = current.querySelector('.feed-shared-update-v2');
-          if (feedUpdate) {
-            postContainer = feedUpdate;
-            break;
-          }
-          current = current.parentElement;
-        }
-      }
-
-      const authorInfo = extractPostAuthorInfo(postContainer);
-      if (authorInfo && authorInfo.name) {
-        commentBox.setAttribute('data-tag-author', authorInfo.name);
-        tagBtn.classList.remove('ai-icon-btn--inactive');
-        tagBtn.classList.add('ai-icon-btn--active');
-        tagBtn.setAttribute('aria-pressed', 'true');
-        tagBtn.setAttribute('title', t('tagAuthorTooltip') + ': ' + authorInfo.name + ' ✓');
-        window.toastNotification.success(t('tagAuthorSuccess').replace('{name}', authorInfo.name));
-      } else {
-        window.toastNotification.warning(t('authorNotFound'));
-      }
-    };
-
-    // === BOUTONS BLACKLIST ===
-    const addBlacklistBtn = document.createElement('button');
-    addBlacklistBtn.type = 'button';
-    addBlacklistBtn.className = isPremium ? 'ai-icon-btn ai-icon-btn--danger' : 'ai-icon-btn ai-icon-btn--danger ai-icon-btn--locked';
-    if (isNegative) addBlacklistBtn.classList.add('negative');
-    if (isReplyToComment) addBlacklistBtn.classList.add('reply-mode');
-    addBlacklistBtn.textContent = '🚫';
-    addBlacklistBtn.setAttribute('title', t('addToBlacklistTooltip'));
-    addBlacklistBtn.setAttribute('aria-label', t('addToBlacklistAriaLabel'));
-    if (!isPremium) addBlacklistBtn.setAttribute('aria-disabled', 'true');
-
-    addBlacklistBtn.onclick = async (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-
-      if (!isPremium) {
-        showPremiumUpgradePrompt(t('blacklistUpgradeRequired'));
-        return;
-      }
-
-      let postContainer = commentBox.closest('.feed-shared-update-v2, [data-urn], article, [data-id]');
-      if (!postContainer) {
-        let current = commentBox;
-        while (current && !postContainer) {
-          const feedUpdate = current.querySelector('.feed-shared-update-v2');
-          if (feedUpdate) {
-            postContainer = feedUpdate;
-            break;
-          }
-          current = current.parentElement;
-        }
-      }
-
-      const authorInfo = extractPostAuthorInfo(postContainer);
-      if (!authorInfo || !authorInfo.name) {
-        window.toastNotification.warning(t('authorNotFound'));
-        return;
-      }
-
-      chrome.runtime.sendMessage({
-        action: 'addToBlacklist',
-        blockedName: authorInfo.name,
-        blockedProfileUrl: authorInfo.url || null
-      }, (response) => {
-        if (response && response.success) {
-          window.toastNotification.success(t('blacklistAddSuccess').replace('{name}', authorInfo.name));
-        } else {
-          window.toastNotification.error(t('error'));
-        }
-      });
-    };
-
-    const viewBlacklistBtn = document.createElement('button');
-    viewBlacklistBtn.type = 'button';
-    viewBlacklistBtn.className = isPremium ? 'ai-icon-btn ai-icon-btn--secondary' : 'ai-icon-btn ai-icon-btn--locked';
-    if (isNegative) viewBlacklistBtn.classList.add('negative');
-    if (isReplyToComment) viewBlacklistBtn.classList.add('reply-mode');
-    viewBlacklistBtn.textContent = '📋';
-    viewBlacklistBtn.setAttribute('title', t('viewBlacklistTooltip'));
-    viewBlacklistBtn.setAttribute('aria-label', t('viewBlacklistAriaLabel'));
-    if (!isPremium) viewBlacklistBtn.setAttribute('aria-disabled', 'true');
-
-    viewBlacklistBtn.onclick = (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-
-      if (!isPremium) {
-        showPremiumUpgradePrompt(t('blacklistUpgradeRequired'));
-        return;
-      }
-
-      showBlacklistModal();
-    };
-
-    // === BOUTON OPTIONS ===
-    const optionsBtn = document.createElement('button');
-    optionsBtn.type = 'button';
-    optionsBtn.className = 'ai-icon-btn ai-icon-btn--options';
-    optionsBtn.innerHTML = '⚙️ ▾';
-    optionsBtn.setAttribute('title', t('personalisationTooltip'));
-    optionsBtn.setAttribute('aria-label', t('personalisationAriaLabel'));
-    optionsBtn.setAttribute('aria-haspopup', 'true');
-    optionsBtn.setAttribute('aria-expanded', 'false');
-    if (isNegative) optionsBtn.classList.add('negative');
-    if (isReplyToComment) optionsBtn.classList.add('reply-mode');
-
-    optionsBtn.onclick = (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      toggleEmotionsPanel(container, commentBox);
-    };
-
-    // === ASSEMBLER LES BOUTONS ===
-    // Actions principales + Options
-    container.appendChild(generateBtn);
-    container.appendChild(randomBtn);
-    container.appendChild(promptBtn);
-    container.appendChild(optionsBtn);
-    container.appendChild(createSeparator());
-
-    // Toggles enrichissement
-    container.appendChild(quoteBtn);
-    container.appendChild(tagBtn);
-    container.appendChild(contextBtn);
-    container.appendChild(webBtn);
-    container.appendChild(newsBtn);
-    container.appendChild(createSeparator());
-
-    // Blacklist
-    container.appendChild(addBlacklistBtn);
-    container.appendChild(viewBlacklistBtn);
-
-    // Stocker les references aux elements
-    container._elements = {
-      generateBtn,
-      randomBtn,
-      promptBtn,
-      quoteBtn,
-      tagBtn,
-      contextBtn,
-      webBtn,
-      newsBtn,
-      addBlacklistBtn,
-      viewBlacklistBtn,
-      optionsBtn
-    };
-
-    // Restaurer les etats des toggles sauvegardes
-    chrome.storage.local.get([
-      'toggle_include-quote',
-      'toggle_include-context',
-      'toggle_web-search',
-      'toggle_news-enrichment'
-    ], (savedStates) => {
-      const toggleConfigs = [
-        { btn: quoteBtn, key: 'toggle_include-quote', dataAttr: 'data-include-quote', tooltipKey: 'quoteToggleTooltip', hasAccess: isPremium },
-        { btn: contextBtn, key: 'toggle_include-context', dataAttr: 'data-include-context', tooltipKey: 'contextToggleTooltip', hasAccess: isPremium },
-        { btn: webBtn, key: 'toggle_web-search', dataAttr: 'data-web-search', tooltipKey: 'webSearchToggleTooltip', hasAccess: isPremium },
-        { btn: newsBtn, key: 'toggle_news-enrichment', dataAttr: 'data-news-enrichment', tooltipKey: 'newsToggleTooltip', hasAccess: isMediumPlus }
-      ];
-
-      toggleConfigs.forEach(({ btn, key, dataAttr, tooltipKey, hasAccess }) => {
-        if (savedStates[key] === true && hasAccess && !btn.classList.contains('ai-icon-btn--locked')) {
-          commentBox.setAttribute(dataAttr, 'true');
-          btn.classList.remove('ai-icon-btn--inactive');
-          btn.classList.add('ai-icon-btn--active');
-          btn.setAttribute('aria-pressed', 'true');
-          btn.setAttribute('title', t(tooltipKey) + ' ✓');
-        }
-      });
-    });
-
-    return container;
-  }
-
-  // ================================================
-  // V3 Story 7.6 — Handle Random Generate
+  // Handle Random Generate
   // Randomizes toggle states before generating
   // ================================================
   function handleRandomGenerate(e, commentBox, isReplyToComment) {
@@ -2000,132 +1317,6 @@
     });
   }
 
-  // ================================================
-  // V3 Story 7.6 — Viewport Detection with ResizeObserver
-  // Detects narrow viewports and triggers fallback to inline mode
-  // ================================================
-  // V3 Story 7.6 — Viewport breakpoints (AC #3: < 500px → inline mode)
-  const VIEWPORT_NARROW = 500;  // < 500px → force inline
-  const VIEWPORT_WIDE = 700;    // > 700px → wide mode
-
-  // Store active observers for cleanup
-  const activeResizeObservers = new WeakMap();
-
-  function setupViewportDetection(containerElement, controlsElement, commentBox) {
-    if (!containerElement || !controlsElement) return null;
-
-    // Cleanup existing observer if any
-    const existingObserver = activeResizeObservers.get(controlsElement);
-    if (existingObserver) {
-      existingObserver.disconnect();
-    }
-
-    let hasTriggeredFallback = false;
-
-    const resizeObserver = new ResizeObserver(entries => {
-      for (const entry of entries) {
-        const width = entry.contentRect.width;
-        let viewport = 'normal';
-
-        if (width < VIEWPORT_NARROW) {
-          viewport = 'narrow';
-          // Fallback automatique si mode expanded et pas encore fait
-          if (controlsElement.classList.contains('ai-controls--expanded') && !hasTriggeredFallback) {
-            hasTriggeredFallback = true;
-            // Basculer temporairement vers mode inline
-            switchToInlineMode(controlsElement, commentBox);
-            window.toastNotification.info(t('modeAdaptedToSpace'));
-          }
-        } else if (width > VIEWPORT_WIDE) {
-          viewport = 'wide';
-          // Restaurer le mode expanded si on etait en fallback
-          if (hasTriggeredFallback && !controlsElement.classList.contains('ai-controls--expanded')) {
-            hasTriggeredFallback = false;
-            // Restaurer le mode expanded
-            controlsElement.classList.remove('ai-controls--inline');
-            controlsElement.classList.add('ai-controls--expanded');
-          }
-        } else {
-          // Viewport normal - restaurer si necessaire
-          if (hasTriggeredFallback && !controlsElement.classList.contains('ai-controls--expanded')) {
-            hasTriggeredFallback = false;
-            controlsElement.classList.remove('ai-controls--inline');
-            controlsElement.classList.add('ai-controls--expanded');
-          }
-        }
-
-        controlsElement.dataset.viewport = viewport;
-      }
-    });
-
-    resizeObserver.observe(containerElement);
-    activeResizeObservers.set(controlsElement, resizeObserver);
-
-    return resizeObserver;
-  }
-
-  // ================================================
-  // V3 Story 7.6 — Switch to Inline Mode (fallback)
-  // Note: Ce fallback est temporaire, ne modifie pas la preference
-  // ================================================
-  function switchToInlineMode(controlsElement, commentBox) {
-    // Changer les classes CSS
-    controlsElement.classList.remove('ai-controls--expanded');
-    controlsElement.classList.add('ai-controls--inline');
-
-    // Masquer les labels des toggles pour le mode inline
-    const toggleLabels = controlsElement.querySelectorAll('.ai-toggle__label');
-    toggleLabels.forEach(label => {
-      label.style.display = 'none';
-    });
-
-    // Marquer le commentBox comme etant en mode fallback
-    commentBox.setAttribute('data-ai-viewport-fallback', 'true');
-  }
-
-  // ================================================
-  // V3 Story 7.6 — Cleanup function for observers
-  // Call when removing controls from DOM
-  // ================================================
-  function cleanupViewportObserver(controlsElement) {
-    const observer = activeResizeObservers.get(controlsElement);
-    if (observer) {
-      observer.disconnect();
-      activeResizeObservers.delete(controlsElement);
-    }
-  }
-
-  // ================================================
-  // V3 Story 7.6 — Auto-cleanup observer for removed controls
-  // Watches DOM for removed ai-controls and cleans up ResizeObservers
-  // Fix: Memory leak prevention (Code Review Issue #1)
-  // ================================================
-  const controlsCleanupObserver = new MutationObserver((mutations) => {
-    for (const mutation of mutations) {
-      for (const removedNode of mutation.removedNodes) {
-        if (removedNode.nodeType === Node.ELEMENT_NODE) {
-          // Check if the removed node is an ai-controls element
-          if (removedNode.classList && removedNode.classList.contains('ai-controls')) {
-            cleanupViewportObserver(removedNode);
-          }
-          // Also check children in case a parent container was removed
-          const removedControls = removedNode.querySelectorAll ?
-            removedNode.querySelectorAll('.ai-controls') : [];
-          removedControls.forEach(control => cleanupViewportObserver(control));
-        }
-      }
-    }
-  });
-
-  // Start observing for removed controls (will be connected after DOM ready)
-  if (document.body) {
-    controlsCleanupObserver.observe(document.body, { childList: true, subtree: true });
-  } else {
-    document.addEventListener('DOMContentLoaded', () => {
-      controlsCleanupObserver.observe(document.body, { childList: true, subtree: true });
-    });
-  }
-
   // Ajouter les boutons
   async function addButtonsToCommentBox(commentBox) {
     // Triple vérification stricte avec verrouillage immédiat
@@ -2143,8 +1334,7 @@
       parent.style.position = 'relative';
     }
 
-    // V3 Story 7.6 — Charger le mode UI et le plan utilisateur
-    const uiMode = await getUIMode();
+    // Charger le plan utilisateur
     const userPlanResult = await new Promise(resolve => {
       chrome.storage.local.get(['user_plan'], resolve);
     });
@@ -2155,55 +1345,23 @@
       const isReplyToComment = commentBox.closest('[data-view-name="comment-container"]') !== null ||
                                 commentBox.closest('.comments-comment-entity') !== null;
 
-      // V3 Story 7.6 — Utiliser le mode Expanded si configure
-      if (uiMode === 'expanded') {
-        const expandedControls = createExpandedModeControls(commentBox, userPlan, isNegative, isReplyToComment);
+      // Mode Inline (unique mode V3.1)
+      const inlineControls = createInlineModeControls(commentBox, userPlan, isNegative, isReplyToComment);
 
-        // Setup viewport detection (Story 7.6 Task 5)
-        setupViewportDetection(parent, expandedControls, commentBox);
+      parent.appendChild(inlineControls);
 
-        parent.appendChild(expandedControls);
+      // Retirer le marqueur "en cours" et marquer comme "ajouté"
+      commentBox.removeAttribute('data-ai-buttons-pending');
+      commentBox.setAttribute('data-ai-buttons-added', 'true');
+      commentBox.setAttribute('data-ai-ui-mode', 'inline');
 
-        // Retirer le marqueur "en cours" et marquer comme "ajouté"
-        commentBox.removeAttribute('data-ai-buttons-pending');
-        commentBox.setAttribute('data-ai-buttons-added', 'true');
-        commentBox.setAttribute('data-ai-ui-mode', 'expanded');
+      updateButtonsState(inlineControls, isAuthenticated);
 
-        updateButtonsState(expandedControls, isAuthenticated);
-        return;
-      }
+      // Legacy mode supprimé - tout le code ci-dessous est maintenu pour référence
+      // mais n'est plus exécuté
+      return;
 
-      // V3 Story 7.7 — Utiliser le mode Inline si configure
-      if (uiMode === 'inline') {
-        const inlineControls = createInlineModeControls(commentBox, userPlan, isNegative, isReplyToComment);
-
-        parent.appendChild(inlineControls);
-
-        // Retirer le marqueur "en cours" et marquer comme "ajouté"
-        commentBox.removeAttribute('data-ai-buttons-pending');
-        commentBox.setAttribute('data-ai-buttons-added', 'true');
-        commentBox.setAttribute('data-ai-ui-mode', 'inline');
-
-        updateButtonsState(inlineControls, isAuthenticated);
-        return;
-      }
-
-      // V3 Story 7.8 — Utiliser le mode Compact si configure
-      if (uiMode === 'compact') {
-        const compactControls = createCompactModeControls(commentBox, userPlan, isNegative, isReplyToComment);
-
-        parent.appendChild(compactControls);
-
-        // Retirer le marqueur "en cours" et marquer comme "ajouté"
-        commentBox.removeAttribute('data-ai-buttons-pending');
-        commentBox.setAttribute('data-ai-buttons-added', 'true');
-        commentBox.setAttribute('data-ai-ui-mode', 'compact');
-
-        updateButtonsState(compactControls, isAuthenticated);
-        return;
-      }
-
-      // Mode Legacy (default) — code existant
+      // Mode Legacy (référence historique) — code existant
       const buttonsWrapper = document.createElement('div');
       buttonsWrapper.className = 'ai-buttons-wrapper';
 
@@ -2881,8 +2039,7 @@
       }
     }
 
-    const button = event.target.closest('.ai-button') || event.target.closest('.ai-generate-button') || event.target.closest('.ai-icon-btn') || event.target.closest('.ai-card') || event.target.closest('.ai-chip');
-    const isIconBtn = button && button.classList.contains('ai-icon-btn');
+    const button = event.target.closest('.ai-button') || event.target.closest('.ai-generate-button') || event.target.closest('.ai-card') || event.target.closest('.ai-chip');
     const isCard = button && button.classList.contains('ai-card');
     const isChip = button && button.classList.contains('ai-chip');
 
@@ -2892,10 +2049,10 @@
       labelElement = button.querySelector('.ai-card__label');
     } else if (isChip) {
       labelElement = button.querySelector('.ai-chip__label');
-    } else if (!isIconBtn) {
+    } else {
       labelElement = button.querySelector('span');
     }
-    const originalContent = isIconBtn ? button.textContent : (labelElement?.textContent || '');
+    const originalContent = labelElement?.textContent || '';
 
     // Vider le champ de commentaire AVANT l'extraction pour éviter toute confusion
     commentBox.textContent = '';
@@ -4876,7 +4033,7 @@
       }
       updateAllButtonsText();
     } else if (message.action === 'uiModeChanged') {
-      // V3 Story 7.6 - Réinitialiser l'UI quand le mode change
+      // Réinitialiser l'UI quand le mode change (legacy - plus utilisé)
       console.log('🎨 Mode UI changé depuis popup:', message.uiMode);
 
       // Supprimer tous les contrôles existants (nouveaux ET legacy)

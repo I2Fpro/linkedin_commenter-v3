@@ -143,12 +143,11 @@ class I18n {
         webSearchUpgradeRequired: 'La recherche web est réservée aux abonnés Premium',
         webSearchFallbackMessage: 'Aucune source web trouvée — génération classique utilisée',
 
-        // V3 Story 7.6 — Mode Expanded
+        // Générations spéciales
         randomGenerate: 'Générer aléatoire',
         tagAuthorSuccess: '{name} sera mentionné dans le commentaire',
-        modeAdaptedToSpace: 'Mode adapté à l\'espace',
 
-        // V3 Story 7.7 — Mode Inline
+        // Mode Inline - Style
         personalisation: 'Style',
         personalisationTooltip: 'Personnaliser le style et les émotions du commentaire',
 
@@ -193,7 +192,7 @@ class I18n {
         showSourceAdded: 'Source ajoutée',
         noSourceAvailable: 'Source non disponible',
 
-        // V3 Story 7.8 — Mode Compact tooltips & ARIA labels
+        // Tooltips & ARIA labels
         generateTooltip: 'Générer un commentaire',
         generateAriaLabel: 'Générer un commentaire pour ce post',
         randomTooltip: 'Génération aléatoire',
@@ -351,12 +350,11 @@ class I18n {
         webSearchUpgradeRequired: 'Web search is reserved for Premium subscribers',
         webSearchFallbackMessage: 'No web source found — classic generation used',
 
-        // V3 Story 7.6 — Mode Expanded
+        // Special generations
         randomGenerate: 'Random generate',
         tagAuthorSuccess: '{name} will be mentioned in the comment',
-        modeAdaptedToSpace: 'Mode adapted to space',
 
-        // V3 Story 7.7 — Mode Inline
+        // Inline Mode - Style
         personalisation: 'Style',
         personalisationTooltip: 'Customize style and emotions of the comment',
 
@@ -401,7 +399,7 @@ class I18n {
         showSourceAdded: 'Source added',
         noSourceAvailable: 'Source unavailable',
 
-        // V3 Story 7.8 — Mode Compact tooltips & ARIA labels
+        // Tooltips & ARIA labels
         generateTooltip: 'Generate a comment',
         generateAriaLabel: 'Generate a comment for this post',
         randomTooltip: 'Random generation',
