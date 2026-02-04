@@ -191,7 +191,24 @@ class I18n {
         // V3 Story 5.5 — Afficher la source web
         showSourceBtn: 'Afficher la source',
         showSourceAdded: 'Source ajoutée',
-        noSourceAvailable: 'Source non disponible'
+        noSourceAvailable: 'Source non disponible',
+
+        // V3 Story 7.8 — Mode Compact tooltips & ARIA labels
+        generateTooltip: 'Générer un commentaire',
+        generateAriaLabel: 'Générer un commentaire pour ce post',
+        randomTooltip: 'Génération aléatoire',
+        randomAriaLabel: 'Générer avec des paramètres aléatoires',
+        promptTooltip: 'Ajouter un prompt personnalisé',
+        promptAriaLabel: 'Générer avec un prompt personnalisé',
+        quoteToggleAriaLabel: 'Activer ou désactiver la citation',
+        contextToggleAriaLabel: 'Activer ou désactiver le contexte des commentaires',
+        webSearchToggleAriaLabel: 'Activer ou désactiver la recherche web',
+        newsToggleAriaLabel: 'Activer ou désactiver les actualités LinkedIn',
+        tagAuthorAriaLabel: 'Activer ou désactiver le tag auteur',
+        addToBlacklistAriaLabel: 'Ajouter cet auteur à la blacklist',
+        viewBlacklistAriaLabel: 'Voir ma blacklist',
+        personalisationAriaLabel: 'Personnaliser le style du commentaire',
+        premiumFeature: 'Fonctionnalité Premium'
         // Note: V3 Story 2.3 translations are in content.js local translations object
       },
       en: {
@@ -382,7 +399,24 @@ class I18n {
         // V3 Story 5.5 — Show web source
         showSourceBtn: 'Show source',
         showSourceAdded: 'Source added',
-        noSourceAvailable: 'Source unavailable'
+        noSourceAvailable: 'Source unavailable',
+
+        // V3 Story 7.8 — Mode Compact tooltips & ARIA labels
+        generateTooltip: 'Generate a comment',
+        generateAriaLabel: 'Generate a comment for this post',
+        randomTooltip: 'Random generation',
+        randomAriaLabel: 'Generate with random parameters',
+        promptTooltip: 'Add a custom prompt',
+        promptAriaLabel: 'Generate with a custom prompt',
+        quoteToggleAriaLabel: 'Enable or disable quote',
+        contextToggleAriaLabel: 'Enable or disable comments context',
+        webSearchToggleAriaLabel: 'Enable or disable web search',
+        newsToggleAriaLabel: 'Enable or disable LinkedIn news',
+        tagAuthorAriaLabel: 'Enable or disable author tag',
+        addToBlacklistAriaLabel: 'Add this author to blacklist',
+        viewBlacklistAriaLabel: 'View my blacklist',
+        personalisationAriaLabel: 'Customize comment style',
+        premiumFeature: 'Premium Feature'
         // Note: V3 Story 2.3 translations are in content.js local translations object
       }
     };

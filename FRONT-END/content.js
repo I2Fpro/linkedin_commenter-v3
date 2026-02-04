@@ -65,6 +65,7 @@
       quoteToggle: 'Citation',
       quoteToggleActive: 'Citation activée',
       quoteToggleInactive: 'Citation désactivée',
+      quoteToggleTooltip: 'Inclut une citation du post',
       quoteUpgradeRequired: 'Passez en Premium pour utiliser les citations contextuelles',
       tagAuthor: 'Tag auteur',
       tagAuthorTooltip: 'Mentionne l\'auteur du post',
@@ -91,7 +92,25 @@
       viewBlacklistTooltip: 'Voir ma blacklist',
       blacklistAddSuccess: '{name} a été ajouté à votre blacklist',
       personalisation: 'Style',
-      personalisationTooltip: 'Choisir émotion et style de langage'
+      personalisationTooltip: 'Choisir émotion et style de langage',
+      // V3 Story 7.8 — Mode Compact tooltips & ARIA labels
+      generateTooltip: 'Générer un commentaire',
+      generateAriaLabel: 'Générer un commentaire pour ce post',
+      randomTooltip: 'Génération aléatoire',
+      randomAriaLabel: 'Générer avec des paramètres aléatoires',
+      promptTooltip: 'Ajouter un prompt personnalisé',
+      promptAriaLabel: 'Ouvrir le champ de prompt personnalisé',
+      optionsTooltip: 'Options',
+      optionsAriaLabel: 'Ouvrir le menu des options',
+      quoteToggleAriaLabel: 'Activer ou désactiver la citation',
+      contextToggleAriaLabel: 'Activer ou désactiver le contexte',
+      webSearchToggleAriaLabel: 'Activer ou désactiver la recherche web',
+      newsToggleAriaLabel: 'Activer ou désactiver les actualités',
+      tagAuthorAriaLabel: 'Activer ou désactiver le tag auteur',
+      addToBlacklistAriaLabel: 'Ajouter cet auteur à la blacklist',
+      viewBlacklistAriaLabel: 'Voir ma blacklist',
+      personalisationAriaLabel: 'Personnaliser le style',
+      premiumFeature: 'Fonctionnalité Premium'
     },
     en: {
       generate: 'Generate',
@@ -134,6 +153,7 @@
       quoteToggle: 'Quote',
       quoteToggleActive: 'Quote enabled',
       quoteToggleInactive: 'Quote disabled',
+      quoteToggleTooltip: 'Include a quote from the post',
       quoteUpgradeRequired: 'Upgrade to Premium for contextual quotes',
       tagAuthor: 'Tag author',
       tagAuthorTooltip: 'Mention the post author',
@@ -160,7 +180,25 @@
       viewBlacklistTooltip: 'View my blacklist',
       blacklistAddSuccess: '{name} has been added to your blacklist',
       personalisation: 'Style',
-      personalisationTooltip: 'Choose emotion and language style'
+      personalisationTooltip: 'Choose emotion and language style',
+      // V3 Story 7.8 — Mode Compact tooltips & ARIA labels
+      generateTooltip: 'Generate a comment',
+      generateAriaLabel: 'Generate a comment for this post',
+      randomTooltip: 'Random generation',
+      randomAriaLabel: 'Generate with random parameters',
+      promptTooltip: 'Add custom prompt',
+      promptAriaLabel: 'Open custom prompt field',
+      optionsTooltip: 'Options',
+      optionsAriaLabel: 'Open options menu',
+      quoteToggleAriaLabel: 'Toggle quote on or off',
+      contextToggleAriaLabel: 'Toggle context on or off',
+      webSearchToggleAriaLabel: 'Toggle web search on or off',
+      newsToggleAriaLabel: 'Toggle news on or off',
+      tagAuthorAriaLabel: 'Toggle author tag on or off',
+      addToBlacklistAriaLabel: 'Add this author to blacklist',
+      viewBlacklistAriaLabel: 'View my blacklist',
+      personalisationAriaLabel: 'Customize style',
+      premiumFeature: 'Premium Feature'
     }
   };
 
@@ -433,6 +471,7 @@
       if (focusTrapCleanup) focusTrapCleanup();
       if (escapeHandler) document.removeEventListener('keydown', escapeHandler);
       modal.classList.add('ai-modal--closing');
+      document.body.classList.remove('ai-modal-active'); // Restaurer les controles
       setTimeout(() => modal.remove(), 200);
     };
 
@@ -480,6 +519,7 @@
       show: () => {
         document.body.appendChild(modal);
         modal.classList.add('ai-modal--open');
+        document.body.classList.add('ai-modal-active'); // Masquer les controles pendant le modal
         document.addEventListener('keydown', escapeHandler);
         // Setup focus trap apres ajout au DOM
         focusTrapCleanup = setupFocusTrap(modal);
@@ -554,21 +594,65 @@
 
   // Mettre à jour l'état des boutons
   function updateButtonsState(wrapper, authenticated) {
+    // V3 Story 7.7 Fix: Support both legacy buttons and inline chips
+    // V3 Story 7.8 Fix: Support compact mode icon buttons
     const buttons = wrapper.querySelectorAll('.ai-button, .ai-generate-button');
+    const chips = wrapper.querySelectorAll('.ai-chip');
+    const iconBtns = wrapper.querySelectorAll('.ai-icon-btn');
+
+    // Handle legacy buttons
     buttons.forEach(button => {
       button.disabled = !authenticated;
+    });
 
-      // Message d'authentification
-      let authMessage = wrapper.querySelector('.auth-required-message');
-      if (!authenticated && !authMessage) {
-        authMessage = document.createElement('div');
-        authMessage.className = 'auth-required-message';
-        authMessage.textContent = t('authRequired');
-        wrapper.appendChild(authMessage);
-      } else if (authenticated && authMessage) {
-        authMessage.remove();
+    // Handle inline chips (Story 7.7)
+    chips.forEach(chip => {
+      if (!authenticated) {
+        // Disable chip if not already locked (preserve locked state for premium features)
+        if (!chip.classList.contains('ai-chip--locked')) {
+          chip.setAttribute('data-auth-disabled', 'true');
+          chip.style.opacity = '0.5';
+          chip.style.pointerEvents = 'none';
+        }
+      } else {
+        // Re-enable chip (unless it's locked for premium)
+        chip.removeAttribute('data-auth-disabled');
+        if (!chip.classList.contains('ai-chip--locked')) {
+          chip.style.opacity = '';
+          chip.style.pointerEvents = '';
+        }
       }
     });
+
+    // Handle compact mode icon buttons (Story 7.8)
+    iconBtns.forEach(btn => {
+      if (!authenticated) {
+        // Disable icon button if not already locked (preserve locked state for premium features)
+        if (!btn.classList.contains('ai-icon-btn--locked')) {
+          btn.setAttribute('data-auth-disabled', 'true');
+          btn.style.opacity = '0.5';
+          btn.style.pointerEvents = 'none';
+        }
+      } else {
+        // Re-enable icon button (unless it's locked for premium)
+        btn.removeAttribute('data-auth-disabled');
+        if (!btn.classList.contains('ai-icon-btn--locked')) {
+          btn.style.opacity = '';
+          btn.style.pointerEvents = '';
+        }
+      }
+    });
+
+    // Message d'authentification (only for legacy wrappers and inline controls)
+    let authMessage = wrapper.querySelector('.auth-required-message');
+    if (!authenticated && !authMessage) {
+      authMessage = document.createElement('div');
+      authMessage.className = 'auth-required-message';
+      authMessage.textContent = t('authRequired');
+      wrapper.appendChild(authMessage);
+    } else if (authenticated && authMessage) {
+      authMessage.remove();
+    }
   }
 
   // Vérifier si les boutons AI existent déjà pour ce commentBox
@@ -1411,6 +1495,8 @@
       ? `<span class="ai-chip__icon">🚫</span><span class="ai-chip__label">${t('addToBlacklist')}</span>`
       : `<span class="ai-chip__icon">🚫</span><span class="ai-chip__label">${t('addToBlacklist')}</span><span class="ai-chip__lock">🔒</span>`;
     addBlacklistChip.setAttribute('aria-label', t('addToBlacklistTooltip'));
+    // Fix Code Review: aria-disabled pour accessibilite
+    if (!isPremium) addBlacklistChip.setAttribute('aria-disabled', 'true');
 
     addBlacklistChip.onclick = async (e) => {
       e.preventDefault();
@@ -1462,6 +1548,8 @@
       ? `<span class="ai-chip__icon">📋</span><span class="ai-chip__label">${t('viewBlacklist')}</span>`
       : `<span class="ai-chip__icon">📋</span><span class="ai-chip__label">${t('viewBlacklist')}</span><span class="ai-chip__lock">🔒</span>`;
     viewBlacklistChip.setAttribute('aria-label', t('viewBlacklistTooltip'));
+    // Fix Code Review: aria-disabled pour accessibilite
+    if (!isPremium) viewBlacklistChip.setAttribute('aria-disabled', 'true');
 
     viewBlacklistChip.onclick = (e) => {
       e.preventDefault();
@@ -1505,6 +1593,374 @@
       addBlacklistChip,
       viewBlacklistChip
     };
+
+    // Fix Code Review: Restaurer les etats des toggles sauvegardes
+    chrome.storage.local.get([
+      'toggle_include-quote',
+      'toggle_include-context',
+      'toggle_web-search',
+      'toggle_news-enrichment'
+    ], (savedStates) => {
+      const toggleConfigs = [
+        { chip: quoteChip, key: 'toggle_include-quote', dataAttr: 'data-include-quote', icon: '💬', labelKey: 'quoteToggle', hasAccess: isPremium },
+        { chip: contextChip, key: 'toggle_include-context', dataAttr: 'data-include-context', icon: '💭', labelKey: 'contextToggle', hasAccess: isPremium },
+        { chip: webChip, key: 'toggle_web-search', dataAttr: 'data-web-search', icon: '🔍', labelKey: 'webSearchToggle', hasAccess: isPremium },
+        { chip: newsChip, key: 'toggle_news-enrichment', dataAttr: 'data-news-enrichment', icon: '📰', labelKey: 'newsToggle', hasAccess: isMediumPlus }
+      ];
+
+      toggleConfigs.forEach(({ chip, key, dataAttr, icon, labelKey, hasAccess }) => {
+        if (savedStates[key] === true && hasAccess && !chip.classList.contains('ai-chip--locked')) {
+          commentBox.setAttribute(dataAttr, 'true');
+          chip.classList.remove('ai-chip--inactive');
+          chip.classList.add('ai-chip--active');
+          chip.setAttribute('aria-pressed', 'true');
+          chip.innerHTML = `<span class="ai-chip__icon">${icon}</span><span class="ai-chip__label">${t(labelKey)}</span><span class="ai-chip__check">✓</span>`;
+        }
+      });
+    });
+
+    return container;
+  }
+
+  // ================================================
+  // V3 Story 7.8 — Mode Compact avec boutons icones
+  // Interface minimaliste pour utilisateurs experts
+  // ================================================
+  function createCompactModeControls(commentBox, userPlan, isNegative, isReplyToComment) {
+    const isPremium = userPlan === 'PREMIUM';
+    const isMediumPlus = userPlan === 'MEDIUM' || userPlan === 'PREMIUM';
+
+    // Container principal
+    const container = document.createElement('div');
+    container.className = 'ai-controls ai-controls--compact';
+    container.setAttribute('data-viewport', 'normal');
+    container.setAttribute('role', 'region');
+    container.setAttribute('aria-label', 'AI Comment Generator');
+
+    // Helper pour creer un separateur
+    const createSeparator = () => {
+      const sep = document.createElement('div');
+      sep.className = 'ai-compact-separator';
+      sep.setAttribute('role', 'separator');
+      return sep;
+    };
+
+    // Helper pour creer un bouton icone d'action
+    const createActionIconBtn = (icon, tooltipKey, ariaLabelKey, onClick, variant = 'secondary', showLabel = false, labelKey = null) => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = `ai-icon-btn ai-icon-btn--${variant}`;
+      if (isNegative) btn.classList.add('negative');
+      if (isReplyToComment) btn.classList.add('reply-mode');
+
+      if (showLabel && labelKey) {
+        btn.innerHTML = `<span>${icon}</span><span>${t(labelKey)}</span>`;
+      } else {
+        btn.textContent = icon;
+      }
+
+      btn.setAttribute('title', t(tooltipKey));
+      btn.setAttribute('aria-label', t(ariaLabelKey));
+      btn.onclick = onClick;
+      return btn;
+    };
+
+    // Helper pour creer un bouton icone toggle
+    const createToggleIconBtn = (icon, tooltipKey, dataAttr, ariaLabelKey, lockedMessageKey, requiredPlan = 'PREMIUM') => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.setAttribute('aria-pressed', 'false');
+
+      // Determiner si l'utilisateur a acces
+      const hasAccess = requiredPlan === 'MEDIUM' ? isMediumPlus : isPremium;
+
+      if (!hasAccess) {
+        btn.className = 'ai-icon-btn ai-icon-btn--locked';
+        btn.setAttribute('aria-disabled', 'true');
+        btn.setAttribute('title', t(tooltipKey) + ' (Premium)');
+        btn.setAttribute('aria-label', t(ariaLabelKey) + ' - ' + t('premiumFeature'));
+      } else {
+        btn.className = 'ai-icon-btn ai-icon-btn--inactive';
+        btn.setAttribute('title', t(tooltipKey));
+        btn.setAttribute('aria-label', t(ariaLabelKey));
+      }
+
+      btn.textContent = icon;
+      if (isNegative) btn.classList.add('negative');
+      if (isReplyToComment) btn.classList.add('reply-mode');
+
+      btn.onclick = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+
+        if (!hasAccess) {
+          showPremiumUpgradePrompt(t(lockedMessageKey));
+          return;
+        }
+
+        const isActive = commentBox.getAttribute(dataAttr) === 'true';
+        if (isActive) {
+          commentBox.removeAttribute(dataAttr);
+          btn.classList.remove('ai-icon-btn--active');
+          btn.classList.add('ai-icon-btn--inactive');
+          btn.setAttribute('aria-pressed', 'false');
+          btn.setAttribute('title', t(tooltipKey));
+        } else {
+          commentBox.setAttribute(dataAttr, 'true');
+          btn.classList.remove('ai-icon-btn--inactive');
+          btn.classList.add('ai-icon-btn--active');
+          btn.setAttribute('aria-pressed', 'true');
+          btn.setAttribute('title', t(tooltipKey) + ' ✓');
+        }
+
+        const storageKey = `toggle_${dataAttr.replace('data-', '')}`;
+        chrome.storage.local.set({ [storageKey]: !isActive });
+      };
+
+      return btn;
+    };
+
+    // === BOUTONS D'ACTION PRINCIPAUX ===
+    const generateBtn = createActionIconBtn('✨', 'generateTooltip', 'generateAriaLabel', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      handleGenerateClick(e, commentBox, isReplyToComment);
+    }, 'primary');
+
+    const randomBtn = createActionIconBtn('🎲', 'randomTooltip', 'randomAriaLabel', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      handleRandomGenerate(e, commentBox, isReplyToComment);
+    }, 'secondary');
+
+    const promptBtn = createActionIconBtn('💭', 'promptTooltip', 'promptAriaLabel', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      handlePromptClick(e, commentBox, isReplyToComment);
+    }, 'secondary');
+
+    // === BOUTONS TOGGLE ENRICHISSEMENT ===
+    const quoteBtn = createToggleIconBtn('💬', 'quoteToggleTooltip', 'data-include-quote', 'quoteToggleAriaLabel', 'quoteUpgradeRequired');
+    const contextBtn = createToggleIconBtn('💭', 'contextToggleTooltip', 'data-include-context', 'contextToggleAriaLabel', 'contextUpgradeRequired');
+    const webBtn = createToggleIconBtn('🔍', 'webSearchToggleTooltip', 'data-web-search', 'webSearchToggleAriaLabel', 'webSearchUpgradeRequired');
+    const newsBtn = createToggleIconBtn('📰', 'newsToggleTooltip', 'data-news-enrichment', 'newsToggleAriaLabel', 'newsUpgradeRequired', 'MEDIUM');
+
+    // Bouton Tag auteur avec logique speciale
+    const tagBtn = document.createElement('button');
+    tagBtn.type = 'button';
+    tagBtn.setAttribute('aria-pressed', 'false');
+
+    if (!isPremium) {
+      tagBtn.className = 'ai-icon-btn ai-icon-btn--locked';
+      tagBtn.setAttribute('aria-disabled', 'true');
+      tagBtn.setAttribute('title', t('tagAuthorTooltip') + ' (Premium)');
+      tagBtn.setAttribute('aria-label', t('tagAuthorAriaLabel') + ' - ' + t('premiumFeature'));
+    } else {
+      tagBtn.className = 'ai-icon-btn ai-icon-btn--inactive';
+      tagBtn.setAttribute('title', t('tagAuthorTooltip'));
+      tagBtn.setAttribute('aria-label', t('tagAuthorAriaLabel'));
+    }
+
+    tagBtn.textContent = '👤';
+    if (isNegative) tagBtn.classList.add('negative');
+    if (isReplyToComment) tagBtn.classList.add('reply-mode');
+
+    tagBtn.onclick = async (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+
+      if (!isPremium) {
+        showPremiumUpgradePrompt(t('tagAuthorUpgradeRequired'));
+        return;
+      }
+
+      const currentAuthor = commentBox.getAttribute('data-tag-author');
+      if (currentAuthor) {
+        commentBox.removeAttribute('data-tag-author');
+        tagBtn.classList.remove('ai-icon-btn--active');
+        tagBtn.classList.add('ai-icon-btn--inactive');
+        tagBtn.setAttribute('aria-pressed', 'false');
+        tagBtn.setAttribute('title', t('tagAuthorTooltip'));
+        return;
+      }
+
+      let postContainer = commentBox.closest('.feed-shared-update-v2, [data-urn], article, [data-id]');
+      if (!postContainer) {
+        let current = commentBox;
+        while (current && !postContainer) {
+          const feedUpdate = current.querySelector('.feed-shared-update-v2');
+          if (feedUpdate) {
+            postContainer = feedUpdate;
+            break;
+          }
+          current = current.parentElement;
+        }
+      }
+
+      const authorInfo = extractPostAuthorInfo(postContainer);
+      if (authorInfo && authorInfo.name) {
+        commentBox.setAttribute('data-tag-author', authorInfo.name);
+        tagBtn.classList.remove('ai-icon-btn--inactive');
+        tagBtn.classList.add('ai-icon-btn--active');
+        tagBtn.setAttribute('aria-pressed', 'true');
+        tagBtn.setAttribute('title', t('tagAuthorTooltip') + ': ' + authorInfo.name + ' ✓');
+        window.toastNotification.success(t('tagAuthorSuccess').replace('{name}', authorInfo.name));
+      } else {
+        window.toastNotification.warning(t('authorNotFound'));
+      }
+    };
+
+    // === BOUTONS BLACKLIST ===
+    const addBlacklistBtn = document.createElement('button');
+    addBlacklistBtn.type = 'button';
+    addBlacklistBtn.className = isPremium ? 'ai-icon-btn ai-icon-btn--danger' : 'ai-icon-btn ai-icon-btn--danger ai-icon-btn--locked';
+    if (isNegative) addBlacklistBtn.classList.add('negative');
+    if (isReplyToComment) addBlacklistBtn.classList.add('reply-mode');
+    addBlacklistBtn.textContent = '🚫';
+    addBlacklistBtn.setAttribute('title', t('addToBlacklistTooltip'));
+    addBlacklistBtn.setAttribute('aria-label', t('addToBlacklistAriaLabel'));
+    if (!isPremium) addBlacklistBtn.setAttribute('aria-disabled', 'true');
+
+    addBlacklistBtn.onclick = async (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+
+      if (!isPremium) {
+        showPremiumUpgradePrompt(t('blacklistUpgradeRequired'));
+        return;
+      }
+
+      let postContainer = commentBox.closest('.feed-shared-update-v2, [data-urn], article, [data-id]');
+      if (!postContainer) {
+        let current = commentBox;
+        while (current && !postContainer) {
+          const feedUpdate = current.querySelector('.feed-shared-update-v2');
+          if (feedUpdate) {
+            postContainer = feedUpdate;
+            break;
+          }
+          current = current.parentElement;
+        }
+      }
+
+      const authorInfo = extractPostAuthorInfo(postContainer);
+      if (!authorInfo || !authorInfo.name) {
+        window.toastNotification.warning(t('authorNotFound'));
+        return;
+      }
+
+      chrome.runtime.sendMessage({
+        action: 'addToBlacklist',
+        blockedName: authorInfo.name,
+        blockedProfileUrl: authorInfo.url || null
+      }, (response) => {
+        if (response && response.success) {
+          window.toastNotification.success(t('blacklistAddSuccess').replace('{name}', authorInfo.name));
+        } else {
+          window.toastNotification.error(t('error'));
+        }
+      });
+    };
+
+    const viewBlacklistBtn = document.createElement('button');
+    viewBlacklistBtn.type = 'button';
+    viewBlacklistBtn.className = isPremium ? 'ai-icon-btn ai-icon-btn--secondary' : 'ai-icon-btn ai-icon-btn--locked';
+    if (isNegative) viewBlacklistBtn.classList.add('negative');
+    if (isReplyToComment) viewBlacklistBtn.classList.add('reply-mode');
+    viewBlacklistBtn.textContent = '📋';
+    viewBlacklistBtn.setAttribute('title', t('viewBlacklistTooltip'));
+    viewBlacklistBtn.setAttribute('aria-label', t('viewBlacklistAriaLabel'));
+    if (!isPremium) viewBlacklistBtn.setAttribute('aria-disabled', 'true');
+
+    viewBlacklistBtn.onclick = (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+
+      if (!isPremium) {
+        showPremiumUpgradePrompt(t('blacklistUpgradeRequired'));
+        return;
+      }
+
+      showBlacklistModal();
+    };
+
+    // === BOUTON OPTIONS ===
+    const optionsBtn = document.createElement('button');
+    optionsBtn.type = 'button';
+    optionsBtn.className = 'ai-icon-btn ai-icon-btn--options';
+    optionsBtn.innerHTML = '⚙️ ▾';
+    optionsBtn.setAttribute('title', t('personalisationTooltip'));
+    optionsBtn.setAttribute('aria-label', t('personalisationAriaLabel'));
+    optionsBtn.setAttribute('aria-haspopup', 'true');
+    optionsBtn.setAttribute('aria-expanded', 'false');
+    if (isNegative) optionsBtn.classList.add('negative');
+    if (isReplyToComment) optionsBtn.classList.add('reply-mode');
+
+    optionsBtn.onclick = (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      toggleEmotionsPanel(container, commentBox);
+    };
+
+    // === ASSEMBLER LES BOUTONS ===
+    // Actions principales + Options
+    container.appendChild(generateBtn);
+    container.appendChild(randomBtn);
+    container.appendChild(promptBtn);
+    container.appendChild(optionsBtn);
+    container.appendChild(createSeparator());
+
+    // Toggles enrichissement
+    container.appendChild(quoteBtn);
+    container.appendChild(tagBtn);
+    container.appendChild(contextBtn);
+    container.appendChild(webBtn);
+    container.appendChild(newsBtn);
+    container.appendChild(createSeparator());
+
+    // Blacklist
+    container.appendChild(addBlacklistBtn);
+    container.appendChild(viewBlacklistBtn);
+
+    // Stocker les references aux elements
+    container._elements = {
+      generateBtn,
+      randomBtn,
+      promptBtn,
+      quoteBtn,
+      tagBtn,
+      contextBtn,
+      webBtn,
+      newsBtn,
+      addBlacklistBtn,
+      viewBlacklistBtn,
+      optionsBtn
+    };
+
+    // Restaurer les etats des toggles sauvegardes
+    chrome.storage.local.get([
+      'toggle_include-quote',
+      'toggle_include-context',
+      'toggle_web-search',
+      'toggle_news-enrichment'
+    ], (savedStates) => {
+      const toggleConfigs = [
+        { btn: quoteBtn, key: 'toggle_include-quote', dataAttr: 'data-include-quote', tooltipKey: 'quoteToggleTooltip', hasAccess: isPremium },
+        { btn: contextBtn, key: 'toggle_include-context', dataAttr: 'data-include-context', tooltipKey: 'contextToggleTooltip', hasAccess: isPremium },
+        { btn: webBtn, key: 'toggle_web-search', dataAttr: 'data-web-search', tooltipKey: 'webSearchToggleTooltip', hasAccess: isPremium },
+        { btn: newsBtn, key: 'toggle_news-enrichment', dataAttr: 'data-news-enrichment', tooltipKey: 'newsToggleTooltip', hasAccess: isMediumPlus }
+      ];
+
+      toggleConfigs.forEach(({ btn, key, dataAttr, tooltipKey, hasAccess }) => {
+        if (savedStates[key] === true && hasAccess && !btn.classList.contains('ai-icon-btn--locked')) {
+          commentBox.setAttribute(dataAttr, 'true');
+          btn.classList.remove('ai-icon-btn--inactive');
+          btn.classList.add('ai-icon-btn--active');
+          btn.setAttribute('aria-pressed', 'true');
+          btn.setAttribute('title', t(tooltipKey) + ' ✓');
+        }
+      });
+    });
 
     return container;
   }
@@ -1732,7 +2188,22 @@
         return;
       }
 
-      // Mode Legacy (compact / default) — code existant
+      // V3 Story 7.8 — Utiliser le mode Compact si configure
+      if (uiMode === 'compact') {
+        const compactControls = createCompactModeControls(commentBox, userPlan, isNegative, isReplyToComment);
+
+        parent.appendChild(compactControls);
+
+        // Retirer le marqueur "en cours" et marquer comme "ajouté"
+        commentBox.removeAttribute('data-ai-buttons-pending');
+        commentBox.setAttribute('data-ai-buttons-added', 'true');
+        commentBox.setAttribute('data-ai-ui-mode', 'compact');
+
+        updateButtonsState(compactControls, isAuthenticated);
+        return;
+      }
+
+      // Mode Legacy (default) — code existant
       const buttonsWrapper = document.createElement('div');
       buttonsWrapper.className = 'ai-buttons-wrapper';
 
@@ -2410,8 +2881,21 @@
       }
     }
 
-    const button = event.target.closest('.ai-button') || event.target.closest('.ai-generate-button');
-    const originalText = button.querySelector('span').textContent;
+    const button = event.target.closest('.ai-button') || event.target.closest('.ai-generate-button') || event.target.closest('.ai-icon-btn') || event.target.closest('.ai-card') || event.target.closest('.ai-chip');
+    const isIconBtn = button && button.classList.contains('ai-icon-btn');
+    const isCard = button && button.classList.contains('ai-card');
+    const isChip = button && button.classList.contains('ai-chip');
+
+    // Trouver l'element texte selon le type de bouton
+    let labelElement = null;
+    if (isCard) {
+      labelElement = button.querySelector('.ai-card__label');
+    } else if (isChip) {
+      labelElement = button.querySelector('.ai-chip__label');
+    } else if (!isIconBtn) {
+      labelElement = button.querySelector('span');
+    }
+    const originalContent = isIconBtn ? button.textContent : (labelElement?.textContent || '');
 
     // Vider le champ de commentaire AVANT l'extraction pour éviter toute confusion
     commentBox.textContent = '';
@@ -2419,7 +2903,9 @@
 
     button.disabled = true;
     button.classList.add('loading');
-    button.querySelector('span').textContent = t('generating');
+    if (labelElement) {
+      labelElement.textContent = t('generating');
+    }
 
     // Track generation started
     const generationStartTime = Date.now();
@@ -2584,7 +3070,11 @@
 
         button.disabled = false;
         button.classList.remove('loading');
-        button.querySelector('span').textContent = originalText;
+        if (isIconBtn) {
+          button.textContent = originalContent;
+        } else if (labelElement) {
+          labelElement.textContent = originalContent;
+        }
       });
 
     } catch (error) {
@@ -2613,7 +3103,11 @@
 
       button.disabled = false;
       button.classList.remove('loading');
-      button.querySelector('span').textContent = originalText;
+      if (isIconBtn) {
+        button.textContent = originalContent;
+      } else if (labelElement) {
+        labelElement.textContent = originalContent;
+      }
     }
   }
 
