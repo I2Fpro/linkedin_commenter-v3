@@ -274,6 +274,222 @@
     });
   }
 
+  // ================================================
+  // MODAL BEM UTILITIES - Story 7.4
+  // Fonctions utilitaires pour creer des modals BEM accessibles
+  // ================================================
+
+  // Compteur pour generer des IDs uniques
+  let modalIdCounter = 0;
+
+  /**
+   * Genere un ID unique pour les attributs aria-labelledby
+   * @returns {string} ID unique
+   */
+  function generateModalId() {
+    return `ai-modal-title-${++modalIdCounter}-${Date.now()}`;
+  }
+
+  /**
+   * Cree une structure de modal BEM complete avec ARIA
+   * @param {Object} options - Options de creation du modal
+   * @param {string} options.variant - 'generation' | 'warning' | 'confirm'
+   * @param {string} options.title - Titre du modal
+   * @param {boolean} [options.showCloseButton=true] - Afficher le bouton fermer
+   * @param {Function} [options.onClose] - Callback de fermeture
+   * @param {Function} [options.onOverlayClick] - Callback clic overlay (null = pas de fermeture)
+   * @returns {Object} { modal, overlay, container, header, title, body, footer, close, cleanup }
+   */
+  function createModalBEM(options) {
+    const {
+      variant = 'generation',
+      title = '',
+      showCloseButton = true,
+      onClose = null,
+      onOverlayClick = null
+    } = options;
+
+    const titleId = generateModalId();
+
+    // Element racine du modal
+    const modal = document.createElement('div');
+    modal.className = `ai-modal ai-modal--${variant}`;
+    modal.setAttribute('role', 'dialog');
+    modal.setAttribute('aria-modal', 'true');
+    modal.setAttribute('aria-labelledby', titleId);
+
+    // Overlay
+    const overlay = document.createElement('div');
+    overlay.className = 'ai-modal__overlay';
+
+    // Container principal
+    const container = document.createElement('div');
+    container.className = 'ai-modal__container';
+
+    // Header
+    const header = document.createElement('div');
+    header.className = 'ai-modal__header';
+
+    // Titre
+    const titleEl = document.createElement('h2');
+    titleEl.className = 'ai-modal__title';
+    titleEl.id = titleId;
+    titleEl.textContent = title;
+
+    // Bouton fermer
+    let closeBtn = null;
+    if (showCloseButton) {
+      closeBtn = document.createElement('button');
+      closeBtn.className = 'ai-modal__close';
+      closeBtn.setAttribute('aria-label', t('cancel') || 'Fermer');
+      closeBtn.innerHTML = '&times;';
+    }
+
+    // Body
+    const body = document.createElement('div');
+    body.className = 'ai-modal__body';
+
+    // Footer
+    const footer = document.createElement('div');
+    footer.className = 'ai-modal__footer';
+
+    // Assemblage
+    header.appendChild(titleEl);
+    if (closeBtn) header.appendChild(closeBtn);
+    container.appendChild(header);
+    container.appendChild(body);
+    container.appendChild(footer);
+    modal.appendChild(overlay);
+    modal.appendChild(container);
+
+    // Gestion du focus trap
+    let focusTrapCleanup = null;
+    let escapeHandler = null;
+
+    // Fonction de cleanup
+    const cleanup = () => {
+      if (focusTrapCleanup) focusTrapCleanup();
+      if (escapeHandler) document.removeEventListener('keydown', escapeHandler);
+      modal.classList.add('ai-modal--closing');
+      setTimeout(() => modal.remove(), 200);
+    };
+
+    // Handler ESC
+    escapeHandler = (e) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        if (onClose) onClose();
+        cleanup();
+      }
+    };
+
+    // Click overlay (sauf confirm)
+    if (onOverlayClick !== null) {
+      overlay.addEventListener('click', (e) => {
+        if (e.target === overlay) {
+          if (onOverlayClick) onOverlayClick();
+          else if (onClose) onClose();
+          cleanup();
+        }
+      });
+    }
+
+    // Click bouton fermer
+    if (closeBtn && onClose) {
+      closeBtn.addEventListener('click', () => {
+        onClose();
+        cleanup();
+      });
+    } else if (closeBtn) {
+      closeBtn.addEventListener('click', cleanup);
+    }
+
+    return {
+      modal,
+      overlay,
+      container,
+      header,
+      title: titleEl,
+      body,
+      footer,
+      close: closeBtn,
+      cleanup,
+      // Methode pour afficher le modal
+      show: () => {
+        document.body.appendChild(modal);
+        modal.classList.add('ai-modal--open');
+        document.addEventListener('keydown', escapeHandler);
+        // Setup focus trap apres ajout au DOM
+        focusTrapCleanup = setupFocusTrap(modal);
+      }
+    };
+  }
+
+  /**
+   * Configure le focus trap dans un modal
+   * @param {HTMLElement} modal - Element modal
+   * @returns {Function} Fonction de cleanup
+   */
+  function setupFocusTrap(modal) {
+    const focusableSelector = 'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])';
+    const focusableElements = modal.querySelectorAll(focusableSelector);
+
+    if (focusableElements.length === 0) return () => {};
+
+    const firstElement = focusableElements[0];
+    const lastElement = focusableElements[focusableElements.length - 1];
+
+    // Sauvegarder l'element qui avait le focus
+    const previouslyFocused = document.activeElement;
+
+    // Focus sur le premier element
+    setTimeout(() => firstElement.focus(), 50);
+
+    const trapHandler = (e) => {
+      if (e.key !== 'Tab') return;
+
+      if (e.shiftKey) {
+        // Shift + Tab
+        if (document.activeElement === firstElement) {
+          e.preventDefault();
+          lastElement.focus();
+        }
+      } else {
+        // Tab
+        if (document.activeElement === lastElement) {
+          e.preventDefault();
+          firstElement.focus();
+        }
+      }
+    };
+
+    modal.addEventListener('keydown', trapHandler);
+
+    // Retourner la fonction de cleanup
+    return () => {
+      modal.removeEventListener('keydown', trapHandler);
+      // Restaurer le focus
+      if (previouslyFocused && previouslyFocused.focus) {
+        previouslyFocused.focus();
+      }
+    };
+  }
+
+  /**
+   * Ferme un modal BEM avec animation
+   * @param {HTMLElement} modal - Element modal a fermer
+   */
+  function closeModalBEM(modal) {
+    if (!modal) return;
+    modal.classList.add('ai-modal--closing');
+    modal.classList.remove('ai-modal--open');
+    setTimeout(() => modal.remove(), 200);
+  }
+
+  // ================================================
+  // FIN MODAL BEM UTILITIES
+  // ================================================
+
   // Mettre à jour l'état des boutons
   function updateButtonsState(wrapper, authenticated) {
     const buttons = wrapper.querySelectorAll('.ai-button, .ai-generate-button');
@@ -1557,44 +1773,42 @@
   }
 
   // Afficher le popup de prompt
+  // V3 Story 7.4 — Migration vers BEM avec ARIA et focus trap
   function showPromptPopup(commentBox, isReplyToComment) {
-    // Nettoyer les popups et overlays existants
-    document.querySelectorAll('.ai-prompt-popup, .ai-options-popup, .ai-popup-overlay').forEach(p => p.remove());
+    // Nettoyer les popups et overlays existants (anciens + nouveaux)
+    document.querySelectorAll('.ai-prompt-popup, .ai-options-popup, .ai-popup-overlay, .ai-modal--generation').forEach(p => p.remove());
 
     chrome.storage.sync.get(['tone'], function(data) {
       const isNegative = data.tone === 'negatif';
 
-      // Créer l'overlay
-      const overlay = document.createElement('div');
-      overlay.className = 'ai-popup-overlay';
-      overlay.onclick = () => {
-        popup.remove();
-        overlay.remove();
-      };
+      // V3 Story 7.4 — Creer le modal BEM avec ARIA
+      const modalParts = createModalBEM({
+        variant: 'generation',
+        title: t('customInstructions'),
+        showCloseButton: true,
+        onClose: null,
+        onOverlayClick: () => {}
+      });
 
-      const popup = document.createElement('div');
-      popup.className = 'ai-prompt-popup';
+      // Ajouter ancienne classe pour compatibilite CSS
+      modalParts.modal.classList.add('ai-prompt-popup');
+      modalParts.title.classList.add('ai-popup-title');
 
-      const title = document.createElement('div');
-      title.className = 'ai-popup-title';
-      title.textContent = t('customInstructions');
-      popup.appendChild(title);
+      // Reduire la taille du container (350px au lieu de 600px)
+      modalParts.container.style.minWidth = '350px';
+      modalParts.container.style.maxWidth = '400px';
 
+      // Textarea dans le body
       const textArea = document.createElement('textarea');
       textArea.className = 'ai-prompt-textarea';
       textArea.placeholder = t('addInstructions');
-      popup.appendChild(textArea);
+      modalParts.body.appendChild(textArea);
 
-      const actionButtons = document.createElement('div');
-      actionButtons.className = 'ai-prompt-actions';
-
+      // Boutons dans le footer
       const cancelButton = document.createElement('button');
       cancelButton.className = 'ai-button ai-button--secondary ai-prompt-cancel';
       cancelButton.textContent = t('cancel');
-      cancelButton.onclick = () => {
-        popup.remove();
-        overlay.remove();
-      };
+      cancelButton.onclick = () => modalParts.cleanup();
 
       const submitButton = document.createElement('button');
       submitButton.className = 'ai-button ai-button--primary ai-prompt-submit';
@@ -1628,32 +1842,18 @@
           submitButton.textContent = t('generating');
 
           // Masquer le popup après un court délai
-          setTimeout(() => {
-            popup.remove();
-            overlay.remove();
-          }, 100);
+          setTimeout(() => modalParts.cleanup(), 100);
 
           handleGenerateWithPrompt(commentBox, userPrompt, isReplyToComment);
         }
       };
 
-      actionButtons.appendChild(cancelButton);
-      actionButtons.appendChild(submitButton);
-      popup.appendChild(actionButtons);
+      modalParts.footer.appendChild(cancelButton);
+      modalParts.footer.appendChild(submitButton);
 
-      const closeButton = document.createElement('button');
-      closeButton.className = 'ai-button ai-button--icon ai-button--ghost ai-close-button';
-      closeButton.textContent = '×';
-      closeButton.onclick = () => {
-        popup.remove();
-        overlay.remove();
-      };
-      popup.appendChild(closeButton);
-
-      // Ajouter l'overlay puis le popup au body
-      document.body.appendChild(overlay);
-      document.body.appendChild(popup);
-      textArea.focus();
+      // Afficher le modal et focus sur le textarea
+      modalParts.show();
+      setTimeout(() => textArea.focus(), 100);
     });
   }
 
@@ -1901,9 +2101,10 @@
 
   // Afficher le popup avec les options
   // V3 Story 5.5 — Ajout des parametres webSearchSourceUrl (6eme) et webSearchFallback (7eme)
+  // V3 Story 7.4 — Migration vers BEM avec ARIA et focus trap
   function showOptionsPopup(commentBox, comments, postContent, userPrompt, isReplyToComment, webSearchSourceUrl, webSearchFallback) {
-    // Nettoyer les popups et overlays existants
-    document.querySelectorAll('.ai-options-popup, .ai-prompt-popup, .ai-popup-overlay').forEach(p => p.remove());
+    // Nettoyer les popups et overlays existants (anciens + nouveaux)
+    document.querySelectorAll('.ai-options-popup, .ai-prompt-popup, .ai-popup-overlay, .ai-modal--generation').forEach(p => p.remove());
 
     chrome.storage.sync.get(['tone'], function(data) {
       const isNegative = data.tone === 'negatif';
@@ -1919,23 +2120,34 @@
         const selectedIntensity = commentBox.getAttribute('data-selected-intensity');
         const selectedStyle = commentBox.getAttribute('data-selected-style');
 
-        // Créer l'overlay
-        const overlay = document.createElement('div');
-        overlay.className = 'ai-popup-overlay';
-        overlay.onclick = () => {
-          popup.remove();
-          overlay.remove();
-        };
+        // V3 Story 7.4 — Creer le modal BEM avec ARIA (sans header pour ce modal)
+        const titleText = `${comments.length} ${t('generations')}${comments.length > 1 ? 's' : ''}`;
+        const modalParts = createModalBEM({
+          variant: 'generation',
+          title: titleText,
+          showCloseButton: true,
+          onClose: null, // Cleanup gere automatiquement
+          onOverlayClick: () => {} // Ferme au clic overlay
+        });
 
-        const popup = document.createElement('div');
-        popup.className = 'ai-options-popup';
+        // Reference au modal pour createCommentOption (compatibilite)
+        // createCommentOption utilise popup.remove() - on garde la reference
+        const popup = modalParts.modal;
+        popup.classList.add('ai-options-popup'); // Compatibilite ancienne classe
 
-        const title = document.createElement('div');
-        title.className = 'ai-popup-title';
-        title.setAttribute('data-count', comments.length);
-        title.textContent = `${comments.length} ${t('generations')}${comments.length > 1 ? 's' : ''}`;
-        popup.appendChild(title);
+        // Supprimer header et footer (design minimaliste pour ce modal)
+        modalParts.header.remove();
+        modalParts.footer.remove();
 
+        // Ajouter bouton fermer flottant (top-right du container)
+        const floatingClose = document.createElement('button');
+        floatingClose.className = 'ai-modal__close ai-modal__close--floating';
+        floatingClose.setAttribute('aria-label', 'Fermer');
+        floatingClose.innerHTML = '×';
+        floatingClose.addEventListener('click', () => closeModalBEM(popup));
+        modalParts.container.appendChild(floatingClose);
+
+        // Ajouter les options de commentaires dans le body
         comments.forEach((comment, index) => {
           const metadata = {
             language: currentCommentLanguage,
@@ -1945,22 +2157,13 @@
             style: selectedStyle
           };
           // V3 Story 5.5 — Passer webSearchSourceUrl (11eme) et webSearchFallback (12eme)
+          // Note: popup passe pour compatibilite avec createCommentOption
           const option = createCommentOption(comment, index, commentBox, popup, postContent, userPrompt, isReplyToComment, isNegative, userPlan, metadata, webSearchSourceUrl, webSearchFallback);
-          popup.appendChild(option);
+          modalParts.body.appendChild(option);
         });
 
-        const closeButton = document.createElement('button');
-        closeButton.className = 'ai-button ai-button--icon ai-button--ghost ai-close-button';
-        closeButton.textContent = '×';
-        closeButton.onclick = () => {
-          popup.remove();
-          overlay.remove();
-        };
-        popup.appendChild(closeButton);
-
-        // Ajouter l'overlay puis le popup au body
-        document.body.appendChild(overlay);
-        document.body.appendChild(popup);
+        // Afficher le modal
+        modalParts.show();
       });
     });
   }
@@ -2376,50 +2579,53 @@
   }
 
   // Affiner un commentaire
+  // V3 Story 7.4 — Migration vers BEM avec ARIA et focus trap
   function showRefinePopup(commentBox, originalComment, postContent, userPrompt, optionIndex, optionsPopup, isReplyToComment) {
     document.querySelectorAll('.ai-refine-popup').forEach(p => p.remove());
 
     chrome.storage.sync.get(['tone'], function(data) {
       const isNegative = data.tone === 'negatif';
 
-      // Créer un overlay secondaire (au-dessus de l'overlay principal)
-      const refineOverlay = document.createElement('div');
-      refineOverlay.className = 'ai-popup-overlay';
-      refineOverlay.style.zIndex = '2147483648'; // Au-dessus de l'overlay principal
-      refineOverlay.onclick = () => {
-        popup.remove();
-        refineOverlay.remove();
-      };
+      // V3 Story 7.4 — Creer le modal BEM avec ARIA
+      // Note: z-index eleve car ce modal s'affiche AU-DESSUS du modal options
+      const modalParts = createModalBEM({
+        variant: 'generation',
+        title: t('refineComment'),
+        showCloseButton: true,
+        onClose: null,
+        onOverlayClick: () => {}
+      });
 
-      const popup = document.createElement('div');
-      popup.className = 'ai-refine-popup';
-      popup.style.zIndex = '2147483649'; // Au-dessus de l'overlay de raffinement
+      // Z-index eleve pour etre au-dessus du modal options
+      modalParts.modal.style.zIndex = '10004';
+      modalParts.overlay.style.zIndex = '10004';
+      modalParts.container.style.zIndex = '10005';
 
-      const title = document.createElement('div');
-      title.className = 'ai-popup-title';
-      title.textContent = t('refineComment');
-      popup.appendChild(title);
+      // Ajouter ancienne classe pour compatibilite CSS
+      modalParts.modal.classList.add('ai-refine-popup');
+      modalParts.title.classList.add('ai-popup-title');
 
+      // Reduire la taille du container
+      modalParts.container.style.minWidth = '350px';
+      modalParts.container.style.maxWidth = '400px';
+
+      // Contexte du commentaire original dans le body
       const context = document.createElement('div');
       context.className = 'ai-refine-context';
       context.textContent = `${t('comment')}: "${originalComment}"`;
-      popup.appendChild(context);
+      modalParts.body.appendChild(context);
 
+      // Textarea pour les instructions
       const textArea = document.createElement('textarea');
       textArea.className = 'ai-refine-textarea';
       textArea.placeholder = t('refineInstructions');
-      popup.appendChild(textArea);
+      modalParts.body.appendChild(textArea);
 
-      const actionButtons = document.createElement('div');
-      actionButtons.className = 'ai-refine-actions';
-
+      // Boutons dans le footer
       const cancelButton = document.createElement('button');
       cancelButton.className = 'ai-button ai-button--secondary ai-refine-cancel';
       cancelButton.textContent = t('cancel');
-      cancelButton.onclick = () => {
-        popup.remove();
-        refineOverlay.remove();
-      };
+      cancelButton.onclick = () => modalParts.cleanup();
 
       const submitButton = document.createElement('button');
       submitButton.className = 'ai-button ai-button--primary ai-refine-submit';
@@ -2429,29 +2635,17 @@
       submitButton.onclick = () => {
         const refineInstructions = textArea.value.trim();
         if (refineInstructions) {
-          popup.remove();
-          refineOverlay.remove();
+          modalParts.cleanup();
           handleRefineComment(commentBox, originalComment, postContent, userPrompt, refineInstructions, optionIndex, optionsPopup, isReplyToComment);
         }
       };
 
-      actionButtons.appendChild(cancelButton);
-      actionButtons.appendChild(submitButton);
-      popup.appendChild(actionButtons);
+      modalParts.footer.appendChild(cancelButton);
+      modalParts.footer.appendChild(submitButton);
 
-      const closeButton = document.createElement('button');
-      closeButton.className = 'ai-button ai-button--icon ai-button--ghost ai-close-button';
-      closeButton.textContent = '×';
-      closeButton.onclick = () => {
-        popup.remove();
-        refineOverlay.remove();
-      };
-      popup.appendChild(closeButton);
-
-      // Ajouter l'overlay de raffinement puis le popup au body
-      document.body.appendChild(refineOverlay);
-      document.body.appendChild(popup);
-      textArea.focus();
+      // Afficher le modal et focus sur le textarea
+      modalParts.show();
+      setTimeout(() => textArea.focus(), 100);
     });
   }
   
@@ -2738,101 +2932,88 @@
   }
 
   // V3 Story 2.3 — Popup de confirmation blacklist
+  // V3 Story 7.4 — Migration vers BEM avec ARIA et focus trap
   function showBlacklistWarningPopup(authorName) {
     return new Promise((resolve) => {
-      // Creer l'overlay
-      const overlay = document.createElement('div');
-      overlay.className = 'ai-modal-overlay ai-blacklist-warning-overlay';
-      overlay.id = 'ai-blacklist-warning-popup';
+      let resolved = false;
 
-      // Creer le popup
-      const popup = document.createElement('div');
-      popup.className = 'ai-modal ai-blacklist-warning-popup';
-      popup.setAttribute('role', 'dialog');
-      popup.setAttribute('aria-modal', 'true');
-      popup.setAttribute('aria-labelledby', 'ai-blacklist-warning-title');
+      // V3 Story 7.4 — Creer le modal BEM avec variant warning
+      const modalParts = createModalBEM({
+        variant: 'warning',
+        title: t('blacklistWarningTitle'),
+        showCloseButton: false, // Pas de bouton X pour ce modal
+        onClose: null,
+        onOverlayClick: () => {
+          if (!resolved) {
+            resolved = true;
+            resolve(false);
+          }
+        }
+      });
 
-      // Header avec icone warning
-      const header = document.createElement('div');
-      header.className = 'ai-modal-header ai-warning-header';
+      // Ajouter anciennes classes pour compatibilite CSS
+      modalParts.modal.classList.add('ai-blacklist-warning-popup');
+      modalParts.modal.id = 'ai-blacklist-warning-popup';
 
-      const title = document.createElement('h3');
-      title.id = 'ai-blacklist-warning-title';
-      title.textContent = t('blacklistWarningTitle');
-      header.appendChild(title);
-
-      // Contenu
-      const content = document.createElement('div');
-      content.className = 'ai-modal-content ai-warning-content';
-
+      // Icone warning dans le body
       const icon = document.createElement('div');
       icon.className = 'ai-warning-icon';
       icon.textContent = '\u26A0\uFE0F';
+      icon.setAttribute('aria-hidden', 'true');
+      modalParts.body.appendChild(icon);
 
+      // Message d'avertissement
       const message = document.createElement('p');
       message.className = 'ai-warning-message';
       message.textContent = t('blacklistWarningMessage').replace('{name}', authorName);
+      modalParts.body.appendChild(message);
 
-      content.appendChild(icon);
-      content.appendChild(message);
-
-      // Boutons d'action
-      const actions = document.createElement('div');
-      actions.className = 'ai-modal-actions';
-
-      // V3 Story 2.3 Fix: Define handleEscape BEFORE button handlers to avoid memory leak
-      const handleEscape = (e) => {
-        if (e.key === 'Escape') {
-          cleanup();
-          resolve(false);
-        }
-      };
-
-      // Cleanup function to remove overlay and event listener
-      const cleanup = () => {
-        overlay.remove();
-        document.removeEventListener('keydown', handleEscape);
-      };
-
+      // Boutons dans le footer
       const cancelBtn = document.createElement('button');
       cancelBtn.className = 'ai-button ai-button--secondary';
       cancelBtn.textContent = t('blacklistWarningNo');
       cancelBtn.addEventListener('click', () => {
-        cleanup();
-        resolve(false);
+        if (!resolved) {
+          resolved = true;
+          modalParts.cleanup();
+          resolve(false);
+        }
       });
 
       const confirmBtn = document.createElement('button');
       confirmBtn.className = 'ai-button ai-button--primary';
       confirmBtn.textContent = t('blacklistWarningYes');
       confirmBtn.addEventListener('click', () => {
-        cleanup();
-        resolve(true);
-      });
-
-      actions.appendChild(cancelBtn);
-      actions.appendChild(confirmBtn);
-
-      // Assembler le popup
-      popup.appendChild(header);
-      popup.appendChild(content);
-      popup.appendChild(actions);
-      overlay.appendChild(popup);
-      document.body.appendChild(overlay);
-
-      // Accessibilite : focus sur le bouton "Non" par defaut
-      cancelBtn.focus();
-
-      // Activer le listener Escape
-      document.addEventListener('keydown', handleEscape);
-
-      // Clic en dehors ferme le popup (= Non)
-      overlay.addEventListener('click', (e) => {
-        if (e.target === overlay) {
-          cleanup();
-          resolve(false);
+        if (!resolved) {
+          resolved = true;
+          modalParts.cleanup();
+          resolve(true);
         }
       });
+
+      modalParts.footer.appendChild(cancelBtn);
+      modalParts.footer.appendChild(confirmBtn);
+
+      // Override le handler ESC pour resoudre la Promise
+      const originalShow = modalParts.show;
+      modalParts.show = () => {
+        originalShow();
+        // Handler ESC personnalise
+        const customEscHandler = (e) => {
+          if (e.key === 'Escape' && !resolved) {
+            resolved = true;
+            document.removeEventListener('keydown', customEscHandler);
+            modalParts.cleanup();
+            resolve(false);
+          }
+        };
+        // Remplacer le handler ESC par defaut
+        document.addEventListener('keydown', customEscHandler);
+        // Focus sur le bouton Annuler (securite)
+        setTimeout(() => cancelBtn.focus(), 100);
+      };
+
+      modalParts.show();
     });
   }
 
@@ -2848,6 +3029,7 @@
   }
 
   // V3 Story 2.1 — Creer le modal de la blacklist
+  // V3 Story 7.4 — Migration vers BEM avec ARIA et focus trap
   function createBlacklistModal(entries) {
     // Supprimer un modal existant
     const existingModal = document.getElementById('ai-blacklist-modal');
@@ -2855,26 +3037,30 @@
       existingModal.remove();
     }
 
-    // Modal overlay
-    const overlay = document.createElement('div');
-    overlay.className = 'ai-modal-overlay';
-    overlay.id = 'ai-blacklist-modal';
+    // V3 Story 7.4 — Creer le modal BEM avec variant generation
+    const modalParts = createModalBEM({
+      variant: 'generation',
+      title: t('blacklistTitle'),
+      showCloseButton: true,
+      onClose: null,
+      onOverlayClick: () => {}
+    });
 
-    const modal = document.createElement('div');
-    modal.className = 'ai-modal';
+    // Ajouter ID pour compatibilite
+    modalParts.modal.id = 'ai-blacklist-modal';
+    // Reduire la largeur du modal
+    modalParts.container.style.minWidth = '400px';
+    modalParts.container.style.maxWidth = '450px';
 
-    const header = document.createElement('div');
-    header.className = 'ai-modal-header';
-    header.innerHTML = `
-      <h3>${t('blacklistTitle')}</h3>
-      <button class="ai-modal-close">&times;</button>
-    `;
+    // Supprimer le footer (pas utilise)
+    modalParts.footer.remove();
 
-    const content = document.createElement('div');
-    content.className = 'ai-modal-content';
-
+    // Contenu du body
     if (entries.length === 0) {
-      content.innerHTML = `<p class="ai-empty-message">${t('blacklistEmpty')}</p>`;
+      const emptyMsg = document.createElement('p');
+      emptyMsg.className = 'ai-empty-message';
+      emptyMsg.textContent = t('blacklistEmpty');
+      modalParts.body.appendChild(emptyMsg);
     } else {
       const list = document.createElement('ul');
       list.className = 'ai-blacklist-list';
@@ -2907,32 +3093,11 @@
         item.appendChild(removeBtn);
         list.appendChild(item);
       });
-      content.appendChild(list);
+      modalParts.body.appendChild(list);
     }
 
-    modal.appendChild(header);
-    modal.appendChild(content);
-    overlay.appendChild(modal);
-    document.body.appendChild(overlay);
-
-    // Event listeners
-    overlay.querySelector('.ai-modal-close').addEventListener('click', () => {
-      overlay.remove();
-    });
-    overlay.addEventListener('click', (e) => {
-      if (e.target === overlay) {
-        overlay.remove();
-      }
-    });
-
-    // Accessibility: fermer avec Escape
-    const handleEscape = (e) => {
-      if (e.key === 'Escape') {
-        overlay.remove();
-        document.removeEventListener('keydown', handleEscape);
-      }
-    };
-    document.addEventListener('keydown', handleEscape);
+    // Afficher le modal
+    modalParts.show();
   }
 
   // V3 Story 2.2 — Handler pour retirer de la blacklist

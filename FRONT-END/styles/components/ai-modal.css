@@ -1,0 +1,378 @@
+/* ================================================
+   COMPOSANT: ai-modal
+   Convention: BEM (Block Element Modifier)
+   Story: 7.4 - Refactoring Modals vers BEM
+
+   Purpose: Resultats generation, confirmations, warnings
+   Variants: --generation (slide-in), --warning (fade-in), --confirm (scale-in)
+   States: --open (visible), --closing (animation sortie)
+   Behavior: ESC ferme, overlay cliquable (sauf confirm), focus trap
+
+   Note: Ce fichier sert de documentation/reference.
+   Les styles sont injectes directement dans content.css
+   car @import ne fonctionne pas dans les extensions Chrome Manifest V3.
+   ================================================ */
+
+/* === BLOCK - Proprietes communes === */
+.ai-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--ai-font-family);
+  z-index: 10000;
+}
+
+.ai-modal--open {
+  display: flex;
+}
+
+/* === ELEMENTS === */
+
+/* Overlay semi-transparent */
+.ai-modal__overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: var(--ai-bg-overlay);
+  z-index: 10000;
+  animation: ai-fade-in var(--ai-transition-normal) ease forwards;
+}
+
+/* Conteneur principal du modal */
+.ai-modal__container {
+  position: relative;
+  background: var(--ai-bg-card);
+  border-radius: var(--ai-radius-lg);
+  box-shadow: var(--ai-shadow-lg);
+  z-index: 10001;
+  max-width: 90vw;
+  max-height: 85vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* En-tete avec titre et bouton fermer */
+.ai-modal__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--ai-spacing-md) var(--ai-spacing-lg);
+  border-bottom: 1px solid var(--ai-neutral-600);
+  background: var(--ai-bg-dark);
+}
+
+/* Titre du modal (pour aria-labelledby) */
+.ai-modal__title {
+  margin: 0;
+  font-size: var(--ai-font-size-lg);
+  font-weight: var(--ai-font-weight-bold);
+  color: var(--ai-text-primary);
+}
+
+/* Bouton de fermeture (croix) */
+.ai-modal__close {
+  background: none;
+  border: none;
+  font-size: 24px;
+  line-height: 1;
+  cursor: pointer;
+  color: var(--ai-text-secondary);
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--ai-radius-sm);
+  transition: all var(--ai-transition-fast);
+  padding: 0;
+}
+
+.ai-modal__close:hover {
+  background: var(--ai-bg-hover);
+  color: var(--ai-text-primary);
+}
+
+.ai-modal__close:focus {
+  outline: 2px solid var(--ai-accent);
+  outline-offset: 2px;
+}
+
+/* Bouton fermer flottant (sans header) */
+.ai-modal__close--floating {
+  position: absolute;
+  top: var(--ai-spacing-sm);
+  right: var(--ai-spacing-sm);
+  z-index: 10;
+  background: var(--ai-neutral-200);
+  color: var(--ai-neutral-700);
+}
+
+.ai-modal__close--floating:hover {
+  background: var(--ai-neutral-300);
+  color: var(--ai-neutral-900);
+}
+
+/* Contenu principal */
+.ai-modal__body {
+  padding: var(--ai-spacing-lg);
+  overflow-y: auto;
+  flex: 1;
+  color: var(--ai-text-primary);
+}
+
+/* Zone des boutons d'action */
+.ai-modal__footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--ai-spacing-sm);
+  padding: var(--ai-spacing-md) var(--ai-spacing-lg);
+  border-top: 1px solid var(--ai-neutral-600);
+  background: var(--ai-bg-dark);
+}
+
+/* === MODIFIER - Variant Generation (slide-in bottom) === */
+/* Override: fond blanc comme les anciens popups pour meilleure lisibilite */
+.ai-modal--generation .ai-modal__container {
+  min-width: 600px;
+  max-width: 800px;
+  background: white;
+  animation: ai-slide-in-bottom var(--ai-transition-normal) ease forwards;
+}
+
+.ai-modal--generation .ai-modal__header {
+  background: var(--ai-neutral-200);
+  border-bottom: 1px solid var(--ai-neutral-300);
+}
+
+.ai-modal--generation .ai-modal__title {
+  color: var(--ai-neutral-900);
+}
+
+.ai-modal--generation .ai-modal__close {
+  color: var(--ai-neutral-700);
+}
+
+.ai-modal--generation .ai-modal__close:hover {
+  background: var(--ai-neutral-300);
+  color: var(--ai-neutral-900);
+}
+
+.ai-modal--generation .ai-modal__body {
+  color: var(--ai-neutral-900);
+}
+
+/* Modal sans header (avec bouton fermer flottant) - padding top pour le bouton */
+.ai-options-popup .ai-modal__body {
+  padding-top: calc(var(--ai-spacing-lg) + 24px);
+}
+
+.ai-modal--generation .ai-modal__footer {
+  background: var(--ai-neutral-200);
+  border-top: 1px solid var(--ai-neutral-300);
+}
+
+.ai-modal--generation .ai-modal__overlay {
+  cursor: pointer;
+}
+
+/* === MODIFIER - Variant Warning (fade-in) === */
+.ai-modal--warning .ai-modal__container {
+  min-width: 380px;
+  max-width: 450px;
+  text-align: center;
+  animation: ai-fade-in var(--ai-transition-normal) ease forwards;
+}
+
+.ai-modal--warning .ai-modal__overlay {
+  cursor: pointer;
+}
+
+.ai-modal--warning .ai-modal__header {
+  background: var(--ai-state-warning);
+  border-bottom: 2px solid #cc9900;
+}
+
+.ai-modal--warning .ai-modal__title {
+  color: var(--ai-neutral-900);
+}
+
+.ai-modal--warning .ai-modal__close {
+  color: var(--ai-neutral-900);
+}
+
+.ai-modal--warning .ai-modal__close:hover {
+  background: rgba(0, 0, 0, 0.1);
+  color: var(--ai-neutral-900);
+}
+
+/* === MODIFIER - Variant Confirm (scale-in center) === */
+.ai-modal--confirm .ai-modal__container {
+  min-width: 350px;
+  max-width: 420px;
+  text-align: center;
+  animation: ai-scale-in var(--ai-transition-normal) ease forwards;
+}
+
+/* Overlay opaque pour confirm - CRITIQUE: ne ferme PAS au clic */
+.ai-modal--confirm .ai-modal__overlay {
+  background: rgba(0, 0, 0, 0.85);
+  cursor: default;
+}
+
+.ai-modal--confirm .ai-modal__header {
+  background: var(--ai-danger);
+  border-bottom: none;
+}
+
+.ai-modal--confirm .ai-modal__title {
+  color: var(--ai-neutral-100);
+}
+
+.ai-modal--confirm .ai-modal__close {
+  color: var(--ai-neutral-100);
+}
+
+.ai-modal--confirm .ai-modal__close:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--ai-neutral-100);
+}
+
+/* === MODIFIER - State Closing (animation de sortie) === */
+.ai-modal--closing .ai-modal__overlay {
+  animation: ai-fade-out var(--ai-transition-fast) ease forwards;
+}
+
+.ai-modal--generation.ai-modal--closing .ai-modal__container {
+  animation: ai-slide-out-bottom var(--ai-transition-fast) ease forwards;
+}
+
+.ai-modal--warning.ai-modal--closing .ai-modal__container {
+  animation: ai-fade-out var(--ai-transition-fast) ease forwards;
+}
+
+.ai-modal--confirm.ai-modal--closing .ai-modal__container {
+  animation: ai-scale-out var(--ai-transition-fast) ease forwards;
+}
+
+/* === ANIMATIONS === */
+
+/* Slide-in depuis le bas (generation) */
+@keyframes ai-slide-in-bottom {
+  from {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* Slide-out vers le bas */
+@keyframes ai-slide-out-bottom {
+  from {
+    transform: translateY(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+}
+
+/* Fade-in (warning) */
+@keyframes ai-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Fade-out */
+@keyframes ai-fade-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+/* Scale-in depuis le centre (confirm) */
+@keyframes ai-scale-in {
+  from {
+    transform: scale(0.8);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* Scale-out */
+@keyframes ai-scale-out {
+  from {
+    transform: scale(1);
+    opacity: 1;
+  }
+  to {
+    transform: scale(0.8);
+    opacity: 0;
+  }
+}
+
+/* === REDUCED MOTION === */
+@media (prefers-reduced-motion: reduce) {
+  .ai-modal,
+  .ai-modal__container,
+  .ai-modal__overlay {
+    animation: none !important;
+    transition: opacity 0.1s ease !important;
+  }
+
+  .ai-modal--open .ai-modal__container,
+  .ai-modal--open .ai-modal__overlay {
+    opacity: 1;
+  }
+
+  .ai-modal--closing .ai-modal__container,
+  .ai-modal--closing .ai-modal__overlay {
+    opacity: 0;
+  }
+}
+
+/* === Z-INDEX HIERARCHY === */
+/*
+| Type              | Z-index | Description                    |
+|-------------------|---------|--------------------------------|
+| Overlay base      | 10000   | Fond semi-transparent/opaque   |
+| Generation        | 10001   | Modal resultats generation     |
+| Warning           | 10001   | Modal avertissement            |
+| Confirm           | 10002   | Modal confirmation (au-dessus) |
+*/
+
+/* Confirm modal au-dessus des autres */
+.ai-modal--confirm {
+  z-index: 10002;
+}
+
+.ai-modal--confirm .ai-modal__overlay {
+  z-index: 10002;
+}
+
+.ai-modal--confirm .ai-modal__container {
+  z-index: 10003;
+}
+
+/* ========== FIN COMPOSANT ai-modal ========== */
