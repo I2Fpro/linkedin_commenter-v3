@@ -52,6 +52,12 @@
       intensityMedium: 'Moyen',
       intensityHigh: 'Fort',
       intensity: 'Intensité',
+      // Longueurs
+      lengthVeryShort: 'Très court',
+      lengthShort: 'Court',
+      lengthMedium: 'Moyen',
+      lengthLong: 'Long',
+      lengthVeryLong: 'Très long',
       // Styles de langage
       oral: 'Oral /\nConversationnel',
       professional: 'Professionnel',
@@ -150,6 +156,12 @@
       intensityMedium: 'Medium',
       intensityHigh: 'High',
       intensity: 'Intensity',
+      // Lengths
+      lengthVeryShort: 'Very short',
+      lengthShort: 'Short',
+      lengthMedium: 'Medium',
+      lengthLong: 'Long',
+      lengthVeryLong: 'Very long',
       // Styles de langage
       oral: 'Oral /\nConversational',
       professional: 'Professional',
@@ -2186,12 +2198,13 @@
 
     // === CHIP LONGUEUR CYCLIQUE ===
     // XS(7) -> S(14) -> M(21) -> L(28) -> XL(35) -> XS...
+    // Longueurs en nombre de mots : XS=court, XL=x2
     const LENGTH_OPTIONS = [
-      { key: 'XS', value: 7 },
-      { key: 'S', value: 14 },
-      { key: 'M', value: 21 },
-      { key: 'L', value: 28 },
-      { key: 'XL', value: 35 }
+      { key: 'XS', value: 7, labelKey: 'lengthVeryShort' },
+      { key: 'S', value: 20, labelKey: 'lengthShort' },
+      { key: 'M', value: 35, labelKey: 'lengthMedium' },
+      { key: 'L', value: 50, labelKey: 'lengthLong' },
+      { key: 'XL', value: 70, labelKey: 'lengthVeryLong' }
     ];
 
     const lengthChip = document.createElement('button');
@@ -2212,8 +2225,9 @@
         }
       }
       const currentLength = LENGTH_OPTIONS[currentLengthIndex];
-      lengthChip.innerHTML = `<span class="ai-chip__icon">📏</span><span class="ai-chip__label">${currentLength.key}</span>`;
+      lengthChip.innerHTML = `<span class="ai-chip__icon">📏</span><span class="ai-chip__label">${t(currentLength.labelKey)}</span>`;
       commentBox.setAttribute('data-length', currentLength.value);
+      commentBox.setAttribute('data-length-key', currentLength.labelKey);
     });
 
     lengthChip.onclick = (e) => {
@@ -2222,8 +2236,9 @@
       // Cycler vers la prochaine longueur
       currentLengthIndex = (currentLengthIndex + 1) % LENGTH_OPTIONS.length;
       const newLength = LENGTH_OPTIONS[currentLengthIndex];
-      lengthChip.innerHTML = `<span class="ai-chip__icon">📏</span><span class="ai-chip__label">${newLength.key}</span>`;
+      lengthChip.innerHTML = `<span class="ai-chip__icon">📏</span><span class="ai-chip__label">${t(newLength.labelKey)}</span>`;
       commentBox.setAttribute('data-length', newLength.value);
+      commentBox.setAttribute('data-length-key', newLength.labelKey);
       // Sauvegarder
       chrome.storage.sync.set({ length: newLength.value });
     };
@@ -3839,6 +3854,12 @@
         const selectedEmotion = commentBox.getAttribute('data-selected-emotion');
         const selectedIntensity = commentBox.getAttribute('data-selected-intensity');
         const selectedStyle = commentBox.getAttribute('data-selected-style');
+        const selectedLengthKey = commentBox.getAttribute('data-length-key') || 'lengthMedium';
+        // Options d'enrichissement activées
+        const hasQuote = commentBox.getAttribute('data-include-quote') === 'true';
+        const hasTagAuthor = !!commentBox.getAttribute('data-tag-author');
+        const hasContext = commentBox.getAttribute('data-include-context') === 'true';
+        const hasNews = commentBox.getAttribute('data-news-enrichment') && commentBox.getAttribute('data-news-enrichment') !== 'disabled';
 
         // V3 Story 7.4 — Creer le modal BEM avec ARIA (sans header pour ce modal)
         const titleText = `${comments.length} ${t('generations')}${comments.length > 1 ? 's' : ''}`;
@@ -3872,10 +3893,16 @@
         comments.forEach((comment, index) => {
           const metadata = {
             language: currentCommentLanguage,
-            length: calculateCommentLength(comment),
+            length: selectedLengthKey, // Utiliser la taille sélectionnée (XS/S/M/L/XL)
             emotion: selectedEmotion,
             intensity: selectedIntensity,
-            style: selectedStyle
+            style: selectedStyle,
+            // Options d'enrichissement
+            hasQuote,
+            hasTagAuthor,
+            hasContext,
+            hasWebSearch: webSearchEnabled,
+            hasNews
           };
           // V3 Story 5.5 — Passer webSearchSourceUrl (11eme), webSearchFallback (12eme), webSearchEnabled (13eme)
           // Note: popup passe pour compatibilite avec createCommentOption, cleanup pour fermer proprement le modal
@@ -3887,14 +3914,6 @@
         modalParts.show();
       });
     });
-  }
-
-  // Fonction pour calculer la longueur du commentaire
-  function calculateCommentLength(comment) {
-    const lines = comment.split('\n').filter(line => line.trim().length > 0).length;
-    if (lines <= 2) return 'Court';
-    if (lines <= 4) return 'Moyen';
-    return 'Long';
   }
 
   // Créer un séparateur de métadonnées
@@ -3993,11 +4012,11 @@
 
       metaContainer.appendChild(createMetaSeparator());
 
-      // Longueur
+      // Longueur (metadata.length contient la clé de traduction comme 'lengthVeryShort')
       const lengthMeta = document.createElement('span');
       lengthMeta.className = 'ai-meta-item meta-length';
       lengthMeta.title = 'Longueur du commentaire';
-      lengthMeta.innerHTML = `📝 ${metadata.length}`;
+      lengthMeta.innerHTML = `📝 ${t(metadata.length)}`;
       metaContainer.appendChild(lengthMeta);
 
       // Émotion + Intensité (combinés dans un seul tag)
@@ -4020,6 +4039,27 @@
         styleMeta.title = 'Style de langage';
         styleMeta.innerHTML = `💼 ${getStyleLabel(metadata.style)}`;
         metaContainer.appendChild(styleMeta);
+      }
+
+      // Options d'enrichissement activées (labels verts)
+      const enrichmentOptions = [];
+      if (metadata.hasQuote) enrichmentOptions.push({ icon: '💬', label: t('quoteToggle') });
+      if (metadata.hasTagAuthor) enrichmentOptions.push({ icon: '👤', label: t('tagAuthor') });
+      if (metadata.hasContext) enrichmentOptions.push({ icon: '💭', label: t('contextToggle') });
+      if (metadata.hasWebSearch) enrichmentOptions.push({ icon: '🔍', label: t('webSearchToggle') });
+      if (metadata.hasNews) enrichmentOptions.push({ icon: '📰', label: t('newsToggle') });
+
+      if (enrichmentOptions.length > 0) {
+        metaContainer.appendChild(createMetaSeparator());
+        enrichmentOptions.forEach((opt, idx) => {
+          const enrichMeta = document.createElement('span');
+          enrichMeta.className = 'ai-meta-item meta-enrichment';
+          enrichMeta.innerHTML = `${opt.icon} ${opt.label}`;
+          metaContainer.appendChild(enrichMeta);
+          if (idx < enrichmentOptions.length - 1) {
+            metaContainer.appendChild(createMetaSeparator());
+          }
+        });
       }
 
       option.appendChild(metaContainer);

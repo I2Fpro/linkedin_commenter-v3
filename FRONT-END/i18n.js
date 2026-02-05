@@ -15,7 +15,7 @@ class I18n {
 
         // Onglets principaux
         tabSettings: 'Paramètres',
-        tabSupport: 'Soutien',
+        tabContact: 'Contact',
 
         // Sous-onglets
         subTabAccount: '👤 Compte',
@@ -30,13 +30,9 @@ class I18n {
         toggleOn: 'ON',
         toggleOff: 'OFF',
 
-        // Support
-        supportHelp: 'Documentation',
-        supportHelpDesc: 'Guide d\'utilisation et FAQ',
-        supportFeedback: 'Feedback',
-        supportFeedbackDesc: 'Partagez vos suggestions',
-        supportBug: 'Signaler un bug',
-        supportBugDesc: 'Aidez-nous à améliorer l\'extension',
+        // Contact
+        supportSite: 'Site internet',
+        supportSiteDesc: 'Consulter le site',
         supportContact: 'Contact',
         supportContactDesc: 'Contactez le support',
 
@@ -222,7 +218,7 @@ class I18n {
 
         // Main tabs
         tabSettings: 'Settings',
-        tabSupport: 'Support',
+        tabContact: 'Contact',
 
         // Sub-tabs
         subTabAccount: '👤 Account',
@@ -237,13 +233,9 @@ class I18n {
         toggleOn: 'ON',
         toggleOff: 'OFF',
 
-        // Support
-        supportHelp: 'Documentation',
-        supportHelpDesc: 'User guide and FAQ',
-        supportFeedback: 'Feedback',
-        supportFeedbackDesc: 'Share your suggestions',
-        supportBug: 'Report a bug',
-        supportBugDesc: 'Help us improve the extension',
+        // Contact
+        supportSite: 'Website',
+        supportSiteDesc: 'Visit the website',
         supportContact: 'Contact',
         supportContactDesc: 'Contact support',
 

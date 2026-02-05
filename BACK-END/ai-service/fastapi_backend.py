@@ -312,22 +312,36 @@ def get_style_instructions(style: str, language: str = "fr") -> str:
     """Convertit un style de langage en instructions de prompt"""
     styles_map = {
         'fr': {
+            # Styles de langage
             'oral': "Utilisez un style oral et conversationnel, comme si vous parliez naturellement",
             'professional': "Utilisez un style professionnel et structuré",
             'storytelling': "Racontez une histoire ou utilisez une anecdote pour illustrer votre propos",
             'poetic': "Utilisez un langage poétique, créatif et imagé",
             'humoristic': "Intégrez une touche d'humour subtil et intelligent",
             'impactful': "Créez un message percutant et mémorable avec un fort impact",
-            'benevolent': "Adoptez un ton bienveillant, positif et encourageant"
+            'benevolent': "Adoptez un ton bienveillant, positif et encourageant",
+            # Tons (fusionnés depuis le popup)
+            'formal': "Utilisez un ton formel et soutenu, avec un vocabulaire recherché",
+            'friendly': "Utilisez un ton amical et chaleureux, proche et accessible",
+            'expert': "Adoptez un ton d'expert, technique et autoritaire dans le domaine",
+            'informative': "Utilisez un ton informatif et pédagogique, clair et factuel",
+            'negative': "Adoptez un ton critique et sceptique, pointez les failles ou limites"
         },
         'en': {
+            # Language styles
             'oral': "Use an oral and conversational style, as if speaking naturally",
             'professional': "Use a professional and structured style",
             'storytelling': "Tell a story or use an anecdote to illustrate your point",
             'poetic': "Use poetic, creative and imaginative language",
             'humoristic': "Integrate a touch of subtle and intelligent humor",
             'impactful': "Create a powerful and memorable message with strong impact",
-            'benevolent': "Adopt a benevolent, positive and encouraging tone"
+            'benevolent': "Adopt a benevolent, positive and encouraging tone",
+            # Tones (merged from popup)
+            'formal': "Use a formal and elevated tone with sophisticated vocabulary",
+            'friendly': "Use a friendly and warm tone, approachable and accessible",
+            'expert': "Adopt an expert tone, technical and authoritative in the field",
+            'informative': "Use an informative and educational tone, clear and factual",
+            'negative': "Adopt a critical and skeptical tone, point out flaws or limitations"
         }
     }
 

@@ -1012,6 +1012,14 @@ body.ai-modal-active .ai-buttons-wrapper {
   color: var(--ai-neutral-900);
 }
 
+.ai-modal--warning .ai-modal__body {
+  color: var(--ai-neutral-100);
+}
+
+.ai-modal--warning .ai-modal__footer .ai-button {
+  color: var(--ai-neutral-100);
+}
+
 /* === MODIFIER - Variant Confirm (scale-in center) === */
 .ai-modal--confirm .ai-modal__container {
   min-width: 350px;
@@ -3421,6 +3429,19 @@ body.ai-modal-active .ai-buttons-wrapper {
   color: white;
 }
 
+/* Options d'enrichissement (vert) */
+.ai-meta-item.meta-enrichment {
+  border-color: #4caf50;
+  color: #2e7d32;
+  background: rgba(76, 175, 80, 0.1);
+}
+
+.ai-meta-item.meta-enrichment:hover {
+  background: #4caf50;
+  border-color: #4caf50;
+  color: white;
+}
+
 /* ========== FIN MÉTADONNÉES DES GÉNÉRATIONS ========== */
 
 /* ================================================
@@ -3649,7 +3670,7 @@ body.ai-modal-active .ai-buttons-wrapper {
 
 .ai-warning-message {
   font-size: 14px;
-  color: #333;
+  color: var(--ai-neutral-100);
   line-height: 1.5;
   margin: 0;
 }
