@@ -60,6 +60,12 @@
       humoristic: 'Humoristique',
       impactful: 'Impactant /\nMarketing',
       benevolent: 'Bienveillant /\nPositif',
+      // Tons (fusion ex-popup)
+      formal: 'Soutenu /\nFormel',
+      friendly: 'Amical',
+      expert: 'Expert',
+      informative: 'Informatif',
+      negative: 'Négatif /\nCritique',
       languageStyle: 'Style de langage',
       // V3 Story 2.3 — Warning personne à éviter
       blacklistWarningTitle: 'Attention',
@@ -152,6 +158,12 @@
       humoristic: 'Humoristic',
       impactful: 'Impactful /\nMarketing',
       benevolent: 'Benevolent /\nPositive',
+      // Tones (ex-popup fusion)
+      formal: 'Formal',
+      friendly: 'Friendly',
+      expert: 'Expert',
+      informative: 'Informative',
+      negative: 'Negative /\nCritical',
       languageStyle: 'Language Style',
       // V3 Story 2.3 — Warning person to avoid
       blacklistWarningTitle: 'Warning',
@@ -729,20 +741,28 @@
   // ================================================
 
   // Configuration des styles de langage avec leurs couleurs
+  // Fusion des styles + tons (ex-popup)
   const STYLE_WHEEL_CONFIG = {
     styles: [
+      // Styles de langage
       { key: 'oral', color: '#64B5F6', emoji: '🗣️' },
       { key: 'professional', color: '#78909C', emoji: '💼' },
       { key: 'storytelling', color: '#AB47BC', emoji: '📖' },
       { key: 'poetic', color: '#F06292', emoji: '🎨' },
       { key: 'humoristic', color: '#FFD54F', emoji: '😂' },
       { key: 'impactful', color: '#FF7043', emoji: '⚡' },
-      { key: 'benevolent', color: '#81C784', emoji: '🤝' }
+      { key: 'benevolent', color: '#81C784', emoji: '🤝' },
+      // Tons (ex-popup) - ajoutes pour fusion
+      { key: 'formal', color: '#7B1FA2', emoji: '👔' },
+      { key: 'friendly', color: '#4CAF50', emoji: '😊' },
+      { key: 'expert', color: '#1565C0', emoji: '🎓' },
+      { key: 'informative', color: '#00ACC1', emoji: '📊' },
+      { key: 'negative', color: '#D32F2F', emoji: '😤' }
     ],
-    // Dimensions SVG (legerement plus petit que emotion wheel - pas d'anneaux)
-    size: 180,
-    centerRadius: 25,
-    outerRadius: 80
+    // Dimensions SVG (agrandi pour 12 elements)
+    size: 220,
+    centerRadius: 30,
+    outerRadius: 100
   };
 
   // Calcul d'un arc SVG (secteur de camembert)
@@ -2080,11 +2100,32 @@
       handleGenerateClick(e, commentBox, isReplyToComment);
     };
 
-    const promptChip = createActionChip('💭', 'withPrompt', (e) => {
+    // Chip Prompt : reserve aux plans MEDIUM et PREMIUM
+    const promptChip = document.createElement('button');
+    promptChip.type = 'button';
+    if (!isMediumPlus) {
+      // User FREE : afficher cadenas
+      promptChip.className = 'ai-chip ai-chip--secondary ai-chip--locked';
+      promptChip.setAttribute('aria-disabled', 'true');
+      promptChip.setAttribute('aria-label', t('withPrompt') + ' (Premium)');
+      promptChip.setAttribute('tabindex', '-1');
+      promptChip.innerHTML = `<span class="ai-chip__icon">💭</span><span class="ai-chip__label">${t('withPrompt')}</span><span class="ai-chip__lock">🔒</span>`;
+    } else {
+      promptChip.className = 'ai-chip ai-chip--secondary';
+      promptChip.setAttribute('aria-label', t('withPrompt'));
+      promptChip.innerHTML = `<span class="ai-chip__icon">💭</span><span class="ai-chip__label">${t('withPrompt')}</span>`;
+    }
+    if (isNegative) promptChip.classList.add('negative');
+    if (isReplyToComment) promptChip.classList.add('reply-mode');
+    promptChip.onclick = (e) => {
       e.preventDefault();
       e.stopPropagation();
+      if (!isMediumPlus) {
+        showPremiumUpgradePrompt(t('promptRequiresPremium') || 'Le prompt personnalise necessite un plan MEDIUM ou PREMIUM');
+        return;
+      }
       handlePromptClick(e, commentBox, isReplyToComment);
-    }, 'secondary');
+    };
 
     const randomChip = createActionChip('🎲', 'randomGenerate', (e) => {
       e.preventDefault();
@@ -2143,6 +2184,50 @@
       // Si style_wheel_selection existe mais vide (reset explicite) : pas de style force
     });
 
+    // === CHIP LONGUEUR CYCLIQUE ===
+    // XS(7) -> S(14) -> M(21) -> L(28) -> XL(35) -> XS...
+    const LENGTH_OPTIONS = [
+      { key: 'XS', value: 7 },
+      { key: 'S', value: 14 },
+      { key: 'M', value: 21 },
+      { key: 'L', value: 28 },
+      { key: 'XL', value: 35 }
+    ];
+
+    const lengthChip = document.createElement('button');
+    lengthChip.type = 'button';
+    lengthChip.className = 'ai-chip ai-chip--secondary ai-chip--cycle';
+    if (isNegative) lengthChip.classList.add('negative');
+    if (isReplyToComment) lengthChip.classList.add('reply-mode');
+    lengthChip.setAttribute('aria-label', t('length') || 'Longueur');
+    lengthChip.setAttribute('data-chip-type', 'length');
+
+    // Charger la longueur sauvegardee et initialiser l'affichage
+    let currentLengthIndex = 2; // Default: M (21 mots)
+    chrome.storage.sync.get(['length'], (data) => {
+      if (data.length) {
+        const savedIndex = LENGTH_OPTIONS.findIndex(opt => opt.value === data.length);
+        if (savedIndex !== -1) {
+          currentLengthIndex = savedIndex;
+        }
+      }
+      const currentLength = LENGTH_OPTIONS[currentLengthIndex];
+      lengthChip.innerHTML = `<span class="ai-chip__icon">📏</span><span class="ai-chip__label">${currentLength.key}</span>`;
+      commentBox.setAttribute('data-length', currentLength.value);
+    });
+
+    lengthChip.onclick = (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      // Cycler vers la prochaine longueur
+      currentLengthIndex = (currentLengthIndex + 1) % LENGTH_OPTIONS.length;
+      const newLength = LENGTH_OPTIONS[currentLengthIndex];
+      lengthChip.innerHTML = `<span class="ai-chip__icon">📏</span><span class="ai-chip__label">${newLength.key}</span>`;
+      commentBox.setAttribute('data-length', newLength.value);
+      // Sauvegarder
+      chrome.storage.sync.set({ length: newLength.value });
+    };
+
     // === CHIPS TOGGLE (Enrichissement) ===
     const quoteChip = createToggleChip('💬', 'quoteToggle', 'data-include-quote', 'quoteToggleTooltip', 'quoteUpgradeRequired');
     const contextChip = createToggleChip('💭', 'contextToggle', 'data-include-context', 'contextToggleTooltip', 'contextUpgradeRequired');
@@ -2191,17 +2276,36 @@
         return;
       }
 
-      let postContainer = commentBox.closest('.feed-shared-update-v2, [data-urn], article, [data-id]');
+      // LinkedIn 2026 SDUI: remonter jusqu'au conteneur du POST (pas du commentaire)
+      // On cherche d'abord [role="listitem"] qui englobe tout le post
+      let postContainer = commentBox.closest('[role="listitem"]');
+
+      // Si pas trouve, essayer les autres selecteurs en remontant le plus haut possible
       if (!postContainer) {
+        // Remonter via parentElement jusqu'a trouver un conteneur avec data-view-name="feed-full-update"
+        // mais au niveau du POST (pas du commentaire)
         let current = commentBox;
-        while (current && !postContainer) {
-          const feedUpdate = current.querySelector('.feed-shared-update-v2');
-          if (feedUpdate) {
-            postContainer = feedUpdate;
+        let lastFeedUpdate = null;
+        while (current && current !== document.body) {
+          if (current.getAttribute('data-view-name') === 'feed-full-update') {
+            lastFeedUpdate = current;
+          }
+          // Arreter si on trouve un listitem
+          if (current.getAttribute('role') === 'listitem') {
+            postContainer = current;
             break;
           }
           current = current.parentElement;
         }
+        // Utiliser le feed-full-update le plus haut trouve
+        if (!postContainer && lastFeedUpdate) {
+          postContainer = lastFeedUpdate.parentElement || lastFeedUpdate;
+        }
+      }
+
+      // Fallback sur les anciens selecteurs
+      if (!postContainer) {
+        postContainer = commentBox.closest('[data-id], article, .feed-shared-update-v2, [data-urn]');
       }
 
       const authorInfo = extractPostAuthorInfo(postContainer);
@@ -2223,17 +2327,27 @@
       'addToBlacklist',
       'addToBlacklistTooltip',
       async () => {
-        let postContainer = commentBox.closest('.feed-shared-update-v2, [data-urn], article, [data-id]');
+        // LinkedIn 2026 SDUI: remonter jusqu'au conteneur du POST
+        let postContainer = commentBox.closest('[role="listitem"]');
         if (!postContainer) {
           let current = commentBox;
-          while (current && !postContainer) {
-            const feedUpdate = current.querySelector('.feed-shared-update-v2');
-            if (feedUpdate) {
-              postContainer = feedUpdate;
+          let lastFeedUpdate = null;
+          while (current && current !== document.body) {
+            if (current.getAttribute('data-view-name') === 'feed-full-update') {
+              lastFeedUpdate = current;
+            }
+            if (current.getAttribute('role') === 'listitem') {
+              postContainer = current;
               break;
             }
             current = current.parentElement;
           }
+          if (!postContainer && lastFeedUpdate) {
+            postContainer = lastFeedUpdate.parentElement || lastFeedUpdate;
+          }
+        }
+        if (!postContainer) {
+          postContainer = commentBox.closest('[data-id], article, .feed-shared-update-v2, [data-urn]');
         }
 
         const authorInfo = extractPostAuthorInfo(postContainer);
@@ -2274,6 +2388,7 @@
     container.appendChild(randomChip);
     container.appendChild(emotionChip);
     container.appendChild(styleChip);  // Story 7.14 - Nouveau chip style de langage
+    container.appendChild(lengthChip); // Chip longueur cyclique XS/S/M/L/XL
     // Toggles enrichissement
     container.appendChild(quoteChip);
     container.appendChild(tagChip);
@@ -2291,6 +2406,7 @@
       randomChip,
       emotionChip,
       styleChip,  // Story 7.14 - Nouveau chip style de langage
+      lengthChip, // Chip longueur cyclique
       quoteChip,
       tagChip,
       contextChip,
@@ -3192,11 +3308,15 @@
       const thirdPartyComments = includeContext ? extractThirdPartyComments(postContainer) : [];
       // V3 Story 1.4 — Lire l'etat du toggle Recherche Web
       const webSearchEnabled = commentBox.getAttribute('data-web-search') === 'true';
+      // Lire la longueur selectionnee depuis le chip (ou defaut 21 = M)
+      const selectedLength = parseInt(commentBox.getAttribute('data-length')) || 21;
 
       const requestData = {
         post: postContent || null,
         isComment: isReplyToComment,
         commentLanguage: currentCommentLanguage,
+        // Longueur cible (nombre de mots)
+        length: selectedLength,
         // Paramètres contextuels (prioritaires sur les paramètres globaux du popup)
         emotion: selectedEmotion,
         intensity: selectedIntensity,
@@ -3252,7 +3372,8 @@
           }
         } else if (response && response.comments) {
           // V3 Story 5.5 — Passer l'URL source et le flag fallback au popup
-          showOptionsPopup(commentBox, response.comments, postContent || '', null, isReplyToComment, response.web_search_source_url, response.web_search_fallback);
+          // Fix: passer webSearchEnabled pour n'afficher le bouton source que si la recherche etait activee
+          showOptionsPopup(commentBox, response.comments, postContent || '', null, isReplyToComment, response.web_search_source_url, response.web_search_fallback, webSearchEnabled);
 
           // V3 Story 1.4 — Notification de fallback si recherche web echouee
           if (response.web_search_fallback) {
@@ -3339,6 +3460,13 @@
     // V3 Story 2.3 — Verifier si l'auteur est dans la blacklist (PREMIUM uniquement)
     const userPlanData = await chrome.storage.local.get(['user_plan']);
     const userPlan = userPlanData.user_plan || 'FREE';
+
+    // Bloquer les utilisateurs FREE — prompt personnalise reserve aux plans payants
+    if (userPlan === 'FREE') {
+      window.toastNotification.warning(t('promptRequiresPremium') || 'Le prompt personnalise necessite un plan MEDIUM ou PREMIUM');
+      return;
+    }
+
     if (userPlan === 'PREMIUM') {
       const postContainer = findPostContainer(commentBox);
       const authorInfo = extractPostAuthorInfo(postContainer);
@@ -3555,12 +3683,16 @@
       const includeContext = commentBox.getAttribute('data-include-context') === 'true';
       const thirdPartyComments = includeContext ? extractThirdPartyComments(postContainer) : [];
       const webSearchEnabled = commentBox.getAttribute('data-web-search') === 'true';
+      // Lire la longueur selectionnee depuis le chip (ou defaut 21 = M)
+      const selectedLength = parseInt(commentBox.getAttribute('data-length')) || 21;
 
       const requestData = {
         post: postContent || null,
         userPrompt: userPrompt,
         isComment: isReplyToComment,
         commentLanguage: currentCommentLanguage,
+        // Longueur cible (nombre de mots)
+        length: selectedLength,
         // Paramètres contextuels (prioritaires sur les paramètres globaux du popup)
         emotion: selectedEmotion,
         intensity: selectedIntensity,
@@ -3623,7 +3755,8 @@
           }
         } else if (response && response.comments) {
           // V3 Story 5.5 — Passer l'URL source et le flag fallback au popup
-          showOptionsPopup(commentBox, response.comments, postContent || '', userPrompt, isReplyToComment, response.web_search_source_url, response.web_search_fallback);
+          // Fix: passer webSearchEnabled pour n'afficher le bouton source que si la recherche etait activee
+          showOptionsPopup(commentBox, response.comments, postContent || '', userPrompt, isReplyToComment, response.web_search_source_url, response.web_search_fallback, webSearchEnabled);
 
           // V3 Story 1.4 — Notification de fallback si recherche web echouee
           if (response.web_search_fallback) {
@@ -3688,7 +3821,8 @@
   // Afficher le popup avec les options
   // V3 Story 5.5 — Ajout des parametres webSearchSourceUrl (6eme) et webSearchFallback (7eme)
   // V3 Story 7.4 — Migration vers BEM avec ARIA et focus trap
-  function showOptionsPopup(commentBox, comments, postContent, userPrompt, isReplyToComment, webSearchSourceUrl, webSearchFallback) {
+  // Fix: Ajout de webSearchEnabled (8eme) pour conditionner l'affichage du bouton source
+  function showOptionsPopup(commentBox, comments, postContent, userPrompt, isReplyToComment, webSearchSourceUrl, webSearchFallback, webSearchEnabled) {
     // Nettoyer les popups et overlays existants (anciens + nouveaux)
     document.querySelectorAll('.ai-options-popup, .ai-prompt-popup, .ai-popup-overlay, .ai-modal--generation').forEach(p => p.remove());
 
@@ -3743,9 +3877,9 @@
             intensity: selectedIntensity,
             style: selectedStyle
           };
-          // V3 Story 5.5 — Passer webSearchSourceUrl (11eme) et webSearchFallback (12eme)
-          // Note: popup passe pour compatibilite avec createCommentOption
-          const option = createCommentOption(comment, index, commentBox, popup, postContent, userPrompt, isReplyToComment, isNegative, userPlan, metadata, webSearchSourceUrl, webSearchFallback);
+          // V3 Story 5.5 — Passer webSearchSourceUrl (11eme), webSearchFallback (12eme), webSearchEnabled (13eme)
+          // Note: popup passe pour compatibilite avec createCommentOption, cleanup pour fermer proprement le modal
+          const option = createCommentOption(comment, index, commentBox, popup, postContent, userPrompt, isReplyToComment, isNegative, userPlan, metadata, webSearchSourceUrl, webSearchFallback, webSearchEnabled, modalParts.cleanup);
           modalParts.body.appendChild(option);
         });
 
@@ -3793,13 +3927,20 @@
   // Mapper les styles vers leurs labels
   function getStyleLabel(styleKey) {
     const styleLabels = {
+      // Styles de langage
       oral: 'Conversationnel',
       professional: 'Professionnel',
       storytelling: 'Storytelling',
       poetic: 'Créatif',
       humoristic: 'Humoristique',
       impactful: 'Impactant',
-      benevolent: 'Bienveillant'
+      benevolent: 'Bienveillant',
+      // Tons (fusion ex-popup)
+      formal: 'Soutenu',
+      friendly: 'Amical',
+      expert: 'Expert',
+      informative: 'Informatif',
+      negative: 'Négatif'
     };
     return styleLabels[styleKey] || styleKey;
   }
@@ -3815,8 +3956,8 @@
   }
 
   // Créer une option de commentaire
-  // V3 Story 5.5 — Ajout des parametres webSearchSourceUrl (11eme) et webSearchFallback (12eme)
-  function createCommentOption(comment, index, commentBox, popup, postContent, userPrompt, isReplyToComment, isNegative, userPlan, metadata, webSearchSourceUrl, webSearchFallback) {
+  // V3 Story 5.5 — Ajout des parametres webSearchSourceUrl (11eme), webSearchFallback (12eme), webSearchEnabled (13eme)
+  function createCommentOption(comment, index, commentBox, popup, postContent, userPrompt, isReplyToComment, isNegative, userPlan, metadata, webSearchSourceUrl, webSearchFallback, webSearchEnabled, modalCleanup) {
     const option = document.createElement('div');
     option.className = 'ai-option';
     if (isNegative) option.classList.add('negative');
@@ -3891,8 +4032,8 @@
     option.appendChild(optionText);
 
     // V3 Story 5.5 — Bouton "Afficher la source" ou "Aucune source trouvée"
-    // Le bouton s'affiche des que la recherche web est activee (webSearchFallback indique que la recherche etait activee)
-    if (webSearchSourceUrl) {
+    // Fix: Le bouton s'affiche SEULEMENT si webSearchEnabled est true (l'utilisateur a demande une source)
+    if (webSearchEnabled && webSearchSourceUrl) {
       // Cas 1: Source disponible — bouton actif
       const showSourceBtn = document.createElement('button');
       showSourceBtn.className = 'ai-button ai-button--ghost ai-button--sm ai-show-source-btn';
@@ -3909,11 +4050,9 @@
         showSourceBtn.disabled = true;
       };
       option.appendChild(showSourceBtn);
-    } else if (webSearchFallback || webSearchFallback === false) {
+    } else if (webSearchEnabled && !webSearchSourceUrl) {
       // Cas 2: Recherche web activee mais aucune source trouvee — bouton grise informatif
-      // Note: webSearchFallback === false signifie recherche reussie mais source = null (cas rare)
-      // webSearchFallback === true signifie recherche echouee/timeout
-      // Dans les deux cas, on affiche le bouton grise si pas de source
+      // Fix: on verifie webSearchEnabled pour n'afficher que si l'utilisateur a demande une source
       const showSourceBtn = document.createElement('button');
       showSourceBtn.className = 'ai-button ai-button--ghost ai-button--sm ai-button--disabled ai-show-source-btn';
       if (isNegative) showSourceBtn.classList.add('negative');
@@ -3957,7 +4096,15 @@
         const firstName = tagAuthorName.split(' ')[0];
 
         // Lancer l'observer pour detecter la mention
-        observeMentionCreation(commentBox, afterMention, firstName);
+        // Passer un callback pour supprimer ai-modal-active une fois la mention completee
+        observeMentionCreation(commentBox, afterMention, firstName, () => {
+          document.body.classList.remove('ai-modal-active');
+        });
+
+        // Fermer le modal visuellement mais GARDER ai-modal-active pour masquer les boutons
+        // L'utilisateur doit pouvoir cliquer sur la suggestion LinkedIn sans interference
+        popup.remove();
+        document.querySelectorAll('.ai-popup-overlay').forEach(o => o.remove());
 
         // Toast pour guider l'utilisateur
         if (window.toastNotification) {
@@ -3966,11 +4113,16 @@
       } else {
         // Mode normal : inserer tout le commentaire (nettoyer le delimiteur si present)
         commentBox.textContent = currentComment.replace('{{{SPLIT}}}', '');
-      }
 
-      popup.remove();
-      // Supprimer aussi l'overlay
-      document.querySelectorAll('.ai-popup-overlay').forEach(o => o.remove());
+        // Fermer proprement le modal (supprime aussi ai-modal-active du body)
+        if (modalCleanup) {
+          modalCleanup();
+        } else {
+          popup.remove();
+          document.querySelectorAll('.ai-popup-overlay').forEach(o => o.remove());
+          document.body.classList.remove('ai-modal-active');
+        }
+      }
       commentBox.focus();
 
       // Positionner le curseur a la fin du texte (necessaire pour que LinkedIn detecte le @)
@@ -4875,7 +5027,7 @@
   }
 
   // V3 Story 1.2 v2 — Observer pour detecter quand LinkedIn cree une mention
-  function observeMentionCreation(commentBox, afterMentionText, firstName) {
+  function observeMentionCreation(commentBox, afterMentionText, firstName, onComplete) {
     const observer = new MutationObserver((mutations) => {
       for (const mutation of mutations) {
         // Chercher les nouveaux elements ajoutes
@@ -4892,9 +5044,12 @@
             // Verifier que c'est bien notre mention (contient le prenom)
             if (isMention && node.textContent?.toLowerCase().includes(firstName.toLowerCase())) {
               observer.disconnect();
+              clearTimeout(timeoutId);
               // Petit delai pour laisser LinkedIn finir son traitement
               setTimeout(() => {
                 insertAfterMention(commentBox, afterMentionText);
+                // Callback pour restaurer les boutons
+                if (onComplete) onComplete();
               }, 50);
               return;
             }
@@ -4908,9 +5063,11 @@
       subtree: true
     });
 
-    // Timeout de securite : si pas de mention detectee apres 30s, abandonner
+    // Timeout de securite : si pas de mention detectee apres 30s, abandonner et restaurer les boutons
     const timeoutId = setTimeout(() => {
       observer.disconnect();
+      // Restaurer les boutons meme en cas de timeout
+      if (onComplete) onComplete();
     }, 30000);
 
     // Stocker le timeout pour pouvoir l'annuler si besoin

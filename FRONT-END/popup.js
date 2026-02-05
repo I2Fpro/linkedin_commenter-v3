@@ -6,8 +6,6 @@ document.addEventListener('DOMContentLoaded', async function() {
 
   // ==================== CONSTANTES ====================
   const LANGUAGES = ['fr', 'en'];
-  const TONES = ['professionnel', 'soutenu', 'amical', 'expert', 'informatif', 'negatif'];
-  const LENGTHS = [7, 15, 30];
   const GENERATIONS = [1, 2, 3];
 
   // ==================== STATE ====================
@@ -56,9 +54,6 @@ document.addEventListener('DOMContentLoaded', async function() {
   const manageSubscriptionBtn = document.getElementById('manageSubscriptionBtn');
   const accountBadge = document.getElementById('accountBadge');
 
-  // Toggles authentification
-  const authOnBtn = document.getElementById('authOnBtn');
-  const authOffBtn = document.getElementById('authOffBtn');
 
   // Langue
   const interfaceLangPrev = document.getElementById('interfaceLangPrev');
@@ -69,22 +64,9 @@ document.addEventListener('DOMContentLoaded', async function() {
   const commentLangValue = document.getElementById('commentLangValue');
 
   // Plus
-  const newsOnBtn = document.getElementById('newsOnBtn');
-  const newsOffBtn = document.getElementById('newsOffBtn');
-  const smartOnBtn = document.getElementById('smartOnBtn');
-  const smartOffBtn = document.getElementById('smartOffBtn');
-  const newsInfoBox = document.getElementById('newsInfoBox');
-  const newsInfoText = document.getElementById('newsInfoText');
-
   const autoCloseOnBtn = document.getElementById('autoCloseOnBtn');
   const autoCloseOffBtn = document.getElementById('autoCloseOffBtn');
 
-  const tonePrev = document.getElementById('tonePrev');
-  const toneNext = document.getElementById('toneNext');
-  const toneValue = document.getElementById('toneValue');
-  const lengthPrev = document.getElementById('lengthPrev');
-  const lengthNext = document.getElementById('lengthNext');
-  const lengthValue = document.getElementById('lengthValue');
   const generationsPrev = document.getElementById('generationsPrev');
   const generationsNext = document.getElementById('generationsNext');
   const generationsValue = document.getElementById('generationsValue');
@@ -315,19 +297,6 @@ document.addEventListener('DOMContentLoaded', async function() {
     }
   });
 
-  // Toggles authentification (affichage uniquement)
-  authOnBtn.addEventListener('click', () => {
-    if (!currentState.isAuthenticated) {
-      googleSignInBtn.click();
-    }
-  });
-
-  authOffBtn.addEventListener('click', () => {
-    if (currentState.isAuthenticated) {
-      logoutBtn.click();
-    }
-  });
-
   // ==================== LANGUE ====================
 
   // Interface Language
@@ -410,96 +379,6 @@ document.addEventListener('DOMContentLoaded', async function() {
     }
   });
 
-  // ==================== ENRICHISSEMENT ====================
-
-  // Toggle News
-  newsOnBtn.addEventListener('click', () => {
-    // Vérifier le plan utilisateur
-    const role = currentState.planData?.role || 'FREE';
-    if (role === 'FREE') {
-      window.toastNotification.warning(window.i18n.t('newsRequiresMedium') || 'Cette fonctionnalité nécessite un plan MEDIUM ou supérieur');
-      return;
-    }
-
-    const oldMode = currentState.newsEnrichmentMode;
-    if (currentState.newsEnrichmentMode === 'disabled') {
-      currentState.newsEnrichmentMode = 'title-only';
-      updateNewsDisplay();
-      saveSettings();
-
-      // Track news enrichment change
-      if (typeof posthogClient !== 'undefined') {
-        try {
-          posthogClient.trackNewsEnrichmentChanged(currentState.newsEnrichmentMode, oldMode, role);
-        } catch (e) {
-          console.warn('PostHog tracking failed:', e);
-        }
-      }
-    }
-  });
-
-  newsOffBtn.addEventListener('click', () => {
-    const oldMode = currentState.newsEnrichmentMode;
-    const role = currentState.planData?.role || 'FREE';
-    currentState.newsEnrichmentMode = 'disabled';
-    updateNewsDisplay();
-    saveSettings();
-
-    // Track news enrichment change
-    if (typeof posthogClient !== 'undefined') {
-      try {
-        posthogClient.trackNewsEnrichmentChanged(currentState.newsEnrichmentMode, oldMode, role);
-      } catch (e) {
-        console.warn('PostHog tracking failed:', e);
-      }
-    }
-  });
-
-  // Toggle Smart Summary
-  smartOnBtn.addEventListener('click', () => {
-    // Vérifier le plan utilisateur
-    const role = currentState.planData?.role || 'FREE';
-    if (role !== 'PREMIUM') {
-      window.toastNotification.warning(window.i18n.t('smartRequiresPremium') || 'Cette fonctionnalité nécessite un plan PREMIUM');
-      return;
-    }
-
-    const oldMode = currentState.newsEnrichmentMode;
-    currentState.newsEnrichmentMode = 'smart-summary';
-    updateNewsDisplay();
-    saveSettings();
-
-    // Track smart summary enabled
-    if (typeof posthogClient !== 'undefined') {
-      try {
-        posthogClient.trackSmartSummaryToggled(true, role);
-        posthogClient.trackNewsEnrichmentChanged(currentState.newsEnrichmentMode, oldMode, role);
-      } catch (e) {
-        console.warn('PostHog tracking failed:', e);
-      }
-    }
-  });
-
-  smartOffBtn.addEventListener('click', () => {
-    const oldMode = currentState.newsEnrichmentMode;
-    const role = currentState.planData?.role || 'FREE';
-    if (currentState.newsEnrichmentMode === 'smart-summary') {
-      currentState.newsEnrichmentMode = 'title-only';
-      updateNewsDisplay();
-      saveSettings();
-
-      // Track smart summary disabled
-      if (typeof posthogClient !== 'undefined') {
-        try {
-          posthogClient.trackSmartSummaryToggled(false, role);
-          posthogClient.trackNewsEnrichmentChanged(currentState.newsEnrichmentMode, oldMode, role);
-        } catch (e) {
-          console.warn('PostHog tracking failed:', e);
-        }
-      }
-    }
-  });
-
   // ==================== AUTO-CLOSE EMOTIONS PANEL ====================
 
   autoCloseOnBtn.addEventListener('click', () => {
@@ -512,82 +391,6 @@ document.addEventListener('DOMContentLoaded', async function() {
     currentState.autoCloseEmotionsPanel = false;
     updateAutoCloseDisplay();
     saveSettings();
-  });
-
-  // ==================== TON ====================
-
-  tonePrev.addEventListener('click', () => {
-    const oldTone = currentState.tone;
-    const currentIndex = TONES.indexOf(currentState.tone);
-    const newIndex = (currentIndex - 1 + TONES.length) % TONES.length;
-    currentState.tone = TONES[newIndex];
-    updateToneDisplay();
-    saveSettings();
-
-    // Track tone change
-    if (typeof posthogClient !== 'undefined') {
-      try {
-        posthogClient.trackToneChanged(currentState.tone, oldTone);
-      } catch (e) {
-        console.warn('PostHog tracking failed:', e);
-      }
-    }
-  });
-
-  toneNext.addEventListener('click', () => {
-    const oldTone = currentState.tone;
-    const currentIndex = TONES.indexOf(currentState.tone);
-    const newIndex = (currentIndex + 1) % TONES.length;
-    currentState.tone = TONES[newIndex];
-    updateToneDisplay();
-    saveSettings();
-
-    // Track tone change
-    if (typeof posthogClient !== 'undefined') {
-      try {
-        posthogClient.trackToneChanged(currentState.tone, oldTone);
-      } catch (e) {
-        console.warn('PostHog tracking failed:', e);
-      }
-    }
-  });
-
-  // ==================== LONGUEUR ====================
-
-  lengthPrev.addEventListener('click', () => {
-    const oldLength = currentState.length;
-    const currentIndex = LENGTHS.indexOf(currentState.length);
-    const newIndex = (currentIndex - 1 + LENGTHS.length) % LENGTHS.length;
-    currentState.length = LENGTHS[newIndex];
-    updateLengthDisplay();
-    saveSettings();
-
-    // Track length change
-    if (typeof posthogClient !== 'undefined') {
-      try {
-        posthogClient.trackLengthChanged(currentState.length, oldLength);
-      } catch (e) {
-        console.warn('PostHog tracking failed:', e);
-      }
-    }
-  });
-
-  lengthNext.addEventListener('click', () => {
-    const oldLength = currentState.length;
-    const currentIndex = LENGTHS.indexOf(currentState.length);
-    const newIndex = (currentIndex + 1) % LENGTHS.length;
-    currentState.length = LENGTHS[newIndex];
-    updateLengthDisplay();
-    saveSettings();
-
-    // Track length change
-    if (typeof posthogClient !== 'undefined') {
-      try {
-        posthogClient.trackLengthChanged(currentState.length, oldLength);
-      } catch (e) {
-        console.warn('PostHog tracking failed:', e);
-      }
-    }
   });
 
   // ==================== GÉNÉRATIONS ====================
@@ -662,45 +465,6 @@ document.addEventListener('DOMContentLoaded', async function() {
     commentLangValue.textContent = window.i18n.t(currentState.commentLanguage === 'fr' ? 'french' : 'english');
   }
 
-  function updateNewsDisplay() {
-    const mode = currentState.newsEnrichmentMode;
-    const role = currentState.planData?.role || 'FREE';
-
-    // Mettre à jour les toggles
-    newsOnBtn.classList.remove('active');
-    newsOffBtn.classList.remove('active');
-    smartOnBtn.classList.remove('active');
-    smartOffBtn.classList.remove('active');
-
-    if (mode === 'disabled') {
-      newsOffBtn.classList.add('active');
-      smartOffBtn.classList.add('active');
-      // Afficher un message différent pour les utilisateurs FREE
-      newsInfoText.innerHTML = role === 'FREE'
-        ? window.i18n.t('newsInfoDisabledFree')
-        : window.i18n.t('newsInfoDisabled');
-    } else if (mode === 'title-only') {
-      newsOnBtn.classList.add('active');
-      smartOffBtn.classList.add('active');
-      // Afficher un message incitatif pour les utilisateurs MEDIUM
-      newsInfoText.innerHTML = role === 'MEDIUM'
-        ? window.i18n.t('newsInfoTitleOnlyMedium')
-        : window.i18n.t('newsInfoTitleOnly');
-    } else if (mode === 'smart-summary') {
-      newsOnBtn.classList.add('active');
-      smartOnBtn.classList.add('active');
-      newsInfoText.innerHTML = window.i18n.t('newsInfoSmartSummary');
-    }
-  }
-
-  function updateToneDisplay() {
-    toneValue.textContent = window.i18n.t(getToneTranslationKey(currentState.tone));
-  }
-
-  function updateLengthDisplay() {
-    lengthValue.textContent = window.i18n.t(getLengthTranslationKey(currentState.length));
-  }
-
   function updateGenerationsDisplay() {
     generationsValue.textContent = currentState.optionsCount;
   }
@@ -725,27 +489,6 @@ document.addEventListener('DOMContentLoaded', async function() {
       // On utilise un attribut CSS personnalisé pour le contenu du pseudo-élément
       icon.style.setProperty('--tooltip-content', `"${tooltipText}"`);
     });
-  }
-
-  function getToneTranslationKey(tone) {
-    const map = {
-      'professionnel': 'professional',
-      'soutenu': 'formal',
-      'amical': 'friendly',
-      'expert': 'expert',
-      'informatif': 'informative',
-      'negatif': 'negative'
-    };
-    return map[tone] || 'professional';
-  }
-
-  function getLengthTranslationKey(length) {
-    const map = {
-      7: 'words0to10',
-      15: 'words10to20',
-      30: 'words20to40'
-    };
-    return map[length] || 'words10to20';
   }
 
   // ==================== RÉCUPÉRATION DU PLAN ====================
@@ -981,19 +724,11 @@ document.addEventListener('DOMContentLoaded', async function() {
         console.error('❌ Erreur lors de la récupération des données utilisateur:', error);
       }
 
-      // Mettre à jour les toggles auth
-      authOnBtn.classList.add('active');
-      authOffBtn.classList.remove('active');
-
       console.log('✅ Utilisateur connecté:', userData.email);
     } else {
       // Utilisateur non connecté
       userCardUnauthenticated.style.display = 'block';
       userCardAuthenticated.style.display = 'none';
-
-      // Mettre à jour les toggles auth
-      authOnBtn.classList.remove('active');
-      authOffBtn.classList.add('active');
 
       console.log('❌ Utilisateur non connecté');
     }
@@ -1050,51 +785,6 @@ document.addEventListener('DOMContentLoaded', async function() {
     }
 
     quotaDisplay.style.display = 'block';
-
-    // Mettre à jour les restrictions de fonctionnalités
-    updateFeatureRestrictions(role);
-  }
-
-  // Fonction pour gérer les restrictions selon le plan
-  function updateFeatureRestrictions(role) {
-    // Enrichissement Actualité : disponible pour MEDIUM et PREMIUM uniquement
-    const newsEnrichmentRow = document.querySelector('.setting-row:has(#newsOnBtn)');
-    const smartSummaryRow = document.querySelector('.setting-row:has(#smartOnBtn)');
-
-    if (role === 'FREE') {
-      // Désactiver l'enrichissement actualité pour FREE
-      newsOnBtn.style.opacity = '0.5';
-      newsOnBtn.style.cursor = 'not-allowed';
-
-      // Si l'enrichissement est activé, le désactiver
-      if (currentState.newsEnrichmentMode !== 'disabled') {
-        currentState.newsEnrichmentMode = 'disabled';
-        updateNewsDisplay();
-        saveSettings();
-      }
-    } else {
-      // Activer l'enrichissement actualité pour MEDIUM et PREMIUM
-      newsOnBtn.style.opacity = '1';
-      newsOnBtn.style.cursor = 'pointer';
-    }
-
-    // Smart Summary : disponible uniquement pour PREMIUM
-    if (role !== 'PREMIUM') {
-      // Désactiver smart summary pour FREE et MEDIUM
-      smartOnBtn.style.opacity = '0.5';
-      smartOnBtn.style.cursor = 'not-allowed';
-
-      // Si smart summary est activé, le passer en title-only
-      if (currentState.newsEnrichmentMode === 'smart-summary') {
-        currentState.newsEnrichmentMode = role === 'FREE' ? 'disabled' : 'title-only';
-        updateNewsDisplay();
-        saveSettings();
-      }
-    } else {
-      // Activer smart summary pour PREMIUM
-      smartOnBtn.style.opacity = '1';
-      smartOnBtn.style.cursor = 'pointer';
-    }
   }
 
   // ==================== SAUVEGARDE & CHARGEMENT ====================
@@ -1129,9 +819,6 @@ document.addEventListener('DOMContentLoaded', async function() {
 
         // Mettre à jour tous les affichages
         updateLanguageDisplay();
-        updateNewsDisplay();
-        updateToneDisplay();
-        updateLengthDisplay();
         updateGenerationsDisplay();
         updateAutoCloseDisplay();
         updateTooltips();

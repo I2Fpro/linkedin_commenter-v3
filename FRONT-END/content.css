@@ -785,7 +785,8 @@
 }
 
 /* Masquer les controles quand un modal est ouvert (evite superposition z-index) */
-body.ai-modal-active .ai-controls {
+body.ai-modal-active .ai-controls,
+body.ai-modal-active .ai-buttons-wrapper {
   visibility: hidden;
   pointer-events: none;
 }
