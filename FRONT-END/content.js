@@ -946,8 +946,8 @@
         emotion_wheel_selection: { emotion: emotionKey, intensity: intensityKey }
       });
 
-      // Mettre a jour le bouton
-      updateButtonWithEmotion(triggerButton, emotionKey, intensityKey);
+      // Mettre a jour le chip emotion (pas le bouton generer)
+      updateEmotionChip(triggerButton, emotionKey, intensityKey);
 
       // Log
       console.log('Emotion selectionnee:', emotionKey, 'Intensite:', intensityKey);
@@ -970,7 +970,7 @@
       closeEmotionWheel();
     };
 
-    // Story 7.13 - Callback de reset (clic sur le centre = emotion neutre)
+    // Callback de reset (clic sur le centre = supprime la selection)
     const handleReset = () => {
       // Supprimer les attributs d'emotion du commentBox
       commentBox.removeAttribute('data-selected-emotion');
@@ -979,11 +979,11 @@
       // Supprimer de chrome.storage
       chrome.storage.sync.remove('emotion_wheel_selection');
 
-      // Remettre le bouton a l'etat par defaut
-      resetButtonToDefault(triggerButton, commentBox);
+      // Remettre le chip emotion a l'etat par defaut
+      resetEmotionChipToDefault(triggerButton);
 
       // Log
-      console.log('Emotion resetee a neutre');
+      console.log('Emotion supprimee (aucune emotion forcee)');
 
       // Fermer la roue
       closeEmotionWheel();
@@ -1151,35 +1151,6 @@
     activeEmotionWheel = null;
   }
 
-  // Mettre a jour l'apparence du bouton avec l'emotion selectionnee
-  function updateButtonWithEmotion(button, emotionKey, intensityKey) {
-    // Trouver l'emotion dans la config
-    const emotion = EMOTION_WHEEL_CONFIG.emotions.find(e => e.key === emotionKey);
-    if (!emotion) return;
-
-    // Retirer les classes d'emotion precedentes
-    EMOTION_WHEEL_CONFIG.emotions.forEach(e => {
-      button.classList.remove(`ai-button--emotion-${e.key}`);
-    });
-    button.classList.remove('ai-button--emotion-selected');
-
-    // Ajouter les nouvelles classes
-    button.classList.add('ai-button--emotion-selected');
-    button.classList.add(`ai-button--emotion-${emotionKey}`);
-
-    // Mettre a jour le label du bouton
-    const labelSpan = button.querySelector('.ai-button__label');
-    if (labelSpan) {
-      labelSpan.textContent = t(emotionKey) || emotionKey;
-    }
-
-    // Mettre a jour l'icone avec l'emoji de l'emotion
-    const iconSpan = button.querySelector('.ai-button__icon');
-    if (iconSpan) {
-      iconSpan.textContent = emotion.emoji;
-    }
-  }
-
   // Remettre le bouton a son etat par defaut (apres generation)
   function resetButtonToDefault(button, commentBox) {
     // Retirer les classes d'emotion
@@ -1209,6 +1180,71 @@
     console.log('Bouton reset a l\'etat par defaut');
   }
 
+  // Mettre a jour l'apparence du chip emotion avec l'emotion selectionnee
+  function updateEmotionChip(chip, emotionKey, intensityKey) {
+    // Trouver l'emotion dans la config
+    const emotion = EMOTION_WHEEL_CONFIG.emotions.find(e => e.key === emotionKey);
+    if (!emotion) return;
+
+    // Retirer les classes d'emotion precedentes
+    EMOTION_WHEEL_CONFIG.emotions.forEach(e => {
+      chip.classList.remove(`ai-button--emotion-${e.key}`);
+    });
+    chip.classList.remove('ai-button--emotion-selected');
+
+    // Ajouter les nouvelles classes
+    chip.classList.add('ai-button--emotion-selected');
+    chip.classList.add(`ai-button--emotion-${emotionKey}`);
+
+    // Mettre a jour le label du chip
+    const labelSpan = chip.querySelector('.ai-chip__label');
+    if (labelSpan) {
+      // Label court pour l'emotion
+      const shortLabel = getShortEmotionLabel(emotionKey, intensityKey);
+      labelSpan.textContent = shortLabel;
+    }
+
+    // Mettre a jour l'icone avec l'emoji de l'emotion
+    const iconSpan = chip.querySelector('.ai-chip__icon');
+    if (iconSpan) {
+      iconSpan.textContent = emotion.emoji;
+    }
+  }
+
+  // Obtenir un label court pour l'emotion (pour affichage compact)
+  function getShortEmotionLabel(emotionKey, intensityKey) {
+    const shortLabels = {
+      admiration: 'Admire',
+      inspiration: 'Inspire',
+      curiosity: 'Curieux',
+      gratitude: 'Merci',
+      empathy: 'Empathie',
+      skepticism: 'Sceptique'
+    };
+    return shortLabels[emotionKey] || emotionKey;
+  }
+
+  // Remettre le chip emotion a son etat par defaut
+  function resetEmotionChipToDefault(chip) {
+    // Retirer les classes d'emotion
+    EMOTION_WHEEL_CONFIG.emotions.forEach(e => {
+      chip.classList.remove(`ai-button--emotion-${e.key}`);
+    });
+    chip.classList.remove('ai-button--emotion-selected');
+
+    // Remettre le label par defaut
+    const labelSpan = chip.querySelector('.ai-chip__label');
+    if (labelSpan) {
+      labelSpan.textContent = 'Emotion';
+    }
+
+    // Remettre l'icone par defaut
+    const iconSpan = chip.querySelector('.ai-chip__icon');
+    if (iconSpan) {
+      iconSpan.textContent = '✨';
+    }
+  }
+
   // ================================================
   // STYLE WHEEL FUNCTIONS (Story 7.14)
   // ================================================
@@ -1216,30 +1252,7 @@
   // Reference globale a la roue de style ouverte
   let activeStyleWheel = null;
 
-  // Calcul d'un secteur simple pour la roue des styles (un seul anneau)
-  function describeStyleArc(cx, cy, innerRadius, outerRadius, startAngle, endAngle) {
-    const startRad = (startAngle - 90) * Math.PI / 180;
-    const endRad = (endAngle - 90) * Math.PI / 180;
-
-    const x1 = cx + outerRadius * Math.cos(startRad);
-    const y1 = cy + outerRadius * Math.sin(startRad);
-    const x2 = cx + outerRadius * Math.cos(endRad);
-    const y2 = cy + outerRadius * Math.sin(endRad);
-    const x3 = cx + innerRadius * Math.cos(endRad);
-    const y3 = cy + innerRadius * Math.sin(endRad);
-    const x4 = cx + innerRadius * Math.cos(startRad);
-    const y4 = cy + innerRadius * Math.sin(startRad);
-
-    const largeArc = endAngle - startAngle > 180 ? 1 : 0;
-
-    return [
-      'M', x1, y1,
-      'A', outerRadius, outerRadius, 0, largeArc, 1, x2, y2,
-      'L', x3, y3,
-      'A', innerRadius, innerRadius, 0, largeArc, 0, x4, y4,
-      'Z'
-    ].join(' ');
-  }
+  // Story 7.14 Review - Reutilise describeArc() defini plus haut (DRY)
 
   // Creation du SVG de la roue des styles
   function createStyleWheelSVG(commentBox, onSelect, onClose, onReset) {
@@ -1272,7 +1285,7 @@
 
       const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
       path.setAttribute('class', 'ai-style-wheel__zone');
-      path.setAttribute('d', describeStyleArc(cx, cy, centerRadius, outerRadius, startAngle, endAngle));
+      path.setAttribute('d', describeArc(cx, cy, centerRadius, outerRadius, startAngle, endAngle));
       path.setAttribute('data-style', style.key);
       path.setAttribute('role', 'option');
       path.setAttribute('aria-label', t(style.key) || style.key);
@@ -1405,9 +1418,6 @@
       // Mettre a jour le bouton
       updateButtonWithStyle(triggerButton, styleKey);
 
-      // Log
-      console.log('Style selectionne:', styleKey);
-
       // Track
       if (phClient) {
         try {
@@ -1426,22 +1436,16 @@
       closeStyleWheel();
     };
 
-    // Story 7.14 - Callback de reset (clic sur le centre = style par defaut)
+    // Story 7.14 - Callback de reset (clic sur le centre = supprime la selection)
     const handleReset = () => {
-      // Remettre au style par defaut (professional)
-      const defaultStyle = 'professional';
-      commentBox.setAttribute('data-selected-style', defaultStyle);
+      // Supprimer l'attribut de style du commentBox
+      commentBox.removeAttribute('data-selected-style');
 
-      // Sauvegarder dans chrome.storage
-      chrome.storage.sync.set({
-        style_wheel_selection: { style: defaultStyle }
-      });
+      // Supprimer de chrome.storage
+      chrome.storage.sync.remove('style_wheel_selection');
 
-      // Remettre le bouton a l'etat par defaut avec style professional
-      updateButtonWithStyle(triggerButton, defaultStyle);
-
-      // Log
-      console.log('Style reset a professional');
+      // Remettre le bouton a l'etat par defaut (pas de style)
+      resetStyleButtonToDefault(triggerButton);
 
       // Fermer la roue
       closeStyleWheel();
@@ -1653,10 +1657,10 @@
     });
     button.classList.remove('ai-button--style-selected');
 
-    // Remettre le label par defaut
+    // Remettre le label par defaut (Story 7.14 Review - coherence avec creation du chip)
     const labelSpan = button.querySelector('.ai-chip__label');
     if (labelSpan) {
-      labelSpan.textContent = t('personalisation') || 'Style';
+      labelSpan.textContent = t('languageStyle') || 'Style';
     }
 
     // Remettre l'icone par defaut
@@ -2066,35 +2070,13 @@
     generateChip.setAttribute('aria-label', t('generateAriaLabel') || t('generate'));
     generateChip.setAttribute('aria-expanded', 'false');
 
+    // Story 7.14 - Le bouton generate lance toujours la generation
+    // L'emotion n'est envoyee QUE si l'utilisateur l'a selectionnee via le chip Emotion
     generateChip.onclick = (e) => {
       e.preventDefault();
       e.stopPropagation();
-
-      const hasEmotionSelected = commentBox.hasAttribute('data-selected-emotion');
-
-      if (hasEmotionSelected) {
-        // Emotion deja selectionnee → lancer la generation
-        handleGenerateClick(e, commentBox, isReplyToComment);
-      } else {
-        // Pas d'emotion → ouvrir la roue
-        toggleEmotionWheel(generateChip, commentBox);
-      }
+      handleGenerateClick(e, commentBox, isReplyToComment);
     };
-
-    // Story 7.13 - Task 5: Charger la selection sauvegardee depuis chrome.storage
-    chrome.storage.sync.get(['emotion_wheel_selection'], (result) => {
-      if (result.emotion_wheel_selection) {
-        const { emotion, intensity } = result.emotion_wheel_selection;
-        if (emotion && intensity) {
-          // Appliquer au commentBox
-          commentBox.setAttribute('data-selected-emotion', emotion);
-          commentBox.setAttribute('data-selected-intensity', intensity);
-          // Mettre a jour l'apparence du bouton
-          updateButtonWithEmotion(generateChip, emotion, intensity);
-          console.log('Emotion restauree depuis storage:', emotion, intensity);
-        }
-      }
-    });
 
     const promptChip = createActionChip('💭', 'withPrompt', (e) => {
       e.preventDefault();
@@ -2108,13 +2090,25 @@
       handleRandomGenerate(e, commentBox, isReplyToComment);
     }, 'secondary');
 
-    // Story 7.13 - Chip Emotion : ouvre la roue des emotions
-    const emotionChip = createActionChip('✨', 'personalisation', (e) => {
+    // Chip Emotion : ouvre la roue des emotions (modifie pour fonctionner comme Style)
+    const emotionChip = document.createElement('button');
+    emotionChip.type = 'button';
+    emotionChip.className = 'ai-chip ai-chip--secondary';
+    emotionChip.setAttribute('data-chip-type', 'emotion');
+    emotionChip.setAttribute('aria-label', 'Emotion');
+    emotionChip.setAttribute('aria-haspopup', 'true');
+    emotionChip.setAttribute('aria-expanded', 'false');
+    emotionChip.innerHTML = `<span class="ai-chip__icon">✨</span><span class="ai-chip__label">Emotion</span>`;
+    emotionChip.addEventListener('click', (e) => {
       e.preventDefault();
       e.stopPropagation();
-      // Story 7.13 - Ouvrir la roue chromatique des emotions centree sur le bouton generate
-      toggleEmotionWheel(generateChip, commentBox);
-    }, 'secondary');
+      // Ouvrir la roue chromatique des emotions centree sur le chip emotion
+      toggleEmotionWheel(emotionChip, commentBox);
+    });
+
+    // Story 7.14 - Pas de chargement automatique de l'emotion depuis storage
+    // L'utilisateur doit explicitement cliquer sur le chip Emotion pour selectionner une emotion
+    // Le chip reste a l'etat par defaut "Emotion" jusqu'a selection explicite
 
     // Story 7.14 - Chip Style : ouvre la roue des styles de langage
     const styleChip = document.createElement('button');
@@ -2133,15 +2127,18 @@
     });
 
     // Story 7.14 - Charger la selection de style sauvegardee
+    // Story 7.14 Review - Task 6.3: valeur par defaut 'professional' si jamais selectionnee
     chrome.storage.sync.get(['style_wheel_selection'], (data) => {
       if (data.style_wheel_selection && data.style_wheel_selection.style) {
         const savedStyle = data.style_wheel_selection.style;
         commentBox.setAttribute('data-selected-style', savedStyle);
         updateButtonWithStyle(styleChip, savedStyle);
-      } else {
-        // Style par defaut: professional
+      } else if (data.style_wheel_selection === undefined) {
+        // Premiere utilisation : definir 'professional' comme defaut
         commentBox.setAttribute('data-selected-style', 'professional');
+        // Bouton reste en etat neutre (pas de bordure coloree) pour inciter a explorer
       }
+      // Si style_wheel_selection existe mais vide (reset explicite) : pas de style force
     });
 
     // === CHIPS TOGGLE (Enrichissement) ===
@@ -3274,10 +3271,8 @@
             }
           }
 
-          // Story 7.13 — Reset bouton apres generation reussie
-          if (button.classList.contains('ai-button')) {
-            resetButtonToDefault(button, commentBox);
-          }
+          // Story 7.14 — L'emotion et le style persistent apres generation
+          // (pas de reset - l'utilisateur garde ses derniers parametres)
         }
 
         button.disabled = false;
@@ -3856,14 +3851,15 @@
       lengthMeta.innerHTML = `📝 ${metadata.length}`;
       metaContainer.appendChild(lengthMeta);
 
-      // Émotion (si définie)
+      // Émotion + Intensité (combinés dans un seul tag)
       if (metadata.emotion) {
         metaContainer.appendChild(createMetaSeparator());
         const emotionMeta = document.createElement('span');
         emotionMeta.className = 'ai-meta-item meta-emotion';
-        emotionMeta.title = 'Émotion';
-        // Story 7.13 - Utiliser l'emoji specifique de l'emotion
-        emotionMeta.innerHTML = `${getEmotionEmoji(metadata.emotion)} ${getEmotionLabel(metadata.emotion)}`;
+        // Story 7.14 - Inclure l'intensite entre parentheses si definie
+        const intensityText = metadata.intensity ? ` (${getIntensityLabel(metadata.intensity)})` : '';
+        emotionMeta.title = metadata.intensity ? `Émotion: ${getEmotionLabel(metadata.emotion)}, Intensité: ${getIntensityLabel(metadata.intensity)}` : 'Émotion';
+        emotionMeta.innerHTML = `${getEmotionEmoji(metadata.emotion)} ${getEmotionLabel(metadata.emotion)}${intensityText}`;
         metaContainer.appendChild(emotionMeta);
       }
 
@@ -3875,16 +3871,6 @@
         styleMeta.title = 'Style de langage';
         styleMeta.innerHTML = `💼 ${getStyleLabel(metadata.style)}`;
         metaContainer.appendChild(styleMeta);
-      }
-
-      // Intensité (si définie)
-      if (metadata.intensity) {
-        metaContainer.appendChild(createMetaSeparator());
-        const intensityMeta = document.createElement('span');
-        intensityMeta.className = 'ai-meta-item meta-intensity';
-        intensityMeta.title = 'Intensité de l\'émotion';
-        intensityMeta.innerHTML = `🔥 ${getIntensityLabel(metadata.intensity)}`;
-        metaContainer.appendChild(intensityMeta);
       }
 
       option.appendChild(metaContainer);
