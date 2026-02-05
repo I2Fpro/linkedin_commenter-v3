@@ -1985,6 +1985,7 @@
         chip.className = 'ai-chip ai-chip--locked';
         chip.setAttribute('aria-disabled', 'true');
         chip.setAttribute('aria-label', t(ariaLabelKey) + ' (Premium)');
+        chip.setAttribute('tabindex', '-1'); // Story 7.10 - Retirer du flux de tabulation
         chip.innerHTML = `<span class="ai-chip__icon">${icon}</span><span class="ai-chip__label">${t(labelKey)}</span><span class="ai-chip__lock">🔒</span>`;
       } else {
         chip.className = 'ai-chip ai-chip--inactive';
@@ -2035,6 +2036,7 @@
         chip.className = `ai-chip ai-chip--${variant} ai-chip--locked`;
         chip.setAttribute('aria-disabled', 'true');
         chip.setAttribute('aria-label', t(ariaLabelKey) + ' (Premium)');
+        chip.setAttribute('tabindex', '-1'); // Story 7.10 - Retirer du flux de tabulation
         chip.innerHTML = `<span class="ai-chip__icon">${icon}</span><span class="ai-chip__label">${t(labelKey)}</span><span class="ai-chip__lock">🔒</span>`;
       } else {
         chip.className = `ai-chip ai-chip--${variant}`;
@@ -2159,6 +2161,7 @@
       tagChip.className = 'ai-chip ai-chip--locked';
       tagChip.setAttribute('aria-disabled', 'true');
       tagChip.setAttribute('aria-label', t('tagAuthorTooltip') + ' (Premium)');
+      tagChip.setAttribute('tabindex', '-1'); // Story 7.10 - Retirer du flux de tabulation
       tagChip.innerHTML = `<span class="ai-chip__icon">👤</span><span class="ai-chip__label">${t('tagAuthor')}</span><span class="ai-chip__lock">🔒</span>`;
     } else {
       tagChip.className = 'ai-chip ai-chip--inactive';
@@ -2465,6 +2468,7 @@
           quoteToggle.classList.remove('ai-toggle--inactive');
           quoteToggle.classList.add('ai-toggle--locked');
           quoteToggle.setAttribute('aria-disabled', 'true');
+          quoteToggle.setAttribute('tabindex', '-1'); // Story 7.10 - Retirer du flux de tabulation
           quoteToggle.innerHTML = `<span class="ai-toggle__icon">💬</span><span class="ai-toggle__label">${t('quoteToggle')}</span><span class="ai-toggle__lock">🔒</span>`;
         }
       });
@@ -2517,6 +2521,7 @@
           tagAuthorToggle.classList.remove('ai-toggle--inactive');
           tagAuthorToggle.classList.add('ai-toggle--locked');
           tagAuthorToggle.setAttribute('aria-disabled', 'true');
+          tagAuthorToggle.setAttribute('tabindex', '-1'); // Story 7.10 - Retirer du flux de tabulation
           tagAuthorToggle.innerHTML = `<span class="ai-toggle__icon">👤</span><span class="ai-toggle__label">${t('tagAuthor')}</span><span class="ai-toggle__lock">🔒</span>`;
         }
       });
@@ -2612,6 +2617,7 @@
           contextToggle.classList.remove('ai-toggle--inactive');
           contextToggle.classList.add('ai-toggle--locked');
           contextToggle.setAttribute('aria-disabled', 'true');
+          contextToggle.setAttribute('tabindex', '-1'); // Story 7.10 - Retirer du flux de tabulation
           contextToggle.innerHTML = `<span class="ai-toggle__icon">💭</span><span class="ai-toggle__label">${t('contextToggle')}</span><span class="ai-toggle__lock">🔒</span>`;
         }
       });
@@ -2664,6 +2670,7 @@
           webSearchToggle.classList.remove('ai-toggle--inactive');
           webSearchToggle.classList.add('ai-toggle--locked');
           webSearchToggle.setAttribute('aria-disabled', 'true');
+          webSearchToggle.setAttribute('tabindex', '-1'); // Story 7.10 - Retirer du flux de tabulation
           webSearchToggle.innerHTML = `<span class="ai-toggle__icon">🔍</span><span class="ai-toggle__label">${t('webSearchToggle')}</span><span class="ai-toggle__lock">🔒</span>`;
         }
       });
@@ -2717,6 +2724,7 @@
           newsToggle.classList.remove('ai-toggle--inactive');
           newsToggle.classList.add('ai-toggle--locked');
           newsToggle.setAttribute('aria-disabled', 'true');
+          newsToggle.setAttribute('tabindex', '-1'); // Story 7.10 - Retirer du flux de tabulation
           newsToggle.innerHTML = `<span class="ai-toggle__icon">📰</span><span class="ai-toggle__label">${t('newsToggle')}</span><span class="ai-toggle__lock">🔒</span>`;
         }
       });

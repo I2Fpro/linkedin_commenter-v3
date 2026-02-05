@@ -136,9 +136,15 @@
   white-space: nowrap;
 }
 
-.ai-button:focus {
-  outline: 2px solid var(--ai-accent);
+/* Focus visible conforme WCAG 2.1 AA (Story 7.10) */
+.ai-button:focus-visible {
+  outline: 2px solid var(--ai-primary, #FFD700);
   outline-offset: 2px;
+}
+
+/* Supprimer outline sur focus souris */
+.ai-button:focus:not(:focus-visible) {
+  outline: none;
 }
 
 .ai-button:active:not(:disabled) {
@@ -571,9 +577,9 @@
   background: var(--ai-neutral-600);
 }
 
-.ai-toggle:focus {
-  outline: 2px solid var(--ai-accent);
-  outline-offset: 2px;
+/* Focus souris - supprimer outline (Story 7.10) */
+.ai-toggle:focus:not(:focus-visible) {
+  outline: none;
 }
 
 .ai-toggle:active:not(:disabled):not(.ai-toggle--locked) {
@@ -673,9 +679,9 @@
   transform: translateY(-1px);
 }
 
-/* === STATES - Focus (accessibilite) === */
+/* === STATES - Focus visible conforme WCAG 2.1 AA (Story 7.10) === */
 .ai-toggle:focus-visible {
-  outline: 2px solid var(--ai-accent);
+  outline: 2px solid var(--ai-primary, #FFD700);
   outline-offset: 2px;
 }
 
@@ -853,9 +859,14 @@ body.ai-modal-active .ai-controls {
   color: var(--ai-text-primary);
 }
 
-.ai-modal__close:focus {
-  outline: 2px solid var(--ai-accent);
+/* Focus visible conforme WCAG 2.1 AA (Story 7.10) */
+.ai-modal__close:focus-visible {
+  outline: 2px solid var(--ai-primary, #FFD700);
   outline-offset: 2px;
+}
+
+.ai-modal__close:focus:not(:focus-visible) {
+  outline: none;
 }
 
 /* Bouton fermer flottant (sans header) */
@@ -1303,9 +1314,14 @@ body.ai-modal-active .ai-controls {
   opacity: 1;
 }
 
-.ai-toast__close:focus {
-  outline: 2px solid var(--ai-accent);
+/* Focus visible conforme WCAG 2.1 AA (Story 7.10) */
+.ai-toast__close:focus-visible {
+  outline: 2px solid var(--ai-primary, #FFD700);
   outline-offset: 2px;
+}
+
+.ai-toast__close:focus:not(:focus-visible) {
+  outline: none;
 }
 
 /* === MODIFIERS - Animation states === */
@@ -1626,9 +1642,15 @@ body.ai-modal-active .ai-controls {
   border-color: var(--ai-neutral-400, #a3a3a3);
 }
 
-.ai-chip:focus {
-  outline: 2px solid var(--ai-accent, #0a66c2);
+/* Focus visible conforme WCAG 2.1 AA (Story 7.10) */
+.ai-chip:focus-visible {
+  outline: 2px solid var(--ai-primary, #FFD700);
   outline-offset: 2px;
+}
+
+/* Supprimer outline sur focus souris */
+.ai-chip:focus:not(:focus-visible) {
+  outline: none;
 }
 
 .ai-chip:active {
@@ -2190,7 +2212,15 @@ body.ai-modal-active .ai-controls {
   font-size: 14px;
 }
 
-.ai-prompt-textarea:focus {
+/* Focus visible conforme WCAG 2.1 AA (Story 7.10) */
+.ai-prompt-textarea:focus-visible {
+  outline: 2px solid var(--ai-primary, #FFD700);
+  outline-offset: 2px;
+  border-color: var(--ai-primary, #FFD700);
+}
+
+/* Focus souris - indicateur subtil sans outline */
+.ai-prompt-textarea:focus:not(:focus-visible) {
   outline: none;
   border-color: #0077b5;
   box-shadow: 0 0 0 2px rgba(0, 119, 181, 0.2);
@@ -2543,7 +2573,15 @@ body.ai-modal-active .ai-controls {
   font-size: 14px;
 }
 
-.ai-refine-textarea:focus {
+/* Focus visible conforme WCAG 2.1 AA (Story 7.10) */
+.ai-refine-textarea:focus-visible {
+  outline: 2px solid var(--ai-primary, #FFD700);
+  outline-offset: 2px;
+  border-color: var(--ai-primary, #FFD700);
+}
+
+/* Focus souris - indicateur subtil sans outline */
+.ai-refine-textarea:focus:not(:focus-visible) {
   outline: none;
   border-color: #0077b5;
   box-shadow: 0 0 0 2px rgba(0, 119, 181, 0.2);
@@ -2683,7 +2721,16 @@ body.ai-modal-active .ai-controls {
   stroke-width: 2;
 }
 
-.ai-emotion-wheel__zone:focus {
+/* Focus visible conforme WCAG 2.1 AA (Story 7.10) */
+.ai-emotion-wheel__zone:focus-visible {
+  outline: 2px solid var(--ai-primary, #FFD700);
+  outline-offset: 2px;
+  stroke: var(--ai-neutral-100);
+  stroke-width: 3;
+}
+
+/* Focus souris - indicateur subtil sans outline */
+.ai-emotion-wheel__zone:focus:not(:focus-visible) {
   outline: none;
   stroke: var(--ai-neutral-100);
   stroke-width: 3;
@@ -2862,7 +2909,16 @@ body.ai-modal-active .ai-controls {
   stroke-width: 2;
 }
 
-.ai-style-wheel__zone:focus {
+/* Focus visible conforme WCAG 2.1 AA (Story 7.10) */
+.ai-style-wheel__zone:focus-visible {
+  outline: 2px solid var(--ai-primary, #FFD700);
+  outline-offset: 2px;
+  stroke: var(--ai-neutral-100);
+  stroke-width: 3;
+}
+
+/* Focus souris - indicateur subtil sans outline */
+.ai-style-wheel__zone:focus:not(:focus-visible) {
   outline: none;
   stroke: var(--ai-neutral-100);
   stroke-width: 3;
