@@ -1201,6 +1201,9 @@ async function handleGetTrialStatus(sendResponse) {
       user_plan: trialStatus.role
     });
 
+    // Verifier les notifications apres mise a jour du cache
+    await checkTrialNotifications();
+
     sendResponse({ success: true, ...trialStatus, fromCache: false });
 
   } catch (error) {
@@ -1209,24 +1212,77 @@ async function handleGetTrialStatus(sendResponse) {
   }
 }
 
+// Phase 2 — Verifier et afficher les notifications trial (badge)
+async function checkTrialNotifications() {
+  try {
+    const storage = await chrome.storage.local.get([
+      'trial_status_cache',
+      'trial_notification_j3_shown',
+      'trial_notification_j0_shown'
+    ]);
+
+    const trialStatus = storage.trial_status_cache;
+    if (!trialStatus) return;
+
+    const today = new Date().toISOString().slice(0, 10);
+
+    // Notification J-3
+    if (trialStatus.trial_active && trialStatus.trial_days_remaining === 3) {
+      if (storage.trial_notification_j3_shown !== today) {
+        chrome.action.setBadgeText({ text: '3' });
+        chrome.action.setBadgeBackgroundColor({ color: '#ffc107' });
+        await chrome.storage.local.set({ trial_notification_j3_shown: today });
+        console.log('[Phase2] Notification J-3 affichee');
+      }
+    }
+
+    // Notification J0
+    else if (trialStatus.trial_active && trialStatus.trial_days_remaining <= 0) {
+      if (storage.trial_notification_j0_shown !== today) {
+        chrome.action.setBadgeText({ text: '!' });
+        chrome.action.setBadgeBackgroundColor({ color: '#ef5350' });
+        await chrome.storage.local.set({ trial_notification_j0_shown: today });
+        console.log('[Phase2] Notification J0 affichee');
+      }
+    }
+
+    // Grace period badge
+    else if (trialStatus.grace_active) {
+      chrome.action.setBadgeText({ text: `${trialStatus.grace_days_remaining || 0}` });
+      chrome.action.setBadgeBackgroundColor({ color: '#ff9800' });
+    }
+
+    // Pas de notification
+    else {
+      chrome.action.setBadgeText({ text: '' });
+    }
+
+  } catch (error) {
+    console.error('[Phase2] Erreur checkTrialNotifications:', error);
+  }
+}
+
 // Fonction d'initialisation commune
 async function initializeExtension() {
   console.log('🚀 Extension initialisée');
   console.log('Extension ID:', chrome.runtime.id);
   console.log('Extension ID configuré:', EXTENSION_ID);
-  
+
   // Mettre à jour les URLs depuis API_CONFIG
   BACKEND_URL = API_CONFIG.AI_SERVICE_URL;
   USER_SERVICE_URL = API_CONFIG.USER_SERVICE_URL;
-  
+
   // Charger la configuration au démarrage
   await loadBackendConfig();
-  
+
   if (chrome.runtime.id !== EXTENSION_ID) {
     console.warn('⚠️ ATTENTION: Extension ID différent du configuré!');
   }
-  
+
   await checkAuthentication();
+
+  // Phase 2 — Verifier les notifications trial
+  await checkTrialNotifications();
 }
 
 // Vérification initiale
