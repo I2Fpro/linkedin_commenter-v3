@@ -249,6 +249,15 @@ async def handle_checkout_completed(event: dict, db: Session):
         elif plan == 'premium':
             user.role = RoleType.PREMIUM
 
+        # Phase 2 — Neutraliser le trial si l'utilisateur passe en payant
+        if user.trial_ends_at is not None:
+            logger.info(
+                f"User {user.id}: paiement Stripe detecte, neutralisation du trial "
+                f"(trial_ends_at etait {user.trial_ends_at})"
+            )
+            user.trial_ends_at = None
+            user.grace_ends_at = None
+
         db.commit()
 
         logger.info(f"Utilisateur {user_id} mis à jour avec succès: plan={plan}, customer={customer_id}, subscription={subscription_id}")
@@ -279,6 +288,12 @@ async def handle_invoice_paid(event: dict, db: Session):
 
         # Mettre à jour le statut de l'abonnement
         user.subscription_status = 'active'
+
+        # Phase 2 — Neutraliser le trial apres renouvellement
+        if user.trial_ends_at is not None:
+            user.trial_ends_at = None
+            user.grace_ends_at = None
+
         db.commit()
 
         logger.info(f"Facture payée pour l'utilisateur {user.id}, abonnement {subscription_id} actif")
