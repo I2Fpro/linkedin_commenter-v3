@@ -127,140 +127,343 @@
     <!-- MAIN CONTENT -->
     <div class="pt-[68px] max-w-[900px] mx-auto px-4 py-8">
         <article class="bg-white border border-linkedin-stroke rounded-lg p-8">
-            <h1 class="text-3xl font-bold text-linkedin-text mb-6">Politique de confidentialité</h1>
-            <p class="text-sm text-linkedin-text-secondary mb-8">Dernière mise à jour : Janvier 2025</p>
 
-            <div class="space-y-8 text-linkedin-text-secondary">
+            <!-- Language Toggle -->
+            <div class="flex justify-end mb-6">
+                <div class="inline-flex rounded-lg border border-linkedin-stroke overflow-hidden">
+                    <button id="btn-fr" onclick="switchLanguage('fr')" class="px-4 py-2 text-sm font-semibold bg-linkedin-blue text-white transition-colors">
+                        Français
+                    </button>
+                    <button id="btn-en" onclick="switchLanguage('en')" class="px-4 py-2 text-sm font-semibold bg-white text-linkedin-text hover:bg-linkedin-blue-soft transition-colors">
+                        English
+                    </button>
+                </div>
+            </div>
 
-                <!-- Introduction -->
-                <section>
-                    <h2 class="text-xl font-bold text-linkedin-text mb-4">1. Introduction</h2>
-                    <p class="mb-4">
-                        Bienvenue sur LinkedIn AI Commenter. Cette politique de confidentialité explique comment nous collectons,
-                        utilisons et protégeons vos informations lorsque vous utilisez notre extension Chrome.
-                    </p>
-                    <p>
-                        Nous nous engageons à protéger votre vie privée et à être transparents sur nos pratiques en matière de données.
-                    </p>
-                </section>
+            <!-- FRENCH CONTENT -->
+            <div id="content-fr">
+                <h1 class="text-3xl font-bold text-linkedin-text mb-6">Politique de confidentialité</h1>
+                <p class="text-sm text-linkedin-text-secondary mb-8">Dernière mise à jour : Février 2026</p>
 
-                <!-- Données collectées -->
-                <section>
-                    <h2 class="text-xl font-bold text-linkedin-text mb-4">2. Données collectées</h2>
-                    <p class="mb-4">Nous collectons les types de données suivants :</p>
-                    <ul class="list-disc list-inside space-y-2 ml-4">
-                        <li><strong>Informations de compte :</strong> Adresse email et nom (via Google OAuth) pour l'authentification</li>
-                        <li><strong>Données d'utilisation :</strong> Nombre de générations de commentaires effectuées pour gérer les quotas</li>
-                        <li><strong>Contenu temporaire :</strong> Le texte des posts LinkedIn est analysé en temps réel pour générer des commentaires, mais n'est jamais stocké</li>
-                    </ul>
-                </section>
+                <div class="space-y-8 text-linkedin-text-secondary">
 
-                <!-- Utilisation des données -->
-                <section>
-                    <h2 class="text-xl font-bold text-linkedin-text mb-4">3. Utilisation des données</h2>
-                    <p class="mb-4">Nous utilisons vos données pour :</p>
-                    <ul class="list-disc list-inside space-y-2 ml-4">
-                        <li>Authentifier votre compte et gérer votre abonnement</li>
-                        <li>Générer des commentaires personnalisés basés sur le contexte des posts</li>
-                        <li>Suivre votre utilisation pour appliquer les limites de votre plan</li>
-                        <li>Améliorer nos services et l'expérience utilisateur</li>
-                    </ul>
-                </section>
+                    <!-- Introduction -->
+                    <section>
+                        <h2 class="text-xl font-bold text-linkedin-text mb-4">1. Introduction</h2>
+                        <p class="mb-4">
+                            LinkedIn AI Commenter est une extension Chrome qui génère des commentaires IA pour LinkedIn. Cette politique explique quelles données nous collectons et comment nous les protégeons.
+                        </p>
+                        <p>
+                            Nous nous engageons à protéger votre vie privée et à être transparents sur nos pratiques en matière de données.
+                        </p>
+                    </section>
 
-                <!-- Stockage et sécurité -->
-                <section>
-                    <h2 class="text-xl font-bold text-linkedin-text mb-4">4. Stockage et sécurité</h2>
-                    <p class="mb-4">
-                        Vos données sont stockées de manière sécurisée sur des serveurs situés en Europe.
-                        Nous utilisons le chiffrement (HTTPS/TLS) pour toutes les communications et le stockage des données sensibles.
-                    </p>
-                    <p class="mb-4">Mesures de sécurité mises en place :</p>
-                    <ul class="list-disc list-inside space-y-2 ml-4">
-                        <li>Chiffrement des données en transit et au repos</li>
-                        <li>Authentification sécurisée via OAuth 2.0</li>
-                        <li>Tokens JWT avec expiration limitée</li>
-                        <li>Accès restreint aux données par principe du moindre privilège</li>
-                    </ul>
-                </section>
+                    <!-- Données collectées -->
+                    <section>
+                        <h2 class="text-xl font-bold text-linkedin-text mb-4">2. Données collectées</h2>
+                        <p class="mb-4">Nous collectons trois catégories de données :</p>
 
-                <!-- Partage des données -->
-                <section>
-                    <h2 class="text-xl font-bold text-linkedin-text mb-4">5. Partage des données</h2>
-                    <p class="mb-4">
-                        Nous ne vendons jamais vos données personnelles. Nous pouvons partager des données uniquement avec :
-                    </p>
-                    <ul class="list-disc list-inside space-y-2 ml-4">
-                        <li><strong>OpenAI :</strong> Pour le traitement IA des commentaires (données anonymisées)</li>
-                        <li><strong>Stripe :</strong> Pour le traitement sécurisé des paiements</li>
-                        <li><strong>Google :</strong> Pour l'authentification OAuth</li>
-                    </ul>
-                    <p class="mt-4">
-                        Ces partenaires sont soumis à des obligations contractuelles strictes concernant la protection des données.
-                    </p>
-                </section>
+                        <div class="space-y-4">
+                            <div>
+                                <h3 class="font-semibold text-linkedin-text mb-2">Compte utilisateur</h3>
+                                <p>Adresse email et nom via Google OAuth pour l'authentification.</p>
+                            </div>
 
-                <!-- Cookies et suivi -->
-                <section>
-                    <h2 class="text-xl font-bold text-linkedin-text mb-4">6. Cookies et technologies de suivi</h2>
-                    <p class="mb-4">
-                        L'extension utilise le stockage local du navigateur (localStorage) pour :
-                    </p>
-                    <ul class="list-disc list-inside space-y-2 ml-4">
-                        <li>Stocker votre token d'authentification</li>
-                        <li>Mémoriser vos préférences (thème, langue)</li>
-                        <li>Améliorer les performances de l'application</li>
-                    </ul>
-                </section>
+                            <div>
+                                <h3 class="font-semibold text-linkedin-text mb-2">Données d'utilisation (analytics internes)</h3>
+                                <p class="mb-2">Chaque génération de commentaire enregistre :</p>
+                                <ul class="list-disc list-inside space-y-1 ml-4">
+                                    <li>Type d'action effectuée</li>
+                                    <li>Langue du commentaire généré</li>
+                                    <li>Niveau d'abonnement de l'utilisateur</li>
+                                    <li>Nombre de tokens consommés</li>
+                                    <li>Durée de traitement de la requête</li>
+                                    <li>Contenu du commentaire généré</li>
+                                </ul>
+                                <p class="mt-2">Nous enregistrons également les connexions, déconnexions et erreurs techniques pour améliorer la qualité du service.</p>
+                            </div>
 
-                <!-- Droits des utilisateurs -->
-                <section>
-                    <h2 class="text-xl font-bold text-linkedin-text mb-4">7. Vos droits</h2>
-                    <p class="mb-4">Conformément au RGPD, vous disposez des droits suivants :</p>
-                    <ul class="list-disc list-inside space-y-2 ml-4">
-                        <li><strong>Accès :</strong> Obtenir une copie de vos données personnelles</li>
-                        <li><strong>Rectification :</strong> Corriger vos données inexactes</li>
-                        <li><strong>Effacement :</strong> Demander la suppression de vos données</li>
-                        <li><strong>Portabilité :</strong> Recevoir vos données dans un format structuré</li>
-                        <li><strong>Opposition :</strong> Vous opposer au traitement de vos données</li>
-                    </ul>
-                    <p class="mt-4">
-                        Pour exercer ces droits, contactez-nous à l'adresse indiquée ci-dessous.
-                    </p>
-                </section>
+                            <div>
+                                <h3 class="font-semibold text-linkedin-text mb-2">Contenu temporaire</h3>
+                                <p>Le texte des posts LinkedIn est analysé pour générer des commentaires, mais n'est pas stocké au-delà de la fenêtre de rétention.</p>
+                            </div>
+                        </div>
+                    </section>
 
-                <!-- Conservation des données -->
-                <section>
-                    <h2 class="text-xl font-bold text-linkedin-text mb-4">8. Conservation des données</h2>
-                    <p class="mb-4">
-                        Nous conservons vos données aussi longtemps que votre compte est actif.
-                        Après suppression de votre compte, vos données sont effacées sous 30 jours,
-                        sauf obligation légale de conservation.
-                    </p>
-                </section>
+                    <!-- Pourquoi nous collectons ces données -->
+                    <section>
+                        <h2 class="text-xl font-bold text-linkedin-text mb-4">3. Pourquoi nous collectons ces données</h2>
+                        <p class="mb-4">
+                            <strong>Base légale :</strong> Intérêt légitime (Article 6.1.f RGPD).
+                        </p>
+                        <p class="mb-4">Ces données nous permettent de :</p>
+                        <ul class="list-disc list-inside space-y-2 ml-4">
+                            <li>Gérer les quotas d'utilisation selon votre abonnement</li>
+                            <li>Améliorer la qualité des commentaires générés</li>
+                            <li>Corriger les erreurs et bugs techniques</li>
+                            <li>Estimer nos coûts d'infrastructure et d'IA</li>
+                        </ul>
+                    </section>
 
-                <!-- Modifications -->
-                <section>
-                    <h2 class="text-xl font-bold text-linkedin-text mb-4">9. Modifications de cette politique</h2>
-                    <p>
-                        Nous pouvons mettre à jour cette politique de confidentialité périodiquement.
-                        Les modifications seront publiées sur cette page avec une date de mise à jour.
-                        Nous vous encourageons à consulter régulièrement cette page.
-                    </p>
-                </section>
+                    <!-- Stockage et rétention -->
+                    <section>
+                        <h2 class="text-xl font-bold text-linkedin-text mb-4">4. Stockage et rétention</h2>
+                        <p class="mb-4">
+                            Vos données sont stockées sur des serveurs situés en Europe.
+                        </p>
+                        <div class="bg-linkedin-blue-soft border border-linkedin-stroke rounded-lg p-4 mb-4">
+                            <p class="font-semibold text-linkedin-text mb-2">Rétention de 90 jours</p>
+                            <p>Toutes les données d'analytics sont automatiquement supprimées après 90 jours.</p>
+                        </div>
+                        <p class="mb-4">
+                            Aucune donnée n'est envoyée à des services d'analyse tiers. Toutes les communications utilisent le chiffrement HTTPS/TLS.
+                        </p>
+                    </section>
 
-                <!-- Contact -->
-                <section>
-                    <h2 class="text-xl font-bold text-linkedin-text mb-4">10. Contact</h2>
-                    <p class="mb-4">
-                        Pour toute question concernant cette politique de confidentialité ou vos données personnelles,
-                        vous pouvez nous contacter :
-                    </p>
-                    <div class="bg-linkedin-blue-soft border border-linkedin-stroke rounded-lg p-4">
-                        <p><strong>Email :</strong> privacy@i2f-entreprise.fr</p>
-                        <p class="mt-2"><strong>Responsable du traitement :</strong> I2F Entreprise</p>
-                    </div>
-                </section>
+                    <!-- Partage des données -->
+                    <section>
+                        <h2 class="text-xl font-bold text-linkedin-text mb-4">5. Partage des données</h2>
+                        <p class="mb-4">
+                            Nous ne vendons jamais vos données personnelles. Nous partageons des données uniquement avec :
+                        </p>
+                        <ul class="list-disc list-inside space-y-2 ml-4">
+                            <li><strong>OpenAI :</strong> Pour le traitement IA des commentaires</li>
+                            <li><strong>Stripe :</strong> Pour le traitement sécurisé des paiements</li>
+                            <li><strong>Google :</strong> Pour l'authentification OAuth</li>
+                        </ul>
+                        <div class="bg-linkedin-blue-soft border border-linkedin-stroke rounded-lg p-4 mt-4">
+                            <p class="font-semibold text-linkedin-text">
+                                Nous n'utilisons aucun service d'analyse tiers (pas de Google Analytics, pas de Mixpanel). Toutes les métriques sont collectées et stockées en interne.
+                            </p>
+                        </div>
+                    </section>
 
+                    <!-- Cookies et stockage local -->
+                    <section>
+                        <h2 class="text-xl font-bold text-linkedin-text mb-4">6. Cookies et stockage local</h2>
+                        <p class="mb-4">
+                            L'extension utilise le stockage local du navigateur (localStorage) pour :
+                        </p>
+                        <ul class="list-disc list-inside space-y-2 ml-4">
+                            <li>Stocker votre token d'authentification</li>
+                            <li>Mémoriser vos préférences (thème, langue)</li>
+                            <li>Améliorer les performances de l'application</li>
+                        </ul>
+                    </section>
+
+                    <!-- Vos droits (RGPD) -->
+                    <section>
+                        <h2 class="text-xl font-bold text-linkedin-text mb-4">7. Vos droits (RGPD)</h2>
+                        <p class="mb-4">Vous disposez des droits suivants :</p>
+                        <ul class="list-disc list-inside space-y-2 ml-4">
+                            <li><strong>Accès :</strong> Obtenir une copie de vos données personnelles</li>
+                            <li><strong>Rectification :</strong> Corriger vos données inexactes</li>
+                            <li><strong>Effacement :</strong> Demander la suppression de vos données</li>
+                            <li><strong>Portabilité :</strong> Recevoir vos données dans un format structuré</li>
+                            <li><strong>Opposition :</strong> Vous opposer au traitement de vos données</li>
+                        </ul>
+                        <div class="bg-linkedin-blue-soft border border-linkedin-stroke rounded-lg p-4 mt-4">
+                            <p class="font-semibold text-linkedin-text mb-2">Pour exercer votre droit à l'effacement</p>
+                            <p>Envoyez un email à <strong>privacy@i2f-entreprise.fr</strong>. Vos données seront supprimées sous 30 jours.</p>
+                        </div>
+                    </section>
+
+                    <!-- Conservation des données -->
+                    <section>
+                        <h2 class="text-xl font-bold text-linkedin-text mb-4">8. Conservation des données</h2>
+                        <ul class="list-disc list-inside space-y-2 ml-4">
+                            <li><strong>Analytics :</strong> Conservation de 90 jours, puis suppression automatique</li>
+                            <li><strong>Compte utilisateur :</strong> Conservé tant que votre compte est actif. Suppression sous 30 jours après demande d'effacement</li>
+                        </ul>
+                    </section>
+
+                    <!-- Modifications -->
+                    <section>
+                        <h2 class="text-xl font-bold text-linkedin-text mb-4">9. Modifications de cette politique</h2>
+                        <p>
+                            Nous pouvons mettre à jour cette politique de confidentialité périodiquement.
+                            Les modifications seront publiées sur cette page avec une date de mise à jour.
+                            Nous vous encourageons à consulter régulièrement cette page.
+                        </p>
+                    </section>
+
+                    <!-- Contact -->
+                    <section>
+                        <h2 class="text-xl font-bold text-linkedin-text mb-4">10. Contact</h2>
+                        <p class="mb-4">
+                            Pour toute question concernant cette politique de confidentialité ou vos données personnelles,
+                            vous pouvez nous contacter :
+                        </p>
+                        <div class="bg-linkedin-blue-soft border border-linkedin-stroke rounded-lg p-4">
+                            <p><strong>Email :</strong> privacy@i2f-entreprise.fr</p>
+                            <p class="mt-2"><strong>Responsable du traitement :</strong> I2F Entreprise</p>
+                        </div>
+                    </section>
+
+                </div>
+            </div>
+
+            <!-- ENGLISH CONTENT -->
+            <div id="content-en" style="display: none;">
+                <h1 class="text-3xl font-bold text-linkedin-text mb-6">Privacy Policy</h1>
+                <p class="text-sm text-linkedin-text-secondary mb-8">Last updated: February 2026</p>
+
+                <div class="space-y-8 text-linkedin-text-secondary">
+
+                    <!-- Introduction -->
+                    <section>
+                        <h2 class="text-xl font-bold text-linkedin-text mb-4">1. Introduction</h2>
+                        <p class="mb-4">
+                            LinkedIn AI Commenter is a Chrome extension that generates AI-powered comments for LinkedIn. This policy explains what data we collect and how we protect it.
+                        </p>
+                        <p>
+                            We are committed to protecting your privacy and being transparent about our data practices.
+                        </p>
+                    </section>
+
+                    <!-- Data collected -->
+                    <section>
+                        <h2 class="text-xl font-bold text-linkedin-text mb-4">2. Data Collected</h2>
+                        <p class="mb-4">We collect three categories of data:</p>
+
+                        <div class="space-y-4">
+                            <div>
+                                <h3 class="font-semibold text-linkedin-text mb-2">User Account</h3>
+                                <p>Email address and name via Google OAuth for authentication.</p>
+                            </div>
+
+                            <div>
+                                <h3 class="font-semibold text-linkedin-text mb-2">Usage Data (internal analytics)</h3>
+                                <p class="mb-2">Each comment generation records:</p>
+                                <ul class="list-disc list-inside space-y-1 ml-4">
+                                    <li>Type of action performed</li>
+                                    <li>Language of the generated comment</li>
+                                    <li>User's subscription level</li>
+                                    <li>Number of tokens consumed</li>
+                                    <li>Request processing duration</li>
+                                    <li>Content of the generated comment</li>
+                                </ul>
+                                <p class="mt-2">We also log logins, logouts, and technical errors to improve service quality.</p>
+                            </div>
+
+                            <div>
+                                <h3 class="font-semibold text-linkedin-text mb-2">Temporary Content</h3>
+                                <p>LinkedIn post text is analyzed to generate comments but is not stored beyond the retention window.</p>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- Why we collect this data -->
+                    <section>
+                        <h2 class="text-xl font-bold text-linkedin-text mb-4">3. Why We Collect This Data</h2>
+                        <p class="mb-4">
+                            <strong>Legal basis:</strong> Legitimate interest (Article 6.1.f GDPR).
+                        </p>
+                        <p class="mb-4">This data allows us to:</p>
+                        <ul class="list-disc list-inside space-y-2 ml-4">
+                            <li>Manage usage quotas according to your subscription</li>
+                            <li>Improve the quality of generated comments</li>
+                            <li>Fix technical errors and bugs</li>
+                            <li>Estimate our infrastructure and AI costs</li>
+                        </ul>
+                    </section>
+
+                    <!-- Storage and retention -->
+                    <section>
+                        <h2 class="text-xl font-bold text-linkedin-text mb-4">4. Storage and Retention</h2>
+                        <p class="mb-4">
+                            Your data is stored on servers located in Europe.
+                        </p>
+                        <div class="bg-linkedin-blue-soft border border-linkedin-stroke rounded-lg p-4 mb-4">
+                            <p class="font-semibold text-linkedin-text mb-2">90-day retention</p>
+                            <p>All analytics data is automatically deleted after 90 days.</p>
+                        </div>
+                        <p class="mb-4">
+                            No data is sent to third-party analytics services. All communications use HTTPS/TLS encryption.
+                        </p>
+                    </section>
+
+                    <!-- Data sharing -->
+                    <section>
+                        <h2 class="text-xl font-bold text-linkedin-text mb-4">5. Data Sharing</h2>
+                        <p class="mb-4">
+                            We never sell your personal data. We only share data with:
+                        </p>
+                        <ul class="list-disc list-inside space-y-2 ml-4">
+                            <li><strong>OpenAI:</strong> For AI processing of comments</li>
+                            <li><strong>Stripe:</strong> For secure payment processing</li>
+                            <li><strong>Google:</strong> For OAuth authentication</li>
+                        </ul>
+                        <div class="bg-linkedin-blue-soft border border-linkedin-stroke rounded-lg p-4 mt-4">
+                            <p class="font-semibold text-linkedin-text">
+                                We do not use any third-party analytics services (no Google Analytics, no Mixpanel). All metrics are collected and stored internally.
+                            </p>
+                        </div>
+                    </section>
+
+                    <!-- Cookies and local storage -->
+                    <section>
+                        <h2 class="text-xl font-bold text-linkedin-text mb-4">6. Cookies and Local Storage</h2>
+                        <p class="mb-4">
+                            The extension uses browser local storage (localStorage) to:
+                        </p>
+                        <ul class="list-disc list-inside space-y-2 ml-4">
+                            <li>Store your authentication token</li>
+                            <li>Remember your preferences (theme, language)</li>
+                            <li>Improve application performance</li>
+                        </ul>
+                    </section>
+
+                    <!-- Your rights (GDPR) -->
+                    <section>
+                        <h2 class="text-xl font-bold text-linkedin-text mb-4">7. Your Rights (GDPR)</h2>
+                        <p class="mb-4">You have the following rights:</p>
+                        <ul class="list-disc list-inside space-y-2 ml-4">
+                            <li><strong>Access:</strong> Obtain a copy of your personal data</li>
+                            <li><strong>Rectification:</strong> Correct inaccurate data</li>
+                            <li><strong>Erasure:</strong> Request deletion of your data</li>
+                            <li><strong>Portability:</strong> Receive your data in a structured format</li>
+                            <li><strong>Opposition:</strong> Object to the processing of your data</li>
+                        </ul>
+                        <div class="bg-linkedin-blue-soft border border-linkedin-stroke rounded-lg p-4 mt-4">
+                            <p class="font-semibold text-linkedin-text mb-2">To exercise your right to erasure</p>
+                            <p>Send an email to <strong>privacy@i2f-entreprise.fr</strong>. Your data will be deleted within 30 days.</p>
+                        </div>
+                    </section>
+
+                    <!-- Data retention -->
+                    <section>
+                        <h2 class="text-xl font-bold text-linkedin-text mb-4">8. Data Retention</h2>
+                        <ul class="list-disc list-inside space-y-2 ml-4">
+                            <li><strong>Analytics:</strong> 90-day retention, then automatic deletion</li>
+                            <li><strong>User account:</strong> Retained as long as your account is active. Deleted within 30 days after erasure request</li>
+                        </ul>
+                    </section>
+
+                    <!-- Modifications -->
+                    <section>
+                        <h2 class="text-xl font-bold text-linkedin-text mb-4">9. Changes to This Policy</h2>
+                        <p>
+                            We may update this privacy policy periodically.
+                            Changes will be published on this page with an updated date.
+                            We encourage you to review this page regularly.
+                        </p>
+                    </section>
+
+                    <!-- Contact -->
+                    <section>
+                        <h2 class="text-xl font-bold text-linkedin-text mb-4">10. Contact</h2>
+                        <p class="mb-4">
+                            For any questions regarding this privacy policy or your personal data,
+                            you can contact us:
+                        </p>
+                        <div class="bg-linkedin-blue-soft border border-linkedin-stroke rounded-lg p-4">
+                            <p><strong>Email:</strong> privacy@i2f-entreprise.fr</p>
+                            <p class="mt-2"><strong>Data Controller:</strong> I2F Entreprise</p>
+                        </div>
+                    </section>
+
+                </div>
             </div>
 
             <!-- Back to home -->
@@ -269,7 +472,7 @@
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
                     </svg>
-                    Retour à l'accueil
+                    <span id="back-link-text">Retour à l'accueil</span>
                 </a>
             </div>
         </article>
@@ -280,6 +483,36 @@
         </footer>
     </div>
 
+    <script>
+        function switchLanguage(lang) {
+            const contentFr = document.getElementById('content-fr');
+            const contentEn = document.getElementById('content-en');
+            const btnFr = document.getElementById('btn-fr');
+            const btnEn = document.getElementById('btn-en');
+            const htmlElement = document.documentElement;
+            const backLinkText = document.getElementById('back-link-text');
+
+            if (lang === 'fr') {
+                contentFr.style.display = 'block';
+                contentEn.style.display = 'none';
+                btnFr.classList.add('bg-linkedin-blue', 'text-white');
+                btnFr.classList.remove('bg-white', 'text-linkedin-text', 'hover:bg-linkedin-blue-soft');
+                btnEn.classList.remove('bg-linkedin-blue', 'text-white');
+                btnEn.classList.add('bg-white', 'text-linkedin-text', 'hover:bg-linkedin-blue-soft');
+                htmlElement.setAttribute('lang', 'fr');
+                backLinkText.textContent = 'Retour à l\'accueil';
+            } else {
+                contentFr.style.display = 'none';
+                contentEn.style.display = 'block';
+                btnEn.classList.add('bg-linkedin-blue', 'text-white');
+                btnEn.classList.remove('bg-white', 'text-linkedin-text', 'hover:bg-linkedin-blue-soft');
+                btnFr.classList.remove('bg-linkedin-blue', 'text-white');
+                btnFr.classList.add('bg-white', 'text-linkedin-text', 'hover:bg-linkedin-blue-soft');
+                htmlElement.setAttribute('lang', 'en');
+                backLinkText.textContent = 'Back to home';
+            }
+        }
+    </script>
 
 </body>
 </html>
