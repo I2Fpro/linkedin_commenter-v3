@@ -13,6 +13,7 @@ from database import get_db
 from models import User
 from auth import create_user_token, AuthManager
 from schemas.user import UserResponse
+from utils.trial_manager import TrialManager
 
 router = APIRouter()
 
@@ -71,6 +72,13 @@ async def login_with_google(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Impossible de créer ou récupérer l'utilisateur"
             )
+
+        # Phase 2 — Fallback: verifier l'expiration du trial au login
+        try:
+            TrialManager.check_user_trial_inline(db, user)
+            db.refresh(user)
+        except Exception:
+            pass  # Non-blocking: le login continue normalement
 
         # Mettre à jour le nom si nécessaire
         if not user.name and google_user_info.get("name"):
