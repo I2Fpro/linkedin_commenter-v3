@@ -12,14 +12,7 @@ var API_CONFIG = {
   DATABASE_URL: 'postgres://database-host:5432',
 
   // Timeout par défaut pour les requêtes API (en millisecondes)
-  REQUEST_TIMEOUT: 15000,
-
-  // Configuration PostHog
-  posthog: {
-    apiKey: 'phc_Igj1h8n3Ap7uuJNxZ5cVgsoqpx8kC9hALpPMyYWO0TQ',
-    apiHost: 'https://eu.i.posthog.com',
-    enabled: true
-  }
+  REQUEST_TIMEOUT: 15000
 };
 }
 

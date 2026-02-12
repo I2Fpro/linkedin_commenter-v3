@@ -156,9 +156,6 @@ class GoogleAuth {
         user_id: anonymousUserId,
         user_plan: userPlan
       });
-
-      // Track user authentication avec PostHog (Plan v3)
-      if (typeof posthogClient !== 'undefined' && typeof posthog !== 'undefined' && anonymousUserId) {
         try {
 
           // Get current UI language
@@ -172,46 +169,34 @@ class GoogleAuth {
             console.warn('Could not fetch UI language:', e);
           }
 
-          // Wait for PostHog to be ready
-          await posthogClient.ready();
-
           // Get current anonymous ID before aliasing
-          const currentAnon = posthog.get_distinct_id();
 
           // Alias the anonymous session to the user ID
           if (currentAnon && currentAnon !== anonymousUserId) {
             try {
-              posthog.alias(currentAnon, anonymousUserId);
-              console.log('🔗 PostHog alias created:', currentAnon, '->', anonymousUserId);
             } catch (e) {
-              console.warn('PostHog alias failed:', e);
             }
           }
 
           // Identifier l'utilisateur avec le userId anonyme (PAS d'email)
-          posthogClient.identify(anonymousUserId, {
             plan: userPlan,
             role: userRole,
             interface_lang: currentUiLang
           });
 
           // Set person properties (sans email)
-          posthogClient.setPersonProperties({
             plan: userPlan,
             role: userRole,
             interface_lang: currentUiLang
           });
 
           // Capture user_login event (sans email)
-          posthogClient.capture('user_login', {
             user_id: anonymousUserId,
             plan: userPlan,
             auth_method: 'google_oauth2'
           });
 
-          console.log('✅ PostHog user tracking completed (anonyme):', anonymousUserId);
         } catch (e) {
-          console.warn('PostHog tracking failed:', e);
         }
       }
 
@@ -230,15 +215,6 @@ class GoogleAuth {
       if (token) {
         chrome.identity.removeCachedAuthToken({ token }, () => {});
         try { await fetch(`https://oauth2.googleapis.com/revoke?token=${token}`, { method: 'POST' }); } catch {}
-      }
-
-      // Track user logout
-      if (typeof posthogClient !== 'undefined') {
-        try {
-          posthogClient.trackUserLogout();
-        } catch (e) {
-          console.warn('PostHog tracking failed:', e);
-        }
       }
 
       await this.clearState();

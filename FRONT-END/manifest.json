@@ -16,10 +16,7 @@
     "__USERS_API_URL__/*",
     "https://accounts.google.com/*",
     "https://www.googleapis.com/*",
-    "https://oauth2.googleapis.com/*",
-    "https://us.posthog.com/*",
-    "https://eu.posthog.com/*",
-    "https://eu.i.posthog.com/*"
+    "https://oauth2.googleapis.com/*"
   ],
   "oauth2": {
     "client_id": "__GOOGLE_CLIENT_ID__",
@@ -51,23 +48,12 @@
         "config.js",
         "user-id-utils.js",
         "auth.js",
-        "posthog.min.js",
-        "posthog-client.js",
         "toast.js",
         "content.js"
       ],
       "css": [
         "content.css"
       ]
-    },
-    {
-      "matches": [
-        "*://*.linkedin.com/*"
-      ],
-      "js": [
-        "posthog-bridge.js"
-      ],
-      "world": "MAIN"
     }
   ],
   "background": {
@@ -81,9 +67,6 @@
         "config.js",
         "user-id-utils.js",
         "auth.js",
-        "posthog.min.js",
-        "posthog-client.js",
-        "posthog-bridge.js",
         "toast.js"
       ],
       "matches": [

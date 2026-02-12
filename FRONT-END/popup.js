@@ -54,7 +54,6 @@ document.addEventListener('DOMContentLoaded', async function() {
   const manageSubscriptionBtn = document.getElementById('manageSubscriptionBtn');
   const accountBadge = document.getElementById('accountBadge');
 
-
   // Langue
   const interfaceLangPrev = document.getElementById('interfaceLangPrev');
   const interfaceLangNext = document.getElementById('interfaceLangNext');
@@ -121,17 +120,6 @@ document.addEventListener('DOMContentLoaded', async function() {
     // Tester la connectivité backend
     await window.extensionConfig.checkBackendConnectivity();
 
-    // Track settings opened and usage session start
-    if (typeof posthogClient !== 'undefined') {
-      try {
-        posthogClient.trackSettingsOpened();
-        posthogClient.trackUsageSessionStart();
-        window.sessionStartTime = Date.now();
-      } catch (e) {
-        console.warn('PostHog tracking failed:', e);
-      }
-    }
-
     console.log('✅ Popup initialisé avec succès');
   }
 
@@ -148,17 +136,6 @@ document.addEventListener('DOMContentLoaded', async function() {
       tab.classList.add('active');
       document.getElementById(`${targetTab}-content`).classList.add('active');
 
-      // Track tab change
-      if (typeof posthogClient !== 'undefined') {
-        try {
-          posthogClient.trackFeatureUsed('tab_navigation', {
-            tab_name: targetTab,
-            tab_type: 'main'
-          });
-        } catch (e) {
-          console.warn('PostHog tracking failed:', e);
-        }
-      }
     });
   });
 
@@ -175,36 +152,11 @@ document.addEventListener('DOMContentLoaded', async function() {
       tab.classList.add('active');
       document.getElementById(`${targetSubTab}-content`).classList.add('active');
 
-      // Track subtab change
-      if (typeof posthogClient !== 'undefined') {
-        try {
-          posthogClient.trackFeatureUsed('tab_navigation', {
-            tab_name: targetSubTab,
-            tab_type: 'sub'
-          });
-        } catch (e) {
-          console.warn('PostHog tracking failed:', e);
-        }
-      }
     });
   });
 
   // ==================== BOUTON FERMER ====================
   closeBtn.addEventListener('click', () => {
-    // Track popup closed and usage session end
-    if (typeof posthogClient !== 'undefined') {
-      try {
-        posthogClient.trackFeatureUsed('settings', { action: 'closed' });
-
-        // Track session end with duration
-        if (window.sessionStartTime) {
-          const sessionDuration = Date.now() - window.sessionStartTime;
-          posthogClient.trackUsageSessionEnd(sessionDuration);
-        }
-      } catch (e) {
-        console.warn('PostHog tracking failed:', e);
-      }
-    }
     window.close();
   });
 
@@ -227,21 +179,6 @@ document.addEventListener('DOMContentLoaded', async function() {
             console.warn('⚠️ Erreur lors de la notification au background:', chrome.runtime.lastError.message);
           }
         });
-
-        // Track user authentication (le tracking détaillé est dans auth.js)
-        if (typeof posthogClient !== 'undefined') {
-          try {
-            const userData = window.googleAuth.getUserData();
-            if (userData) {
-              posthogClient.trackUserAuthenticated(userData.email, {
-                name: userData.name,
-                plan: currentState.planData?.role || 'FREE'
-              });
-            }
-          } catch (e) {
-            console.warn('PostHog tracking failed:', e);
-          }
-        }
 
         // Afficher le badge de notification
         accountBadge.style.display = 'block';
@@ -272,15 +209,6 @@ document.addEventListener('DOMContentLoaded', async function() {
       if (success) {
         await updateUI();
 
-        // Track user logout
-        if (typeof posthogClient !== 'undefined') {
-          try {
-            posthogClient.trackUserLogout();
-          } catch (e) {
-            console.warn('PostHog tracking failed:', e);
-          }
-        }
-
         // Notifier le background script
         chrome.runtime.sendMessage({ action: 'authStateChanged', authenticated: false }, (response) => {
           if (chrome.runtime.lastError) {
@@ -309,16 +237,6 @@ document.addEventListener('DOMContentLoaded', async function() {
     saveSettings();
     window.i18n.setLanguage(currentState.interfaceLanguage);
     updateTooltips();
-
-    // Track interface language change
-    if (typeof posthogClient !== 'undefined') {
-      try {
-        posthogClient.trackInterfaceLanguageChanged(currentState.interfaceLanguage, oldLanguage);
-        posthogClient.trackInterfaceLanguageSet(currentState.interfaceLanguage);
-      } catch (e) {
-        console.warn('PostHog tracking failed:', e);
-      }
-    }
   });
 
   interfaceLangNext.addEventListener('click', () => {
@@ -330,16 +248,6 @@ document.addEventListener('DOMContentLoaded', async function() {
     saveSettings();
     window.i18n.setLanguage(currentState.interfaceLanguage);
     updateTooltips();
-
-    // Track interface language change
-    if (typeof posthogClient !== 'undefined') {
-      try {
-        posthogClient.trackInterfaceLanguageChanged(currentState.interfaceLanguage, oldLanguage);
-        posthogClient.trackInterfaceLanguageSet(currentState.interfaceLanguage);
-      } catch (e) {
-        console.warn('PostHog tracking failed:', e);
-      }
-    }
   });
 
   // Comment Language
@@ -350,15 +258,6 @@ document.addEventListener('DOMContentLoaded', async function() {
     currentState.commentLanguage = LANGUAGES[newIndex];
     updateLanguageDisplay();
     saveSettings();
-
-    // Track comment language change
-    if (typeof posthogClient !== 'undefined') {
-      try {
-        posthogClient.trackCommentLanguageChanged(currentState.commentLanguage, oldLanguage);
-      } catch (e) {
-        console.warn('PostHog tracking failed:', e);
-      }
-    }
   });
 
   commentLangNext.addEventListener('click', () => {
@@ -368,15 +267,6 @@ document.addEventListener('DOMContentLoaded', async function() {
     currentState.commentLanguage = LANGUAGES[newIndex];
     updateLanguageDisplay();
     saveSettings();
-
-    // Track comment language change
-    if (typeof posthogClient !== 'undefined') {
-      try {
-        posthogClient.trackCommentLanguageChanged(currentState.commentLanguage, oldLanguage);
-      } catch (e) {
-        console.warn('PostHog tracking failed:', e);
-      }
-    }
   });
 
   // ==================== AUTO-CLOSE EMOTIONS PANEL ====================
@@ -402,15 +292,6 @@ document.addEventListener('DOMContentLoaded', async function() {
     currentState.optionsCount = GENERATIONS[newIndex];
     updateGenerationsDisplay();
     saveSettings();
-
-    // Track options count change
-    if (typeof posthogClient !== 'undefined') {
-      try {
-        posthogClient.trackOptionsCountChanged(currentState.optionsCount, oldCount);
-      } catch (e) {
-        console.warn('PostHog tracking failed:', e);
-      }
-    }
   });
 
   generationsNext.addEventListener('click', () => {
@@ -420,15 +301,6 @@ document.addEventListener('DOMContentLoaded', async function() {
     currentState.optionsCount = GENERATIONS[newIndex];
     updateGenerationsDisplay();
     saveSettings();
-
-    // Track options count change
-    if (typeof posthogClient !== 'undefined') {
-      try {
-        posthogClient.trackOptionsCountChanged(currentState.optionsCount, oldCount);
-      } catch (e) {
-        console.warn('PostHog tracking failed:', e);
-      }
-    }
   });
 
   // ==================== UPGRADE ====================
@@ -436,15 +308,6 @@ document.addEventListener('DOMContentLoaded', async function() {
   upgradeBtn.addEventListener('click', () => {
     const currentPlan = currentState.planData?.role || 'FREE';
     const targetPlan = currentPlan === 'FREE' ? 'MEDIUM' : 'PREMIUM';
-
-    // Track upgrade button click
-    if (typeof posthogClient !== 'undefined') {
-      try {
-        posthogClient.trackUpgradeButtonClicked(currentPlan, targetPlan);
-      } catch (e) {
-        console.warn('PostHog tracking failed:', e);
-      }
-    }
 
     // Rediriger vers la page de pricing avec l'ancre #pricing
     chrome.tabs.create({ url: '__SITE_URL__/#pricing' });

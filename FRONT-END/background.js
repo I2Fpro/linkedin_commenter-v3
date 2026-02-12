@@ -12,103 +12,6 @@ try {
   };
 }
 
-// Import PostHog - Charger posthog.min.js puis initialiser
-let posthogClient = null;
-
-// Charger posthog.min.js via importScripts (Manifest V3 compatible)
-try {
-  self.importScripts('posthog.min.js');
-  console.log('PostHog.js loaded:', typeof posthog !== 'undefined');
-
-  // Initialiser PostHog avec la configuration
-  if (typeof posthog !== 'undefined') {
-    posthog.init('phc_Igj1h8n3Ap7uuJNxZ5cVgsoqpx8kC9hALpPMyYWO0TQ', {
-      api_host: 'https://eu.i.posthog.com',
-      person_profiles: 'always',
-      persistence: 'localStorage',
-      autocapture: false,
-      disable_session_recording: true,
-
-      // Empêche le chargement de scripts externes (CSP)
-      disable_external_dependency_loading: true,
-
-      // Évite les activations via /decide qui pourraient relancer des deps externes
-      advanced_disable_decide: true,
-
-      loaded: (ph) => {
-        console.log('📊 PostHog initialisé dans background.js', {
-          distinctId: ph.get_distinct_id(),
-          apiHost: 'https://eu.i.posthog.com'
-        });
-      }
-    });
-
-    // Créer un wrapper simple pour la compatibilité
-    posthogClient = {
-      initialized: true,
-      capture: (event, properties = {}) => {
-        try {
-          console.log('📊 PostHog capture (background):', event, properties);
-          posthog.capture(event, properties);
-        } catch (error) {
-          console.error('❌ Erreur capture PostHog:', error);
-        }
-      },
-      identify: (userId, properties = {}) => {
-        try {
-          console.log('👤 PostHog identify (background):', userId, properties);
-          posthog.identify(userId, properties);
-        } catch (error) {
-          console.error('❌ Erreur identify PostHog:', error);
-        }
-      },
-      reset: () => {
-        try {
-          console.log('🔄 PostHog reset (background)');
-          posthog.reset();
-        } catch (error) {
-          console.error('❌ Erreur reset PostHog:', error);
-        }
-      },
-      trackCommentGenerationStarted: (options) => {
-        posthogClient.capture('generation_started', {
-          generation_type: options.generationType || 'automatic',
-          has_custom_prompt: options.hasCustomPrompt || false,
-          tone: options.tone || null,
-          language: options.language || 'fr',
-          emotion: options.emotion || null,
-          emotionIntensity: options.emotionIntensity || null,
-          style: options.style || null,
-          newsEnrichment: options.newsEnrichment || 'disabled',
-          length: options.length,
-          optionsCount: options.optionsCount,
-          timestamp: new Date().toISOString()
-        });
-      },
-      trackCommentGenerated: (options) => {
-        posthogClient.capture('comment_generated', {
-          generation_type: options.generationType || 'automatic',
-          has_custom_prompt: options.hasCustomPrompt || false,
-          success: options.success !== false,
-          duration_ms: options.durationMs || 0,
-          options_count: options.optionsCount || 0,
-          tone: options.tone || null,
-          language: options.language || 'fr',
-          emotion: options.emotion || null,
-          emotionIntensity: options.emotionIntensity || null,
-          style: options.style || null,
-          error: options.error || null,
-          timestamp: new Date().toISOString()
-        });
-      }
-    };
-    self.posthogClient = posthogClient;
-    console.log('✅ PostHog client wrapper créé dans background');
-  }
-} catch (err) {
-  console.warn('Failed to load PostHog:', err);
-}
-
 // Valeurs par défaut (seront mises à jour après import)
 let BACKEND_URL = API_CONFIG.AI_SERVICE_URL;
 let USER_SERVICE_URL = API_CONFIG.USER_SERVICE_URL;
@@ -244,7 +147,7 @@ async function fetchAndStoreUserProfile(token) {
           userPlan = quotaData.role || 'FREE';
           console.log('✅ Plan utilisateur récupéré:', userPlan);
 
-          // Stocker l'user_id pour PostHog
+          // Stocker l'user_id
           if (quotaData.user_id) {
             await chrome.storage.local.set({
               user_id: quotaData.user_id
@@ -257,7 +160,7 @@ async function fetchAndStoreUserProfile(token) {
         console.warn('⚠️ Impossible de récupérer le plan utilisateur:', e);
       }
 
-      // Stocker dans chrome.storage.local (sans email pour PostHog)
+      // Stocker dans chrome.storage.local
       await chrome.storage.local.set({
         user_name: userData.name || null,
         user_plan: userPlan,
@@ -274,50 +177,6 @@ async function fetchAndStoreUserProfile(token) {
         }
       }
 
-      // Identifier l'utilisateur dans PostHog avec userId anonyme (SHA256)
-      if (posthogClient && typeof posthog !== 'undefined') {
-        try {
-          // Récupérer le userId anonyme depuis le storage
-          const storageLocal = await chrome.storage.local.get(['user_id', 'userId']);
-          const storageSync = await chrome.storage.sync.get(['interfaceLanguage']);
-          // Lire user_id en priorité, fallback sur userId
-          const userId = storageLocal.user_id || storageLocal.userId;
-          const interfaceLang = storageSync.interfaceLanguage || 'fr';
-
-          if (userId) {
-            // Get current anonymous ID before aliasing
-            const currentAnon = posthog.get_distinct_id();
-
-            // Alias the anonymous session to the user ID
-            if (currentAnon && currentAnon !== userId) {
-              try {
-                posthog.alias(currentAnon, userId);
-                console.log('🔗 PostHog alias created (background):', currentAnon, '->', userId);
-              } catch (e) {
-                console.warn('PostHog alias failed:', e);
-              }
-            }
-
-            // Utiliser userId anonyme comme distinct_id (SANS email)
-            posthogClient.identify(userId, {
-              plan: userPlan,
-              interface_lang: interfaceLang
-            });
-
-            // Set person properties
-            posthogClient.setPersonProperties({
-              plan: userPlan,
-              interface_lang: interfaceLang
-            });
-
-            console.log('📊 PostHog - Utilisateur identifié avec userId anonyme:', userId);
-          } else {
-            console.warn('⚠️ userId anonyme non disponible');
-          }
-        } catch (e) {
-          console.warn('PostHog identification failed:', e);
-        }
-      }
     }
   } catch (error) {
     console.error('❌ Erreur récupération profil utilisateur:', error);
@@ -484,16 +343,6 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 	    chrome.storage.local.remove(['user_id', 'user_email', 'user_name', 'user_plan', 'user_picture'], () => {
 	      console.log('🧹 Données utilisateur nettoyées');
 	    });
-
-	    // Reset PostHog
-	    if (posthogClient && posthogClient.reset) {
-	      try {
-	        posthogClient.reset();
-	        console.log('📊 PostHog reset (déconnexion)');
-	      } catch (e) {
-	        console.warn('PostHog reset failed:', e);
-	      }
-	    }
 	  }
 
 	  // Relayer vers tous les content scripts
@@ -550,50 +399,10 @@ async function handleGenerateComments(data, sendResponse) {
       newsCount: requestData.newsContext ? requestData.newsContext.length : 0
     });
 
-    // Track comment generation started
-    if (posthogClient) {
-      try {
-        posthogClient.trackCommentGenerationStarted({
-          generationType: 'automatic',
-          tone: requestData.tone,
-          language: requestData.commentLanguage,
-          isComment: requestData.isComment || false,
-          hasCustomPrompt: false,
-          emotion: requestData.emotion || null,
-          emotionIntensity: requestData.intensity || null,
-          style: requestData.style || null,
-          newsEnrichment: requestData.newsContext ? 'enabled' : 'disabled',
-          length: requestData.length,
-          optionsCount: requestData.optionsCount
-        });
-      } catch (e) {
-        console.warn('PostHog tracking failed:', e);
-      }
-    }
-
     // Faire la requête
     const result = await makeBackendRequest('/generate-comments', requestData, token);
 
     const durationMs = Date.now() - startTime;
-
-    // Track comment generation success
-    if (posthogClient) {
-      try {
-        posthogClient.trackCommentGenerated({
-          generationType: 'automatic',
-          success: true,
-          durationMs: durationMs,
-          optionsCount: requestData.optionsCount,
-          tone: requestData.tone,
-          language: requestData.commentLanguage,
-          emotion: requestData.emotion || null,
-          emotionIntensity: requestData.intensity || null,
-          style: requestData.style || null
-        });
-      } catch (e) {
-        console.warn('PostHog tracking failed:', e);
-      }
-    }
 
     // V3 Story 5.5 — Inclure web_search_source_url et web_search_fallback dans la reponse
     sendResponse({
@@ -606,20 +415,6 @@ async function handleGenerateComments(data, sendResponse) {
     console.error('❌ Erreur génération:', error);
 
     const durationMs = Date.now() - startTime;
-
-    // Track comment generation error
-    if (posthogClient) {
-      try {
-        posthogClient.trackCommentGenerated({
-          generationType: 'automatic',
-          success: false,
-          durationMs: durationMs,
-          error: error.message
-        });
-      } catch (e) {
-        console.warn('PostHog tracking failed:', e);
-      }
-    }
 
     sendResponse({ error: error.message });
   }
@@ -657,49 +452,9 @@ async function handleGenerateCommentsWithPrompt(data, sendResponse) {
       newsCount: requestData.newsContext ? requestData.newsContext.length : 0
     });
 
-    // Track comment generation started with prompt
-    if (posthogClient) {
-      try {
-        posthogClient.trackCommentGenerationStarted({
-          generationType: 'with_prompt',
-          tone: requestData.tone,
-          language: requestData.commentLanguage,
-          isComment: requestData.isComment || false,
-          hasCustomPrompt: true,
-          emotion: requestData.emotion || null,
-          emotionIntensity: requestData.intensity || null,
-          style: requestData.style || null,
-          newsEnrichment: requestData.newsContext ? 'enabled' : 'disabled',
-          length: requestData.length,
-          optionsCount: requestData.optionsCount
-        });
-      } catch (e) {
-        console.warn('PostHog tracking failed:', e);
-      }
-    }
-
     const result = await makeBackendRequest('/generate-comments-with-prompt', requestData, token);
 
     const durationMs = Date.now() - startTime;
-
-    // Track comment generation success
-    if (posthogClient) {
-      try {
-        posthogClient.trackCommentGenerated({
-          generationType: 'with_prompt',
-          success: true,
-          durationMs: durationMs,
-          optionsCount: requestData.optionsCount,
-          tone: requestData.tone,
-          language: requestData.commentLanguage,
-          emotion: requestData.emotion || null,
-          emotionIntensity: requestData.intensity || null,
-          style: requestData.style || null
-        });
-      } catch (e) {
-        console.warn('PostHog tracking failed:', e);
-      }
-    }
 
     // V3 Story 5.5 — Inclure web_search_source_url et web_search_fallback dans la reponse
     sendResponse({
@@ -712,20 +467,6 @@ async function handleGenerateCommentsWithPrompt(data, sendResponse) {
     console.error('❌ Erreur génération avec prompt:', error);
 
     const durationMs = Date.now() - startTime;
-
-    // Track comment generation error
-    if (posthogClient) {
-      try {
-        posthogClient.trackCommentGenerated({
-          generationType: 'with_prompt',
-          success: false,
-          durationMs: durationMs,
-          error: error.message
-        });
-      } catch (e) {
-        console.warn('PostHog tracking failed:', e);
-      }
-    }
 
     sendResponse({ error: error.message });
   }

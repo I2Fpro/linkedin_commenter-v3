@@ -3,19 +3,11 @@
   'use strict';
 
   // Éviter la double-injection du script
-  if (window.__PH_BOOTED__) {
     console.log('⚠️ Content script déjà chargé, arrêt');
     return;
   }
-  window.__PH_BOOTED__ = true;
 
   console.log('🚀 LinkedIn AI Commenter - Content script chargé');
-
-  // Initialiser PostHog et attendre qu'il soit prêt
-  const phClient = window.posthogClient;
-  if (phClient) {
-    phClient.init();
-  }
 
   // État local
   let isAuthenticated = false;
@@ -304,16 +296,7 @@
   // Initialiser l'application au démarrage
   (async function boot() {
     await loadLanguageSettings();
-
-    // Attendre que PostHog soit prêt avant de continuer
-    if (phClient) {
-      await phClient.ready();
-      console.log('✅ PostHog prêt');
-    }
-
-    // Vérifier l'authentification après l'init
-    await checkAuthentication();
-  })();
+    )();
 
   // Vérifier l'authentification
   async function checkAuthentication() {
@@ -321,16 +304,11 @@
       const response = await chrome.runtime.sendMessage({ action: 'checkAuthentication' });
       isAuthenticated = response && response.authenticated;
       console.log('État authentification:', isAuthenticated);
-
-      // Identifier l'utilisateur dans PostHog si authentifié
-      if (isAuthenticated && phClient && typeof posthog !== 'undefined') {
         try {
           // Récupérer les informations utilisateur depuis le storage
           const userInfo = await chrome.storage.local.get(['user_id', 'user_email', 'user_name', 'user_plan']);
 
           if (userInfo.user_id) {
-            console.log('📊 Identification PostHog avec user_id:', userInfo.user_id);
-            phClient.identify(userInfo.user_id, {
               email: userInfo.user_email,
               name: userInfo.user_name || null,
               plan: userInfo.user_plan || 'FREE'
@@ -338,7 +316,6 @@
           } else if (userInfo.user_email) {
             // Fallback sur email si user_id non disponible
             console.warn('⚠️ user_id non disponible, utilisation de l\'email');
-            phClient.identify(userInfo.user_email, {
               email: userInfo.user_email,
               name: userInfo.user_name || null,
               plan: userInfo.user_plan || 'FREE'
@@ -347,10 +324,8 @@
 
           // Anti-duplicate session logic (Plan v3)
           if (!window.__PH_BOOTED__) {
-            window.__PH_BOOTED__ = true;
             const key = 'ph_session_started';
             if (!sessionStorage.getItem(key)) {
-              posthog.capture('usage_session_start');
               sessionStorage.setItem(key, '1');
               console.log('📊 Session d\'utilisation démarrée');
             } else {
@@ -358,13 +333,10 @@
             }
 
             // Track session end events
-            window.addEventListener('beforeunload', () => posthog.capture('usage_session_end'));
             document.addEventListener('visibilitychange', () => {
-              if (document.visibilityState === 'hidden') posthog.capture('usage_session_end');
             });
           }
         } catch (e) {
-          console.warn('PostHog identification failed:', e);
         }
       }
     } catch (error) {
@@ -985,12 +957,7 @@
       console.log('Emotion selectionnee:', emotionKey, 'Intensite:', intensityKey);
 
       // Track
-      if (phClient) {
-        try {
-          phClient.trackEmotionSelected(emotionKey, intensityKey);
-        } catch (e) {
-          console.warn('PostHog tracking failed:', e);
-        }
+      
       }
 
       // Fermer la roue
@@ -1451,12 +1418,7 @@
       updateButtonWithStyle(triggerButton, styleKey);
 
       // Track
-      if (phClient) {
-        try {
-          phClient.trackStyleSelected(styleKey);
-        } catch (e) {
-          console.warn('PostHog tracking failed:', e);
-        }
+      
       }
 
       // Fermer la roue
@@ -1939,12 +1901,7 @@
     console.log('Style sélectionné:', style.key);
 
     // Track style selection
-    if (phClient) {
-      try {
-        phClient.trackStyleSelected(style.key);
-      } catch (e) {
-        console.warn('PostHog tracking failed:', e);
-      }
+    
     }
   }
 
@@ -1966,12 +1923,7 @@
     console.log('Émotion sélectionnée:', emotion.key, 'Intensité:', intensity);
 
     // Track emotion selection
-    if (phClient) {
-      try {
-        phClient.trackEmotionSelected(emotion.key, intensity);
-      } catch (e) {
-        console.warn('PostHog tracking failed:', e);
-      }
+    
     }
   }
 
@@ -3256,19 +3208,7 @@
     const selectedIntensity = commentBox.getAttribute('data-selected-intensity');
     const selectedStyle = commentBox.getAttribute('data-selected-style');
 
-    if (phClient) {
-      try {
-        phClient.trackGenerationStarted({
-          generationType: 'automatic',
-          hasCustomPrompt: false,
-          language: currentCommentLanguage,
-          emotion: selectedEmotion,
-          intensity: selectedIntensity,
-          style: selectedStyle,
-          isReply: isReplyToComment
-        });
-      } catch (e) {
-        console.warn('PostHog tracking failed:', e);
+     catch (e) {
       }
     }
 
@@ -3367,22 +3307,7 @@
           window.toastNotification.error(t('error') + ': ' + response.error);
 
           // Track generation error
-          if (phClient) {
-            try {
-              phClient.trackCommentGeneration({
-                generationType: 'automatic',
-                hasCustomPrompt: false,
-                language: currentCommentLanguage,
-                emotion: selectedEmotion,
-                intensity: selectedIntensity,
-                style: selectedStyle,
-                isReply: isReplyToComment,
-                success: false,
-                error: response.error,
-                durationMs: generationDuration
-              });
-            } catch (e) {
-              console.warn('PostHog tracking failed:', e);
+           catch (e) {
             }
           }
         } else if (response && response.comments) {
@@ -3396,22 +3321,7 @@
           }
 
           // Track successful generation
-          if (phClient) {
-            try {
-              phClient.trackCommentGeneration({
-                generationType: 'automatic',
-                hasCustomPrompt: false,
-                language: currentCommentLanguage,
-                emotion: selectedEmotion,
-                intensity: selectedIntensity,
-                style: selectedStyle,
-                optionsCount: response.comments.length,
-                isReply: isReplyToComment,
-                success: true,
-                durationMs: generationDuration
-              });
-            } catch (e) {
-              console.warn('PostHog tracking failed:', e);
+           catch (e) {
             }
           }
 
@@ -3436,22 +3346,7 @@
       window.toastNotification.error(t('error') + ': ' + error.message);
 
       // Track generation exception
-      if (phClient) {
-        try {
-          phClient.trackCommentGeneration({
-            generationType: 'automatic',
-            hasCustomPrompt: false,
-            language: currentCommentLanguage,
-            emotion: selectedEmotion,
-            intensity: selectedIntensity,
-            style: selectedStyle,
-            isReply: isReplyToComment,
-            success: false,
-            error: error.message,
-            durationMs: generationDuration
-          });
-        } catch (e) {
-          console.warn('PostHog tracking failed:', e);
+       catch (e) {
         }
       }
 
@@ -3548,21 +3443,7 @@
         const userPrompt = textArea.value.trim();
         if (userPrompt) {
           // Track prompt usage (Plan v3)
-          if (phClient) {
-            try {
-              const selectedEmotion = commentBox.getAttribute('data-selected-emotion');
-              const selectedIntensity = commentBox.getAttribute('data-selected-intensity');
-              const selectedStyle = commentBox.getAttribute('data-selected-style');
-
-              phClient.capture('prompt_used', {
-                custom: true,
-                length: userPrompt.length,
-                tone: selectedIntensity || null,
-                emotion: selectedEmotion || null,
-                style: selectedStyle || null
-              });
-            } catch (e) {
-              console.warn('PostHog tracking failed:', e);
+           catch (e) {
             }
           }
 
@@ -3633,19 +3514,7 @@
     const selectedIntensity = commentBox.getAttribute('data-selected-intensity');
     const selectedStyle = commentBox.getAttribute('data-selected-style');
 
-    if (phClient) {
-      try {
-        phClient.trackGenerationStarted({
-          generationType: 'with_prompt',
-          hasCustomPrompt: true,
-          language: currentCommentLanguage,
-          emotion: selectedEmotion,
-          intensity: selectedIntensity,
-          style: selectedStyle,
-          isReply: isReplyToComment
-        });
-      } catch (e) {
-        console.warn('PostHog tracking failed:', e);
+     catch (e) {
       }
     }
 
@@ -3750,22 +3619,7 @@
           window.toastNotification.error(t('error') + ': ' + response.error);
 
           // Track generation error
-          if (phClient) {
-            try {
-              phClient.trackCommentGeneration({
-                generationType: 'with_prompt',
-                hasCustomPrompt: true,
-                language: currentCommentLanguage,
-                emotion: selectedEmotion,
-                intensity: selectedIntensity,
-                style: selectedStyle,
-                isReply: isReplyToComment,
-                success: false,
-                error: response.error,
-                durationMs: generationDuration
-              });
-            } catch (e) {
-              console.warn('PostHog tracking failed:', e);
+           catch (e) {
             }
           }
         } else if (response && response.comments) {
@@ -3779,22 +3633,7 @@
           }
 
           // Track successful generation
-          if (phClient) {
-            try {
-              phClient.trackCommentGeneration({
-                generationType: 'with_prompt',
-                hasCustomPrompt: true,
-                language: currentCommentLanguage,
-                emotion: selectedEmotion,
-                intensity: selectedIntensity,
-                style: selectedStyle,
-                optionsCount: response.comments.length,
-                isReply: isReplyToComment,
-                success: true,
-                durationMs: generationDuration
-              });
-            } catch (e) {
-              console.warn('PostHog tracking failed:', e);
+           catch (e) {
             }
           }
         }
@@ -3812,22 +3651,7 @@
       window.toastNotification.error(t('error') + ': ' + error.message);
 
       // Track generation exception
-      if (phClient) {
-        try {
-          phClient.trackCommentGeneration({
-            generationType: 'with_prompt',
-            hasCustomPrompt: true,
-            language: currentCommentLanguage,
-            emotion: selectedEmotion,
-            intensity: selectedIntensity,
-            style: selectedStyle,
-            isReply: isReplyToComment,
-            success: false,
-            error: error.message,
-            durationMs: generationDuration
-          });
-        } catch (e) {
-          console.warn('PostHog tracking failed:', e);
+       catch (e) {
         }
       }
     }
@@ -4178,20 +4002,7 @@
 
       // Track comment insertion
       // V3 Story 5.5 — Utiliser currentComment.length (peut inclure la source)
-      if (phClient) {
-        try {
-          phClient.trackCommentInserted({
-            commentIndex: index,
-            commentLength: currentComment.length,
-            hasCustomPrompt: !!userPrompt,
-            language: metadata?.language || currentCommentLanguage,
-            emotion: metadata?.emotion,
-            intensity: metadata?.intensity,
-            style: metadata?.style,
-            isReply: isReplyToComment
-          });
-        } catch (e) {
-          console.warn('PostHog tracking failed:', e);
+       catch (e) {
         }
       }
     });
@@ -4275,26 +4086,8 @@
     const resizeStartTime = Date.now();
 
     // Track resize started
-    if (phClient) {
-      try {
-        phClient.trackFeatureUsed('comment_resize', {
-          direction: direction,
-          language: currentCommentLanguage,
-          is_reply: isReplyToComment,
-          comment_index: optionIndex,
-          current_word_count: originalComment.split(' ').length
-        });
-
-        // Track UI resized event
-        phClient.trackUIResized({
-          target: 'comment',
-          deltaW: direction === '+' ? 1 : -1,
-          deltaH: null,
-          width: originalComment.split(' ').length,
-          height: null
-        });
+    );
       } catch (e) {
-        console.warn('PostHog tracking failed:', e);
       }
     }
 
@@ -4314,16 +4107,7 @@
         window.toastNotification.error(t('error') + ': ' + response.error);
 
         // Track resize error
-        if (phClient) {
-          try {
-            phClient.capture('comment_resize_failed', {
-              direction: direction,
-              error: response.error,
-              duration_ms: resizeDuration,
-              language: currentCommentLanguage
-            });
-          } catch (e) {
-            console.warn('PostHog tracking failed:', e);
+         catch (e) {
           }
         }
       } else if (response.resizedComment) {
@@ -4335,17 +4119,7 @@
         }
 
         // Track successful resize
-        if (phClient) {
-          try {
-            phClient.capture('comment_resize_success', {
-              direction: direction,
-              duration_ms: resizeDuration,
-              language: currentCommentLanguage,
-              new_word_count: response.resizedComment.split(' ').length,
-              comment_index: optionIndex
-            });
-          } catch (e) {
-            console.warn('PostHog tracking failed:', e);
+         catch (e) {
           }
         }
       }
@@ -4430,16 +4204,7 @@
     const refineStartTime = Date.now();
 
     // Track refine started
-    if (phClient) {
-      try {
-        phClient.trackFeatureUsed('comment_refine', {
-          has_custom_prompt: !!userPrompt,
-          language: currentCommentLanguage,
-          is_reply: isReplyToComment,
-          comment_index: optionIndex
-        });
-      } catch (e) {
-        console.warn('PostHog tracking failed:', e);
+     catch (e) {
       }
     }
 
@@ -4459,15 +4224,7 @@
         window.toastNotification.error(t('error') + ': ' + response.error);
 
         // Track refine error
-        if (phClient) {
-          try {
-            phClient.capture('comment_refine_failed', {
-              error: response.error,
-              duration_ms: refineDuration,
-              language: currentCommentLanguage
-            });
-          } catch (e) {
-            console.warn('PostHog tracking failed:', e);
+         catch (e) {
           }
         }
       } else if (response.refinedComment) {
@@ -4479,15 +4236,7 @@
         }
 
         // Track successful refine
-        if (phClient) {
-          try {
-            phClient.capture('comment_refine_success', {
-              duration_ms: refineDuration,
-              language: currentCommentLanguage,
-              comment_index: optionIndex
-            });
-          } catch (e) {
-            console.warn('PostHog tracking failed:', e);
+         catch (e) {
           }
         }
       }
@@ -5208,19 +4957,7 @@
       updateAllButtons();
 
       if (isAuthenticated) {
-        // Identifier l'utilisateur dans PostHog lors de la connexion
-        if (phClient) {
-          chrome.storage.local.get(['user_email', 'user_name', 'user_plan'], (userInfo) => {
-            if (userInfo.user_email) {
-              console.log('📊 PostHog - Identification utilisateur:', userInfo.user_email);
-              try {
-                phClient.identify(userInfo.user_email, {
-                  email: userInfo.user_email,
-                  name: userInfo.user_name || null,
-                  plan: userInfo.user_plan || 'FREE'
-                });
-              } catch (e) {
-                console.warn('PostHog identification failed:', e);
+         catch (e) {
               }
             }
           });
@@ -5267,13 +5004,9 @@
           }
         });
       } else {
-        // Réinitialiser PostHog lors de la déconnexion
         if (phClient && phClient.reset) {
-          console.log('📊 PostHog - Réinitialisation (déconnexion)');
           try {
-            phClient.reset();
           } catch (e) {
-            console.warn('PostHog reset failed:', e);
           }
         }
       }
@@ -5468,58 +5201,6 @@
   newsObserver.observe(document.body, {
     childList: true,
     subtree: true
-  });
-
-  // ====================================================================
-  // POSTHOG BRIDGE - Listener pour les tests depuis la console de la page
-  // ====================================================================
-  window.addEventListener('message', (event) => {
-    // Vérifier que le message vient de la page elle-même
-    if (event.source !== window) return;
-
-    // Test d'événement PostHog depuis le bridge
-    if (event.data.type === 'POSTHOG_TEST_EVENT') {
-      console.log('🧪 PostHog Test Event reçu via bridge:', event.data);
-
-      if (phClient) {
-        phClient.capture(event.data.eventName, event.data.properties);
-        console.log('✅ Événement PostHog capturé:', event.data.eventName);
-
-        // Envoyer une confirmation à la page
-        window.postMessage({
-          type: 'POSTHOG_EVENT_SENT',
-          eventName: event.data.eventName,
-          properties: event.data.properties
-        }, '*');
-      } else {
-        console.error('❌ PostHog client non disponible');
-      }
-    }
-
-    // Demande de configuration PostHog
-    if (event.data.type === 'POSTHOG_GET_CONFIG') {
-      console.log('📊 Configuration PostHog demandée via bridge');
-
-      if (phClient) {
-        const config = {
-          enabled: phClient.enabled,
-          apiKey: phClient.apiKey ? phClient.apiKey.substring(0, 15) + '...' : 'NOT SET',
-          apiHost: phClient.apiHost,
-          distinctId: phClient.distinctId,
-          queueLength: phClient.eventQueue ? phClient.eventQueue.length : 0
-        };
-
-        console.log('✅ Configuration PostHog:', config);
-
-        // Envoyer la config à la page
-        window.postMessage({
-          type: 'POSTHOG_CONFIG_RESPONSE',
-          config: config
-        }, '*');
-      } else {
-        console.error('❌ PostHog client non disponible');
-      }
-    }
   });
 
 })();

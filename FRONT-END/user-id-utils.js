@@ -1,6 +1,5 @@
 /**
  * Utilitaires pour la génération d'identifiants utilisateur anonymes
- * Conforme RGPD - Génère un SHA256 de l'email sans jamais envoyer l'email brut à PostHog
  */
 
 (function() {
@@ -79,7 +78,7 @@
         await chrome.storage.local.set({
           user_id: userId,    // Clé officielle (snake_case)
           userId: userId,     // Compatibilité (camelCase) - à supprimer après migration
-          userIdEmail: email  // Stocké localement pour vérification, jamais envoyé à PostHog
+          userIdEmail: email  
         });
 
         console.log('✅ UserId généré et sauvegardé (user_id + userId)');
