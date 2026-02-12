@@ -744,6 +744,162 @@
       opacity: 1;
     }
 
+    /* ==================== TRIAL COUNTDOWN (Phase 2) ==================== */
+    .ai-trial-section {
+      background: var(--bg-secondary);
+      border-radius: 12px;
+      padding: 14px 16px;
+      margin-bottom: 16px;
+      box-shadow: var(--shadow-box);
+      border: 2px solid var(--plan-premium);
+    }
+
+    .ai-trial-section.ai-grace-mode {
+      border-color: var(--accent-yellow);
+    }
+
+    .ai-trial-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+
+    .ai-trial-badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 4px 10px;
+      border-radius: 10px;
+      font-size: 11px;
+      font-weight: bold;
+      color: white;
+      text-shadow: var(--shadow-text);
+    }
+
+    .ai-trial-badge.ai-badge-trial {
+      background: var(--plan-premium);
+    }
+
+    .ai-trial-badge.ai-badge-grace {
+      background: var(--accent-yellow);
+      color: #333;
+      text-shadow: none;
+    }
+
+    .ai-trial-days {
+      font-size: 15px;
+      font-weight: bold;
+      color: var(--text-primary);
+    }
+
+    .ai-trial-progress-bar {
+      width: 100%;
+      height: 8px;
+      background: rgba(0,0,0,0.3);
+      border-radius: 4px;
+      overflow: hidden;
+      box-shadow: inset 0 1px 3px rgba(0,0,0,0.3);
+    }
+
+    .ai-trial-progress-fill {
+      height: 100%;
+      border-radius: 4px;
+      transition: width 0.5s ease;
+    }
+
+    .ai-trial-progress-fill.ai-progress-trial {
+      background: linear-gradient(90deg, var(--plan-premium) 0%, #0e9f6e 100%);
+      box-shadow: 0 0 6px rgba(16, 185, 129, 0.4);
+    }
+
+    .ai-trial-progress-fill.ai-progress-grace {
+      background: linear-gradient(90deg, var(--accent-yellow) 0%, #ffb300 100%);
+      box-shadow: 0 0 6px rgba(255, 193, 7, 0.4);
+    }
+
+    .ai-trial-progress-fill.ai-progress-low {
+      background: linear-gradient(90deg, var(--accent-red) 0%, #d32f2f 100%);
+      box-shadow: 0 0 6px rgba(239, 83, 80, 0.4);
+    }
+
+    /* Grace CTA Banner */
+    .ai-grace-cta {
+      background: linear-gradient(135deg, rgba(255, 193, 7, 0.15) 0%, rgba(255, 152, 0, 0.15) 100%);
+      border: 2px solid var(--accent-yellow);
+      border-radius: 10px;
+      padding: 12px 14px;
+      margin-bottom: 16px;
+      position: relative;
+      animation: fadeIn 0.3s ease;
+    }
+
+    .ai-grace-cta-text {
+      font-size: 13px;
+      color: var(--text-primary);
+      margin-bottom: 10px;
+      line-height: 1.4;
+    }
+
+    .ai-grace-cta-text strong {
+      color: var(--accent-yellow);
+    }
+
+    .ai-grace-cta-actions {
+      display: flex;
+      gap: 8px;
+    }
+
+    .ai-btn-upgrade-trial {
+      flex: 1;
+      padding: 10px 16px;
+      background: var(--accent-green);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: all 0.2s;
+      text-shadow: var(--shadow-text);
+    }
+
+    .ai-btn-upgrade-trial:hover {
+      background: #0e9f6e;
+      transform: translateY(-1px);
+    }
+
+    .ai-btn-dismiss-cta {
+      padding: 10px 14px;
+      background: rgba(255, 255, 255, 0.1);
+      color: var(--text-secondary);
+      border: 1px solid var(--bg-tertiary);
+      border-radius: 8px;
+      font-size: 12px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .ai-btn-dismiss-cta:hover {
+      background: rgba(255, 255, 255, 0.15);
+      color: var(--text-primary);
+    }
+
+    /* Trial expired message */
+    .ai-trial-expired-msg {
+      background: rgba(239, 83, 80, 0.15);
+      border: 2px solid var(--accent-red);
+      border-radius: 10px;
+      padding: 12px 14px;
+      margin-bottom: 16px;
+      text-align: center;
+    }
+
+    .ai-trial-expired-msg p {
+      font-size: 13px;
+      color: var(--text-primary);
+      margin-bottom: 10px;
+    }
+
     /* ==================== FOOTER ==================== */
     .footer {
       padding: 16px 20px;
@@ -857,6 +1013,35 @@
 
     <!-- ===== SOUS-CONTENU: COMPTE ===== -->
     <div class="sub-content active" id="account-content">
+
+      <!-- Phase 2 — Trial Countdown Section -->
+      <div class="ai-trial-section" id="aiTrialCountdown" style="display: none;">
+        <div class="ai-trial-header">
+          <span class="ai-trial-badge ai-badge-trial" id="aiTrialBadge">Trial Premium</span>
+          <span class="ai-trial-days" id="aiTrialDays">30 jours restants</span>
+        </div>
+        <div class="ai-trial-progress-bar">
+          <div class="ai-trial-progress-fill ai-progress-trial" id="aiTrialProgressFill" style="width: 0%;"></div>
+        </div>
+      </div>
+
+      <!-- Phase 2 — Grace CTA Banner -->
+      <div class="ai-grace-cta" id="aiGraceCta" style="display: none;">
+        <div class="ai-grace-cta-text">
+          <strong>Votre trial Premium est termine.</strong><br>
+          Passez en Premium pour continuer a profiter de toutes les fonctionnalites.
+        </div>
+        <div class="ai-grace-cta-actions">
+          <button class="ai-btn-upgrade-trial" id="aiUpgradeFromGrace">Passer Premium</button>
+          <button class="ai-btn-dismiss-cta" id="aiDismissGraceCta">Plus tard</button>
+        </div>
+      </div>
+
+      <!-- Phase 2 — Trial Expired Message -->
+      <div class="ai-trial-expired-msg" id="aiTrialExpiredMsg" style="display: none;">
+        <p>Votre periode d'essai Premium est terminee. Vous etes maintenant en mode FREE.</p>
+        <button class="ai-btn-upgrade-trial" id="aiUpgradeFromExpired">Passer Premium</button>
+      </div>
 
       <!-- User Card (Non authentifié) -->
       <div class="user-card" id="userCardUnauthenticated">
