@@ -74,19 +74,6 @@ async def login_with_google(
             db.commit()
             db.refresh(user)
 
-        # Utiliser le userId anonyme (SHA256) envoyé par le frontend, sinon fallback sur DB user.id
-        user_plan = getattr(user, 'plan', 'FREE') or 'FREE'
-        user_role = getattr(user, 'role', None) or user_plan
-
-        if is_new_user:
-                plan=user_plan,
-                registration_method="google_oauth2"
-            )
-        else:
-                plan=user_plan,
-                role=user_role
-            )
-
         # Créer le token JWT
         access_token = create_user_token(user)
 
