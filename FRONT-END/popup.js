@@ -70,6 +70,17 @@ document.addEventListener('DOMContentLoaded', async function() {
   const generationsNext = document.getElementById('generationsNext');
   const generationsValue = document.getElementById('generationsValue');
 
+  // Phase 2 — Trial countdown
+  const aiTrialCountdown = document.getElementById('aiTrialCountdown');
+  const aiTrialBadge = document.getElementById('aiTrialBadge');
+  const aiTrialDays = document.getElementById('aiTrialDays');
+  const aiTrialProgressFill = document.getElementById('aiTrialProgressFill');
+  const aiGraceCta = document.getElementById('aiGraceCta');
+  const aiUpgradeFromGrace = document.getElementById('aiUpgradeFromGrace');
+  const aiDismissGraceCta = document.getElementById('aiDismissGraceCta');
+  const aiTrialExpiredMsg = document.getElementById('aiTrialExpiredMsg');
+  const aiUpgradeFromExpired = document.getElementById('aiUpgradeFromExpired');
+
   // ==================== VÉRIFICATION API CONFIG ====================
   if (typeof API_CONFIG === 'undefined') {
     console.warn('⚠️ API_CONFIG non disponible, utilisation de valeurs par défaut');
@@ -116,6 +127,9 @@ document.addEventListener('DOMContentLoaded', async function() {
 
     // Mettre à jour l'UI
     await updateUI();
+
+    // Phase 2 — Mettre a jour l'UI trial
+    await updateTrialUI();
 
     // Tester la connectivité backend
     await window.extensionConfig.checkBackendConnectivity();
@@ -172,6 +186,9 @@ document.addEventListener('DOMContentLoaded', async function() {
       if (success) {
         await updateUI();
         await loadSettings();
+
+        // Phase 2 — Mettre a jour l'UI trial apres login
+        await updateTrialUI();
 
         // Notifier le background script
         chrome.runtime.sendMessage({ action: 'authStateChanged', authenticated: true }, (response) => {
@@ -319,6 +336,31 @@ document.addEventListener('DOMContentLoaded', async function() {
     // Ouvrir la page de gestion d'abonnement
     chrome.tabs.create({ url: '__SITE_URL__/account/subscription' });
   });
+
+  // ==================== PHASE 2: TRIAL CTA LISTENERS ====================
+
+  // Phase 2 — Trial CTA listeners
+  if (aiUpgradeFromGrace) {
+    aiUpgradeFromGrace.addEventListener('click', () => {
+      chrome.runtime.sendMessage({ action: 'openUpgradePage' });
+    });
+  }
+
+  if (aiDismissGraceCta) {
+    aiDismissGraceCta.addEventListener('click', () => {
+      if (aiGraceCta) aiGraceCta.style.display = 'none';
+      const today = new Date().toISOString().slice(0, 10);
+      chrome.storage.local.set({ grace_cta_dismissed_at: today });
+    });
+  }
+
+  if (aiUpgradeFromExpired) {
+    aiUpgradeFromExpired.addEventListener('click', () => {
+      chrome.storage.local.set({ trial_expired_msg_shown: true });
+      if (aiTrialExpiredMsg) aiTrialExpiredMsg.style.display = 'none';
+      chrome.runtime.sendMessage({ action: 'openUpgradePage' });
+    });
+  }
 
   // ==================== FONCTIONS D'AFFICHAGE ====================
 
@@ -552,6 +594,112 @@ document.addEventListener('DOMContentLoaded', async function() {
     } catch (error) {
       console.error('❌ Erreur lors de la récupération du quota:', error);
       return null;
+    }
+  }
+
+  // ==================== PHASE 2: TRIAL UI ====================
+
+  async function updateTrialUI() {
+    if (aiTrialCountdown) aiTrialCountdown.style.display = 'none';
+    if (aiGraceCta) aiGraceCta.style.display = 'none';
+    if (aiTrialExpiredMsg) aiTrialExpiredMsg.style.display = 'none';
+
+    if (!currentState.isAuthenticated) return;
+
+    try {
+      const trialStatus = await new Promise((resolve) => {
+        chrome.runtime.sendMessage({ action: 'getTrialStatus' }, (response) => {
+          if (chrome.runtime.lastError || !response || !response.success) {
+            resolve(null);
+          } else {
+            resolve(response);
+          }
+        });
+      });
+
+      if (!trialStatus) return;
+
+      // Cas 1: Trial actif
+      if (trialStatus.trial_active && trialStatus.trial_days_remaining !== null) {
+        const days = trialStatus.trial_days_remaining;
+        const totalDays = 30;
+        const elapsed = totalDays - days;
+        const percent = Math.min(100, Math.max(0, (elapsed / totalDays) * 100));
+
+        if (aiTrialCountdown) {
+          aiTrialCountdown.style.display = 'block';
+          aiTrialCountdown.classList.remove('ai-grace-mode');
+        }
+        if (aiTrialBadge) {
+          aiTrialBadge.textContent = 'Trial Premium';
+          aiTrialBadge.className = 'ai-trial-badge ai-badge-trial';
+        }
+        if (aiTrialDays) {
+          aiTrialDays.textContent = `${days} jour${days > 1 ? 's' : ''} restant${days > 1 ? 's' : ''}`;
+        }
+        if (aiTrialProgressFill) {
+          aiTrialProgressFill.style.width = `${percent}%`;
+          aiTrialProgressFill.className = 'ai-trial-progress-fill ai-progress-trial';
+          if (days <= 3) {
+            aiTrialProgressFill.classList.add('ai-progress-low');
+            aiTrialProgressFill.classList.remove('ai-progress-trial');
+          }
+        }
+      }
+
+      // Cas 2: Grace active
+      else if (trialStatus.grace_active && trialStatus.grace_days_remaining !== null) {
+        const days = trialStatus.grace_days_remaining;
+        const totalDays = 3;
+        const elapsed = totalDays - days;
+        const percent = Math.min(100, Math.max(0, (elapsed / totalDays) * 100));
+
+        if (aiTrialCountdown) {
+          aiTrialCountdown.style.display = 'block';
+          aiTrialCountdown.classList.add('ai-grace-mode');
+        }
+        if (aiTrialBadge) {
+          aiTrialBadge.textContent = 'Grace MEDIUM';
+          aiTrialBadge.className = 'ai-trial-badge ai-badge-grace';
+        }
+        if (aiTrialDays) {
+          aiTrialDays.textContent = `${days} jour${days > 1 ? 's' : ''} restant${days > 1 ? 's' : ''}`;
+        }
+        if (aiTrialProgressFill) {
+          aiTrialProgressFill.style.width = `${percent}%`;
+          aiTrialProgressFill.className = 'ai-trial-progress-fill ai-progress-grace';
+          if (days <= 1) {
+            aiTrialProgressFill.classList.add('ai-progress-low');
+            aiTrialProgressFill.classList.remove('ai-progress-grace');
+          }
+        }
+
+        // CTA Banner (sauf si dismiss aujourd'hui)
+        const dismissData = await new Promise(resolve => {
+          chrome.storage.local.get('grace_cta_dismissed_at', resolve);
+        });
+
+        const today = new Date().toISOString().slice(0, 10);
+        const dismissedToday = dismissData.grace_cta_dismissed_at === today;
+
+        if (aiGraceCta && !dismissedToday) {
+          aiGraceCta.style.display = 'block';
+        }
+      }
+
+      // Cas 3: Trial expire
+      else if (trialStatus.trial_expired) {
+        const expiredData = await new Promise(resolve => {
+          chrome.storage.local.get('trial_expired_msg_shown', resolve);
+        });
+
+        if (!expiredData.trial_expired_msg_shown && aiTrialExpiredMsg) {
+          aiTrialExpiredMsg.style.display = 'block';
+        }
+      }
+
+    } catch (error) {
+      console.error('[Phase2] Erreur updateTrialUI:', error);
     }
   }
 
