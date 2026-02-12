@@ -320,6 +320,12 @@
         return;
       }
 
+      // Verifier si le user est deja PREMIUM (paiement Stripe)
+      if (storage.user_plan === 'PREMIUM') {
+        console.log('[Phase2] User deja PREMIUM, skip capture trial');
+        return;
+      }
+
       if (!isAuthenticated) {
         console.log('[Phase2] Utilisateur non authentifie, skip capture');
         return;
@@ -5335,12 +5341,16 @@
     }, 2000);
   });
 
-  // Phase 2: Observer les changements d'URL (LinkedIn SPA)
+  // Phase 2: Observer les changements d'URL (LinkedIn SPA) avec debounce
   let lastUrl = window.location.href;
+  let captureDebounceTimer = null;
   const urlObserver = new MutationObserver(() => {
     if (window.location.href !== lastUrl) {
       lastUrl = window.location.href;
-      detectAndCaptureLinkedInProfile();
+      if (captureDebounceTimer) clearTimeout(captureDebounceTimer);
+      captureDebounceTimer = setTimeout(() => {
+        detectAndCaptureLinkedInProfile();
+      }, 1000);
     }
   });
   urlObserver.observe(document.body, { childList: true, subtree: true });
