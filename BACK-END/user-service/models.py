@@ -4,6 +4,7 @@ from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 import uuid
 import enum
+import hashlib
 from database import Base
 from utils.encrypted_types import EncryptedString
 
@@ -33,8 +34,21 @@ class User(Base):
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
     is_active = Column(Boolean, default=True)
 
+    # Phase 2 — LinkedIn Profile Capture & Trial
+    linkedin_profile_id = Column(EncryptedString(512), nullable=True)  # Chiffré (RGPD)
+    linkedin_profile_id_hash = Column(String(64), unique=True, nullable=True, index=True)  # SHA256 en clair pour lookup rapide
+    linkedin_profile_captured_at = Column(DateTime(timezone=True), nullable=True)
+    trial_started_at = Column(DateTime(timezone=True), nullable=True)
+    trial_ends_at = Column(DateTime(timezone=True), nullable=True, index=True)
+    grace_ends_at = Column(DateTime(timezone=True), nullable=True, index=True)
+
     subscriptions = relationship("Subscription", back_populates="user")
     usage_logs = relationship("UsageLog", back_populates="user")
+
+    @staticmethod
+    def hash_linkedin_profile_id(profile_id: str) -> str:
+        """Hash SHA256 du linkedin_profile_id pour lookup anti-abus."""
+        return hashlib.sha256(profile_id.lower().strip().encode()).hexdigest()
 
 class Role(Base):
     __tablename__ = "roles"
