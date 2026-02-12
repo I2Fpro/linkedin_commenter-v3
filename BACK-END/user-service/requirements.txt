@@ -14,6 +14,8 @@ google-auth-oauthlib>=1.0.0
 google-auth-httplib2>=0.2.0
 cryptography>=41.0.0
 tabulate>=0.9.0
+apscheduler>=3.10.0
+python-dateutil>=2.8.0
 
 # Analytics
 posthog>=3.0.0

@@ -4,10 +4,13 @@ from fastapi.responses import JSONResponse
 from contextlib import asynccontextmanager
 import os
 from dotenv import load_dotenv
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
+from apscheduler.triggers.cron import CronTrigger
 
 from database import engine, Base
 from routers import users, subscriptions, permissions, auth, stripe, blacklist, admin
 from posthog_service import posthog_service
+from utils.partition_manager import create_analytics_partitions, purge_old_analytics
 from version import VERSION
 import logging
 
@@ -22,10 +25,37 @@ load_dotenv()  # Puis le .env local si il existe
 # Log de l'état de PostHog au démarrage
 logger.info(f"PostHog initialized: enabled={posthog_service.enabled}, api_key={'***' if posthog_service.api_key else 'NOT SET'}")
 
+# APScheduler instance for analytics partition management
+scheduler = AsyncIOScheduler()
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    # Startup
     Base.metadata.create_all(bind=engine)
+
+    # Configure and start analytics scheduler
+    scheduler.add_job(
+        create_analytics_partitions,
+        trigger=CronTrigger(hour=2, minute=0),
+        id="create_partitions",
+        name="Create future analytics partitions",
+        replace_existing=True
+    )
+    scheduler.add_job(
+        purge_old_analytics,
+        trigger=CronTrigger(day=1, hour=3, minute=0),
+        id="purge_old_partitions",
+        name="Purge old analytics partitions",
+        replace_existing=True
+    )
+    scheduler.start()
+    logger.info("Analytics scheduler started")
+
     yield
+
+    # Shutdown
+    scheduler.shutdown()
+    logger.info("Analytics scheduler stopped")
     # Shutdown PostHog gracefully
     posthog_service.shutdown()
 
