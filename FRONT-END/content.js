@@ -298,6 +298,116 @@
     await loadLanguageSettings();
     )();
 
+  // ==================== Phase 2: LinkedIn Profile Capture ====================
+
+  async function detectAndCaptureLinkedInProfile() {
+    try {
+      const currentPath = window.location.pathname;
+      const isMyProfile = /\/in\/me\/?(\?.*)?$/.test(currentPath);
+
+      if (!isMyProfile) {
+        return;
+      }
+
+      console.log('[Phase2] Page /in/me/ detectee, tentative de capture profil');
+
+      const storage = await new Promise(resolve => {
+        chrome.storage.local.get(['linkedin_profile_captured', 'user_plan'], resolve);
+      });
+
+      if (storage.linkedin_profile_captured) {
+        console.log('[Phase2] Profil LinkedIn deja capture, skip');
+        return;
+      }
+
+      if (!isAuthenticated) {
+        console.log('[Phase2] Utilisateur non authentifie, skip capture');
+        return;
+      }
+
+      let linkedinProfileId = null;
+
+      // Tentative 1 : Attendre que l'URL change (LinkedIn redirect)
+      for (let attempt = 0; attempt < 10; attempt++) {
+        await new Promise(resolve => setTimeout(resolve, 500));
+        const resolvedPath = window.location.pathname;
+        const match = resolvedPath.match(/\/in\/([^\/\?]+)\/?/);
+
+        if (match && match[1] !== 'me') {
+          linkedinProfileId = match[1].toLowerCase().trim();
+          break;
+        }
+      }
+
+      // Tentative 2 : Extraire depuis un element DOM si l'URL n'a pas change
+      if (!linkedinProfileId) {
+        const canonicalLink = document.querySelector('link[rel="canonical"]');
+        if (canonicalLink) {
+          const match = canonicalLink.href.match(/\/in\/([^\/\?]+)\/?/);
+          if (match && match[1] !== 'me') {
+            linkedinProfileId = match[1].toLowerCase().trim();
+          }
+        }
+      }
+
+      // Tentative 3 : Chercher dans les liens du profil
+      if (!linkedinProfileId) {
+        const profileLinks = document.querySelectorAll('a[href*="/in/"]');
+        for (const link of profileLinks) {
+          const match = link.href.match(/\/in\/([^\/\?]+)\/?/);
+          if (match && match[1] !== 'me' && match[1].length > 1) {
+            linkedinProfileId = match[1].toLowerCase().trim();
+            break;
+          }
+        }
+      }
+
+      if (!linkedinProfileId) {
+        console.warn('[Phase2] Impossible d\'extraire le linkedin_profile_id reel');
+        return;
+      }
+
+      if (!/^[a-z0-9\-]+$/.test(linkedinProfileId)) {
+        console.warn('[Phase2] linkedin_profile_id invalide:', linkedinProfileId);
+        return;
+      }
+
+      console.log('[Phase2] linkedin_profile_id extrait:', linkedinProfileId);
+
+      chrome.runtime.sendMessage({
+        action: 'captureLinkedInProfile',
+        data: {
+          linkedin_profile_id: linkedinProfileId
+        }
+      }, (response) => {
+        if (chrome.runtime.lastError) {
+          console.warn('[Phase2] Erreur envoi message:', chrome.runtime.lastError);
+          return;
+        }
+
+        if (response && response.success) {
+          console.log('[Phase2] Profil capture avec succes, trial_granted:', response.trial_granted);
+          chrome.storage.local.set({ linkedin_profile_captured: true });
+
+          if (response.trial_granted && response.role) {
+            chrome.storage.local.set({
+              user_plan: response.role,
+              trial_ends_at: response.trial_ends_at
+            });
+          }
+        } else if (response) {
+          console.log('[Phase2] Capture profil: ', response.reason || 'pas de trial');
+          if (response.already_captured) {
+            chrome.storage.local.set({ linkedin_profile_captured: true });
+          }
+        }
+      });
+
+    } catch (error) {
+      console.error('[Phase2] Erreur capture profil LinkedIn:', error);
+    }
+  }
+
   // Vérifier l'authentification
   async function checkAuthentication() {
     try {
@@ -4957,6 +5067,9 @@
       updateAllButtons();
 
       if (isAuthenticated) {
+        // Phase 2: Tenter capture du profil LinkedIn quand l'utilisateur se connecte
+        detectAndCaptureLinkedInProfile();
+
          catch (e) {
               }
             }
@@ -5043,6 +5156,18 @@
           }
         });
       }, 100);
+    } else if (message.action === 'trialStatusChanged') {
+      // Phase 2: Mise a jour du plan utilisateur apres capture profil
+      console.log('[Phase2] Trial status changed:', message.role);
+      chrome.storage.local.get(['user_plan'], (storage) => {
+        if (storage.user_plan !== message.role) {
+          chrome.storage.local.set({
+            user_plan: message.role,
+            trial_ends_at: message.trial_ends_at
+          });
+          console.log('[Phase2] Plan utilisateur mis a jour:', message.role);
+        }
+      });
     }
   });
 
@@ -5202,5 +5327,22 @@
     childList: true,
     subtree: true
   });
+
+  // Phase 2: Detecter et capturer le profil LinkedIn si sur /in/me/
+  window.addEventListener('load', () => {
+    setTimeout(() => {
+      detectAndCaptureLinkedInProfile();
+    }, 2000);
+  });
+
+  // Phase 2: Observer les changements d'URL (LinkedIn SPA)
+  let lastUrl = window.location.href;
+  const urlObserver = new MutationObserver(() => {
+    if (window.location.href !== lastUrl) {
+      lastUrl = window.location.href;
+      detectAndCaptureLinkedInProfile();
+    }
+  });
+  urlObserver.observe(document.body, { childList: true, subtree: true });
 
 })();
