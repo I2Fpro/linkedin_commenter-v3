@@ -370,9 +370,22 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 	    });
 	  } else {
 	    // Déconnexion : nettoyer les données utilisateur
-	    chrome.storage.local.remove(['user_id', 'user_email', 'user_name', 'user_plan', 'user_picture'], () => {
-	      console.log('🧹 Données utilisateur nettoyées');
+	    chrome.storage.local.remove([
+	      'user_id', 'user_email', 'user_name', 'user_plan', 'user_picture',
+	      // Phase 2 — Donnees trial
+	      'trial_ends_at', 'grace_ends_at',
+	      'linkedin_profile_captured',
+	      'trial_status_cache', 'trial_status_cached_at',
+	      'grace_cta_dismissed_at',
+	      'trial_expired_msg_shown',
+	      'trial_notification_j3_shown',
+	      'trial_notification_j0_shown'
+	    ], () => {
+	      console.log('🧹 Données utilisateur et trial nettoyées');
 	    });
+
+	    // Effacer le badge
+	    chrome.action.setBadgeText({ text: '' });
 	  }
 
 	  // Relayer vers tous les content scripts
