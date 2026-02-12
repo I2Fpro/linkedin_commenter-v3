@@ -88,6 +88,23 @@ USER_SERVICE_URL = os.getenv("USER_SERVICE_URL", "http://user-service:8444")
 BACKEND_EXTERNAL_URL = os.getenv("BACKEND_EXTERNAL_URL", "__AI_API_URL__")
 USER_SERVICE_EXTERNAL_URL = os.getenv("USER_SERVICE_EXTERNAL_URL", "__USERS_API_URL__")
 
+# --- Analytics Helper ---
+async def track_analytics_event(user_token: str, event_type: str, properties: dict) -> None:
+    """Send analytics event to user-service. Fire-and-forget, never blocks response."""
+    try:
+        async with httpx.AsyncClient(verify=False) as client_http:
+            await client_http.post(
+                f"{USER_SERVICE_URL}/api/analytics/track",
+                json={
+                    "event_type": event_type,
+                    "properties": properties,
+                },
+                headers={"Authorization": f"Bearer {user_token}"},
+                timeout=5.0
+            )
+    except Exception as e:
+        logger.warning(f"Analytics tracking failed (non-blocking): {e}")
+
 # ---------- Schémas ----------
 class NewsItem(BaseModel):
     """Actualité LinkedIn"""
@@ -694,10 +711,11 @@ async def clear_auth_cache():
 
 # ---------- Protégés ----------
 @app.post("/generate-comments")
-async def generate_comments(request: GenerateCommentsRequest, current_user: Dict[str, Any] = Depends(get_current_user)):
+async def generate_comments(request: GenerateCommentsRequest, req: Request, current_user: Dict[str, Any] = Depends(get_current_user)):
     """Génère N commentaires pour un post LinkedIn dans la langue spécifiée"""
 
     start_time = time.time()
+    user_token = req.headers.get("Authorization", "").replace("Bearer ", "")
 
     try:
         # Vérifier les permissions
@@ -889,6 +907,26 @@ Commentaire uniquement, sans préambule.
             "web_search_success": web_search_success,
         })
 
+        # Track analytics event for successful generation
+        try:
+            await track_analytics_event(user_token, "comment_generated", {
+                "mode": "generate",
+                "language": request.commentLanguage,
+                "role": request.plan,
+                "tone": request.tone,
+                "emotion": request.emotion or "",
+                "style": request.style or "",
+                "post_type": "comment" if request.isComment else "post",
+                "options_count": request.optionsCount,
+                "tokens_input": usage_info.get("tokens_input", 0),
+                "tokens_output": usage_info.get("tokens_output", 0),
+                "model": usage_info.get("model", MODEL_NAME),
+                "duration_ms": int(processing_time_ms),
+                "success": True,
+            })
+        except Exception:
+            pass  # Non-blocking
+
         # V3 Story 5.5 — Inclure web_search_source_url dans la reponse
         return {
             "comments": comments[:request.optionsCount],
@@ -900,13 +938,23 @@ Commentaire uniquement, sans préambule.
     except Exception as exc:
         processing_time_ms = (time.time() - start_time) * 1000
         logger.error(f"❌ Erreur génération commentaires: {exc}")
+        # Track failed generation
+        try:
+            await track_analytics_event(user_token, "generation_failed", {
+                "mode": "generate",
+                "error": str(exc),
+                "success": False,
+            })
+        except Exception:
+            pass
         raise
 
 @app.post("/generate-comments-with-prompt")
-async def generate_comments_with_prompt(request: GenerateCommentsWithPromptRequest, current_user: Dict[str, Any] = Depends(get_current_user)):
+async def generate_comments_with_prompt(request: GenerateCommentsWithPromptRequest, req: Request, current_user: Dict[str, Any] = Depends(get_current_user)):
     """Génère N commentaires guidés par un prompt utilisateur dans la langue spécifiée"""
 
     start_time = time.time()
+    user_token = req.headers.get("Authorization", "").replace("Bearer ", "")
 
     try:
         # Debug: Log de la requête reçue
@@ -1121,6 +1169,26 @@ Commentaire uniquement.
             "web_search_success": web_search_success,
         })
 
+        # Track analytics event for successful generation with prompt
+        try:
+            await track_analytics_event(user_token, "comment_generated", {
+                "mode": "custom_prompt",
+                "language": request.commentLanguage,
+                "role": request.plan,
+                "tone": request.tone,
+                "emotion": request.emotion or "",
+                "style": request.style or "",
+                "post_type": "comment" if request.isComment else "post",
+                "options_count": request.optionsCount,
+                "tokens_input": usage_info.get("tokens_input", 0),
+                "tokens_output": usage_info.get("tokens_output", 0),
+                "model": usage_info.get("model", MODEL_NAME),
+                "duration_ms": int(processing_time_ms),
+                "success": True,
+            })
+        except Exception:
+            pass  # Non-blocking
+
         # V3 Story 5.5 — Inclure web_search_source_url dans la reponse
         return {
             "comments": comments[:request.optionsCount],
@@ -1132,24 +1200,37 @@ Commentaire uniquement.
     except Exception as exc:
         processing_time_ms = (time.time() - start_time) * 1000
         logger.error(f"❌ Erreur génération commentaires avec prompt: {exc}")
+        # Track failed generation
+        try:
+            await track_analytics_event(user_token, "generation_failed", {
+                "mode": "custom_prompt",
+                "error": str(exc),
+                "success": False,
+            })
+        except Exception:
+            pass
         raise
 
 @app.post("/refine-comment")
-async def refine_comment(request: RefineCommentRequest, current_user: Dict[str, Any] = Depends(get_current_user)):
+async def refine_comment(request: RefineCommentRequest, req: Request, current_user: Dict[str, Any] = Depends(get_current_user)):
     """Affiner un commentaire existant selon des instructions dans la langue spécifiée"""
-    
-    # Vérifier les permissions pour le raffinement
-    user_email = current_user.get("email")
-    if not user_email:
-        raise HTTPException(status_code=401, detail="Email utilisateur non trouvé")
-    
-    # Vérifier si l'utilisateur peut utiliser la fonction de raffinement
-    refine_permissions = await check_user_permissions(user_email, "refine_enabled")
-    if not refine_permissions.get("allowed", False):
-        raise HTTPException(
-            status_code=403,
-            detail="La fonction de raffinement n'est pas disponible pour votre plan. Veuillez upgrader."
-        )
+
+    start_time = time.time()
+    user_token = req.headers.get("Authorization", "").replace("Bearer ", "")
+
+    try:
+        # Vérifier les permissions pour le raffinement
+        user_email = current_user.get("email")
+        if not user_email:
+            raise HTTPException(status_code=401, detail="Email utilisateur non trouvé")
+
+        # Vérifier si l'utilisateur peut utiliser la fonction de raffinement
+        refine_permissions = await check_user_permissions(user_email, "refine_enabled")
+        if not refine_permissions.get("allowed", False):
+            raise HTTPException(
+                status_code=403,
+                detail="La fonction de raffinement n'est pas disponible pour votre plan. Veuillez upgrader."
+            )
     
     cleaned_post = clean_post_content(request.post)
     tone_instructions = get_tone_instructions(request.tone, request.commentLanguage)
@@ -1191,36 +1272,72 @@ Commentaire affiné uniquement.
         "refine_instructions_length": len(request.refineInstructions)
     }
 
-    comments, _usage = call_openai_api(prompt, "refine", 1, request.commentLanguage, context=debug_context)
+        comments, usage_info = call_openai_api(prompt, "refine", 1, request.commentLanguage, context=debug_context)
 
-    # Enregistrer l'utilisation après affinement réussi
-    user_email = current_user.get("email")
-    await record_user_usage(user_email, "refine_comment", {
-        "tone": request.tone,
-        "length": request.length,
-        "language": request.commentLanguage,
-        "is_comment": request.isComment,
-        "original_length": len(request.originalComment.split())
-    })
+        processing_time_ms = (time.time() - start_time) * 1000
 
-    return {"comment": comments[0]}
+        # Enregistrer l'utilisation après affinement réussi
+        user_email = current_user.get("email")
+        await record_user_usage(user_email, "refine_comment", {
+            "tone": request.tone,
+            "length": request.length,
+            "language": request.commentLanguage,
+            "is_comment": request.isComment,
+            "original_length": len(request.originalComment.split())
+        })
+
+        # Track analytics event for successful refine
+        try:
+            await track_analytics_event(user_token, "comment_generated", {
+                "mode": "refine",
+                "language": request.commentLanguage,
+                "tone": request.tone,
+                "post_type": "comment" if request.isComment else "post",
+                "tokens_input": usage_info.get("tokens_input", 0),
+                "tokens_output": usage_info.get("tokens_output", 0),
+                "model": usage_info.get("model", MODEL_NAME),
+                "duration_ms": int(processing_time_ms),
+                "success": True,
+            })
+        except Exception:
+            pass  # Non-blocking
+
+        return {"comment": comments[0]}
+
+    except Exception as exc:
+        processing_time_ms = (time.time() - start_time) * 1000
+        logger.error(f"❌ Erreur raffinement commentaire: {exc}")
+        # Track failed generation
+        try:
+            await track_analytics_event(user_token, "generation_failed", {
+                "mode": "refine",
+                "error": str(exc),
+                "success": False,
+            })
+        except Exception:
+            pass
+        raise
 
 @app.post("/resize-comment")
-async def resize_comment(request: ResizeCommentRequest, current_user: Dict[str, Any] = Depends(get_current_user)):
+async def resize_comment(request: ResizeCommentRequest, req: Request, current_user: Dict[str, Any] = Depends(get_current_user)):
     """Réécrit le commentaire pour le raccourcir/allonger dans la langue spécifiée"""
-    
-    # Vérifier les permissions pour le redimensionnement
-    user_email = current_user.get("email")
-    if not user_email:
-        raise HTTPException(status_code=401, detail="Email utilisateur non trouvé")
-    
-    # Vérifier si l'utilisateur peut utiliser la fonction de redimensionnement
-    resize_permissions = await check_user_permissions(user_email, "resize_enabled")
-    if not resize_permissions.get("allowed", False):
-        raise HTTPException(
-            status_code=403,
-            detail="La fonction de redimensionnement n'est pas disponible pour votre plan. Veuillez upgrader."
-        )
+
+    start_time = time.time()
+    user_token = req.headers.get("Authorization", "").replace("Bearer ", "")
+
+    try:
+        # Vérifier les permissions pour le redimensionnement
+        user_email = current_user.get("email")
+        if not user_email:
+            raise HTTPException(status_code=401, detail="Email utilisateur non trouvé")
+
+        # Vérifier si l'utilisateur peut utiliser la fonction de redimensionnement
+        resize_permissions = await check_user_permissions(user_email, "resize_enabled")
+        if not resize_permissions.get("allowed", False):
+            raise HTTPException(
+                status_code=403,
+                detail="La fonction de redimensionnement n'est pas disponible pour votre plan. Veuillez upgrader."
+            )
     
     cleaned_post = clean_post_content(request.post)
     tone_instructions = get_tone_instructions(request.tone, request.commentLanguage)
@@ -1264,17 +1381,49 @@ Commentaire uniquement.
         "target_word_count": new_length
     }
 
-    comments, _usage = call_openai_api(prompt, "resize", 1, request.commentLanguage, context=debug_context)
+        comments, usage_info = call_openai_api(prompt, "resize", 1, request.commentLanguage, context=debug_context)
 
-    # Enregistrer l'utilisation après redimensionnement réussi
-    await record_user_usage(user_email, "resize_comment", {
-        "direction": request.resizeDirection,
-        "original_word_count": request.currentWordCount,
-        "tone": request.tone,
-        "language": request.commentLanguage
-    })
+        processing_time_ms = (time.time() - start_time) * 1000
 
-    return {"comment": comments[0]}
+        # Enregistrer l'utilisation après redimensionnement réussi
+        await record_user_usage(user_email, "resize_comment", {
+            "direction": request.resizeDirection,
+            "original_word_count": request.currentWordCount,
+            "tone": request.tone,
+            "language": request.commentLanguage
+        })
+
+        # Track analytics event for successful resize
+        try:
+            await track_analytics_event(user_token, "comment_generated", {
+                "mode": "resize",
+                "language": request.commentLanguage,
+                "tone": request.tone,
+                "resize_direction": request.resizeDirection,
+                "tokens_input": usage_info.get("tokens_input", 0),
+                "tokens_output": usage_info.get("tokens_output", 0),
+                "model": usage_info.get("model", MODEL_NAME),
+                "duration_ms": int(processing_time_ms),
+                "success": True,
+            })
+        except Exception:
+            pass  # Non-blocking
+
+        return {"comment": comments[0]}
+
+    except Exception as exc:
+        processing_time_ms = (time.time() - start_time) * 1000
+        logger.error(f"❌ Erreur redimensionnement commentaire: {exc}")
+        # Track failed generation
+        try:
+            await track_analytics_event(user_token, "generation_failed", {
+                "mode": "resize",
+                "error": str(exc),
+                "success": False,
+            })
+        except Exception:
+            pass
+        raise
 
 # ---------- Docker status ----------
 @app.get("/docker/status")

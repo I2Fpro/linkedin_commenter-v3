@@ -1,9 +1,13 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
+from sqlalchemy import text
 from pydantic import BaseModel
 from typing import Optional
 import httpx
 import os
+import uuid
+import json
+from datetime import datetime, timezone
 
 from database import get_db
 from models import User
@@ -76,6 +80,27 @@ async def login_with_google(
 
         # Créer le token JWT
         access_token = create_user_token(user)
+
+        # Track login event
+        try:
+            db.execute(
+                text("""
+                    INSERT INTO analytics.events (id, user_id, event_type, properties, timestamp)
+                    VALUES (:id, :user_id, :event_type, :properties::jsonb, :timestamp)
+                """),
+                {
+                    "id": str(uuid.uuid4()),
+                    "user_id": str(user.id),
+                    "event_type": "login",
+                    "properties": json.dumps({"method": "google", "role": str(user.role.value) if hasattr(user.role, 'value') else str(user.role)}),
+                    "timestamp": datetime.now(timezone.utc),
+                }
+            )
+            db.commit()
+        except Exception as e:
+            # Non-blocking analytics tracking
+            db.rollback()
+            pass
 
         return LoginResponse(
             access_token=access_token,
