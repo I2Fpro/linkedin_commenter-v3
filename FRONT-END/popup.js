@@ -619,9 +619,33 @@ document.addEventListener('DOMContentLoaded', async function() {
 
       if (!trialStatus) return;
 
+      if (typeof trialStatus.trial_active === 'undefined') {
+        console.warn('[Phase2] trialStatus incomplet, skip updateTrialUI');
+        return;
+      }
+
       // Cas 1: Trial actif
       if (trialStatus.trial_active && trialStatus.trial_days_remaining !== null) {
         const days = trialStatus.trial_days_remaining;
+
+        // Edge case: trial_days_remaining <= 0 mais trial marque comme actif
+        if (days <= 0) {
+          if (aiTrialCountdown) {
+            aiTrialCountdown.style.display = 'block';
+          }
+          if (aiTrialBadge) {
+            aiTrialBadge.textContent = 'Trial expire';
+            aiTrialBadge.className = 'ai-trial-badge ai-badge-grace';
+          }
+          if (aiTrialDays) {
+            aiTrialDays.textContent = 'Expiration en cours...';
+          }
+          if (aiTrialProgressFill) {
+            aiTrialProgressFill.style.width = '100%';
+            aiTrialProgressFill.className = 'ai-trial-progress-fill ai-progress-low';
+          }
+          return; // Ne pas continuer avec le calcul normal
+        }
         const totalDays = 30;
         const elapsed = totalDays - days;
         const percent = Math.min(100, Math.max(0, (elapsed / totalDays) * 100));
@@ -879,6 +903,18 @@ document.addEventListener('DOMContentLoaded', async function() {
       });
     });
   }
+
+  // ==================== PHASE 2: LISTENER TRIAL STATUS CHANGES ====================
+
+  // Phase 2 — Ecouter les changements de trial status
+  chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+    if (request.action === 'trialStatusChanged') {
+      console.log('[Phase2] Trial status change detecte, refresh UI');
+      chrome.storage.local.remove(['trial_status_cache', 'trial_status_cached_at'], () => {
+        updateTrialUI();
+      });
+    }
+  });
 
   // ==================== DÉMARRAGE ====================
   await initialize();
