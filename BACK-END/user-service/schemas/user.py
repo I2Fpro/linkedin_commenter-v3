@@ -33,7 +33,12 @@ class UserResponse(BaseModel):
     created_at: datetime
     updated_at: datetime
     is_active: bool
-    
+    # Phase 2 — Trial fields
+    linkedin_profile_captured_at: Optional[datetime] = None
+    trial_started_at: Optional[datetime] = None
+    trial_ends_at: Optional[datetime] = None
+    grace_ends_at: Optional[datetime] = None
+
     class Config:
         from_attributes = True
 
