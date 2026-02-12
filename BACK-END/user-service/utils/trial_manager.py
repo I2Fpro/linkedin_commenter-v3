@@ -10,6 +10,7 @@ avant d'accorder le trial.
 
 import logging
 import hashlib
+import uuid
 from datetime import datetime, timedelta, timezone
 from typing import Optional
 from sqlalchemy.orm import Session
@@ -23,6 +24,43 @@ logger = logging.getLogger(__name__)
 # Constantes du trial
 TRIAL_DURATION_DAYS = 30
 GRACE_DURATION_DAYS = 3
+
+
+def track_trial_event(
+    db: Session,
+    user_id: str,
+    event_type: str,
+    properties: dict = None
+) -> None:
+    """
+    Track un event analytics lie au trial de facon non-blocking.
+
+    Ne leve jamais d'exception. Les erreurs sont loguees en warning.
+    """
+    from sqlalchemy import text
+    import json
+
+    try:
+        db.execute(
+            text("""
+                INSERT INTO analytics.events (id, user_id, event_type, properties, timestamp)
+                VALUES (:id, :user_id, :event_type, :properties::jsonb, :timestamp)
+            """),
+            {
+                "id": str(uuid.uuid4()),
+                "user_id": user_id,
+                "event_type": event_type,
+                "properties": json.dumps(properties or {}),
+                "timestamp": datetime.now(timezone.utc)
+            }
+        )
+        db.commit()
+    except Exception as e:
+        try:
+            db.rollback()
+        except Exception:
+            pass
+        logger.warning(f"Analytics tracking failed for {event_type}: {e}")
 
 
 class TrialManager:
