@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from typing import List
+import logging
 
 from database import get_db
 from models import User, UsageLog
@@ -9,6 +10,9 @@ from auth import get_current_user, find_user_by_email
 from utils.quota_manager import QuotaManager
 from utils.feature_flags import FEATURES
 from utils.role_manager import RoleManager
+from utils.trial_manager import TrialManager
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -135,6 +139,13 @@ async def get_quota_status(
     current_user: User = Depends(get_current_user)
 ):
     """Récupérer le statut du quota de l'utilisateur"""
+    # Phase 2 — Fallback: verifier l'expiration du trial inline
+    try:
+        TrialManager.check_user_trial_inline(db, current_user)
+        db.refresh(current_user)
+    except Exception as e:
+        logger.warning(f"Fallback trial check failed for user {current_user.id}: {e}")
+
     quota_manager = QuotaManager(db)
     
     role_features = FEATURES.get(current_user.role.value, FEATURES["FREE"])
