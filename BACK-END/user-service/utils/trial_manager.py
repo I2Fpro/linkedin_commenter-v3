@@ -419,3 +419,51 @@ class TrialManager:
                 and not (user.stripe_subscription_id and user.subscription_status == "active")):
             logger.info(f"Fallback: expire grace pour user {user.id}")
             TrialManager.expire_grace(db, user)
+
+
+# --- Fonction cron (appelee par APScheduler) ---
+
+async def check_trial_expirations():
+    """
+    Cron job quotidien pour scanner et traiter les expirations trial/grace.
+
+    Appele par APScheduler a 1:00 AM UTC.
+    Cree sa propre session DB (hors cycle FastAPI).
+    Ne leve jamais d'exception pour ne pas crasher le scheduler.
+    """
+    from database import SessionLocal
+
+    logger.info("Cron trial_expirations: demarrage du scan")
+
+    db = SessionLocal()
+    try:
+        stats = TrialManager.check_and_transition_expired_trials(db)
+
+        # Track analytics event recapitulatif
+        if stats["trials_expired"] > 0 or stats["graces_expired"] > 0:
+            track_trial_event(
+                db=db,
+                user_id="00000000-0000-0000-0000-000000000000",
+                event_type="cron_trial_expirations",
+                properties={
+                    "trials_expired": stats["trials_expired"],
+                    "graces_expired": stats["graces_expired"],
+                    "errors": stats["errors"]
+                }
+            )
+
+        logger.info(
+            f"Cron trial_expirations termine: "
+            f"{stats['trials_expired']} trials, "
+            f"{stats['graces_expired']} graces, "
+            f"{stats['errors']} erreurs"
+        )
+
+    except Exception as e:
+        logger.error(f"Cron trial_expirations erreur: {e}", exc_info=True)
+        try:
+            db.rollback()
+        except Exception:
+            pass
+    finally:
+        db.close()
