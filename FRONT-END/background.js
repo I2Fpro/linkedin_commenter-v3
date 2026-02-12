@@ -353,6 +353,16 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 	  });
 	break;
 
+    // Phase 2 — Capture profil LinkedIn et demarrage trial
+    case 'captureLinkedInProfile':
+      handleCaptureLinkedInProfile(request.data, sendResponse);
+      return true;
+
+    // Phase 2 — Recuperer le status du trial
+    case 'getTrialStatus':
+      handleGetTrialStatus(sendResponse);
+      return true;
+
       default:
         // Réponse par défaut pour les actions inconnues
         sendResponse({ ok: true, message: 'Action non reconnue: ' + request.action });
@@ -1019,6 +1029,154 @@ async function getAuthToken() {
       }
     });
   });
+}
+
+// Phase 2 — Capturer le profil LinkedIn et demarrer le trial
+async function handleCaptureLinkedInProfile(data, sendResponse) {
+  try {
+    const token = await getAuthToken();
+    if (!token) {
+      sendResponse({ success: false, error: 'not_authenticated' });
+      return;
+    }
+
+    const authResponse = await fetch(`${USER_SERVICE_URL}/api/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ google_token: token })
+    });
+
+    if (!authResponse.ok) {
+      sendResponse({ success: false, error: 'auth_failed' });
+      return;
+    }
+
+    const authData = await authResponse.json();
+    const jwtToken = authData.access_token;
+
+    const response = await fetch(`${USER_SERVICE_URL}/api/trial/capture-linkedin-profile`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${jwtToken}`
+      },
+      body: JSON.stringify({
+        linkedin_profile_id: data.linkedin_profile_id
+      })
+    });
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ detail: 'Erreur inconnue' }));
+      console.warn('[Phase2] Erreur capture profil:', response.status, error);
+      sendResponse({ success: false, error: error.detail || 'capture_failed' });
+      return;
+    }
+
+    const result = await response.json();
+    console.log('[Phase2] Resultat capture profil:', result);
+
+    if (result.trial_granted) {
+      await chrome.storage.local.set({
+        user_plan: result.role,
+        trial_ends_at: result.trial_ends_at,
+        linkedin_profile_captured: true
+      });
+
+      console.log('[Phase2] Trial accorde, plan mis a jour:', result.role);
+
+      chrome.tabs.query({ url: "*://*.linkedin.com/*" }, function(tabs) {
+        for (const tab of tabs) {
+          chrome.tabs.sendMessage(tab.id, {
+            action: 'trialStatusChanged',
+            role: result.role,
+            trial_ends_at: result.trial_ends_at
+          }).catch(() => {});
+        }
+      });
+    } else {
+      await chrome.storage.local.set({
+        linkedin_profile_captured: true
+      });
+    }
+
+    sendResponse({
+      success: true,
+      trial_granted: result.trial_granted,
+      already_captured: result.already_captured,
+      role: result.role,
+      trial_ends_at: result.trial_ends_at,
+      reason: result.reason
+    });
+
+  } catch (error) {
+    console.error('[Phase2] Erreur handleCaptureLinkedInProfile:', error);
+    sendResponse({ success: false, error: error.message });
+  }
+}
+
+// Phase 2 — Recuperer le status du trial
+async function handleGetTrialStatus(sendResponse) {
+  try {
+    const token = await getAuthToken();
+    if (!token) {
+      sendResponse({ success: false, error: 'not_authenticated' });
+      return;
+    }
+
+    const cached = await chrome.storage.local.get(['trial_status_cache', 'trial_status_cached_at']);
+    const cacheTTL = 60 * 60 * 1000; // 1 heure
+    if (cached.trial_status_cache && cached.trial_status_cached_at) {
+      const age = Date.now() - cached.trial_status_cached_at;
+      if (age < cacheTTL) {
+        console.log('[Phase2] Trial status from cache (age:', Math.round(age / 1000), 's)');
+        sendResponse({ success: true, ...cached.trial_status_cache, fromCache: true });
+        return;
+      }
+    }
+
+    const authResponse = await fetch(`${USER_SERVICE_URL}/api/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ google_token: token })
+    });
+
+    if (!authResponse.ok) {
+      sendResponse({ success: false, error: 'auth_failed' });
+      return;
+    }
+
+    const authData = await authResponse.json();
+    const jwtToken = authData.access_token;
+
+    const response = await fetch(`${USER_SERVICE_URL}/api/trial/status`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${jwtToken}`,
+        'Content-Type': 'application/json'
+      },
+      mode: 'cors'
+    });
+
+    if (!response.ok) {
+      console.warn('[Phase2] Erreur trial status:', response.status);
+      sendResponse({ success: false, error: 'status_failed' });
+      return;
+    }
+
+    const trialStatus = await response.json();
+
+    await chrome.storage.local.set({
+      trial_status_cache: trialStatus,
+      trial_status_cached_at: Date.now(),
+      user_plan: trialStatus.role
+    });
+
+    sendResponse({ success: true, ...trialStatus, fromCache: false });
+
+  } catch (error) {
+    console.error('[Phase2] Erreur handleGetTrialStatus:', error);
+    sendResponse({ success: false, error: error.message });
+  }
 }
 
 // Fonction d'initialisation commune
