@@ -9,7 +9,6 @@ from database import get_db
 from models import User
 from auth import create_user_token, AuthManager
 from schemas.user import UserResponse
-from posthog_service import posthog_service
 
 router = APIRouter()
 
@@ -75,21 +74,15 @@ async def login_with_google(
             db.commit()
             db.refresh(user)
 
-        # Track avec PostHog - Utiliser userId anonyme du frontend si disponible
         # Utiliser le userId anonyme (SHA256) envoyé par le frontend, sinon fallback sur DB user.id
-        posthog_user_id = request.user_id if request.user_id else str(user.id)
         user_plan = getattr(user, 'plan', 'FREE') or 'FREE'
         user_role = getattr(user, 'role', None) or user_plan
 
         if is_new_user:
-            posthog_service.track_user_registration(
-                user_id=posthog_user_id,
                 plan=user_plan,
                 registration_method="google_oauth2"
             )
         else:
-            posthog_service.track_user_login(
-                user_id=posthog_user_id,
                 plan=user_plan,
                 role=user_role
             )

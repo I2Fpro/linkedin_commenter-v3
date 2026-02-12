@@ -29,7 +29,6 @@ def mock_dependencies():
         'JWT_SECRET': 'test-secret-key',
         'ENCRYPTION_KEY': 'dGVzdC1lbmNyeXB0aW9uLWtleS0zMi1ieXRlcyE=',
         'ADMIN_EMAILS': 'admin@test.com,admin2@test.com',
-        'POSTHOG_API_KEY': 'test-key',
     }):
         yield
 

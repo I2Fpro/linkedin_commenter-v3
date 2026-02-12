@@ -9,7 +9,6 @@ from apscheduler.triggers.cron import CronTrigger
 
 from database import engine, Base
 from routers import users, subscriptions, permissions, auth, stripe, blacklist, admin
-from posthog_service import posthog_service
 from utils.partition_manager import create_analytics_partitions, purge_old_analytics
 from version import VERSION
 import logging
@@ -22,8 +21,6 @@ logger = logging.getLogger(__name__)
 load_dotenv("../.env")  # Référencer le .env principal
 load_dotenv()  # Puis le .env local si il existe
 
-# Log de l'état de PostHog au démarrage
-logger.info(f"PostHog initialized: enabled={posthog_service.enabled}, api_key={'***' if posthog_service.api_key else 'NOT SET'}")
 
 # APScheduler instance for analytics partition management
 scheduler = AsyncIOScheduler()
@@ -56,8 +53,6 @@ async def lifespan(app: FastAPI):
     # Shutdown
     scheduler.shutdown()
     logger.info("Analytics scheduler stopped")
-    # Shutdown PostHog gracefully
-    posthog_service.shutdown()
 
 app = FastAPI(
     title="LinkedIn AI Commenter - User Service",

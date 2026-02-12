@@ -29,12 +29,6 @@ from dotenv import load_dotenv
 from modules.news.routes import router as news_router
 from modules.news.database import news_db
 
-# Import PostHog
-from posthog_service import posthog_service
-
-# Import utilitaire d'identification anonyme
-from ident import resolve_distinct_id
-
 # Charger les variables d'environnement
 load_dotenv()
 
@@ -44,9 +38,6 @@ logger = logging.getLogger(__name__)
 
 # --- Validation env ---
 validate_environment()
-
-# Log de l'état de PostHog au démarrage
-logger.info(f"PostHog initialized: enabled={posthog_service.enabled}, api_key={'***' if posthog_service.api_key else 'NOT SET'}")
 
 # --- App ---
 app = FastAPI(title="LinkedIn AI Commenter Backend", version=VERSION)
@@ -121,7 +112,6 @@ class GenerateCommentsRequest(BaseModel):
     newsContext: Optional[List[NewsItem]] = []
     # Mode d'enrichissement des actualités: disabled, title-only, smart-summary
     newsEnrichmentMode: str = "disabled"
-    # UserId anonyme (SHA256) envoyé par le frontend pour PostHog (RGPD)
     user_id: Optional[str] = None
     # Plan utilisateur (FREE, MEDIUM, PREMIUM) pour analytics
     plan: Optional[str] = "FREE"
@@ -152,7 +142,6 @@ class GenerateCommentsWithPromptRequest(BaseModel):
     newsContext: Optional[List[NewsItem]] = []
     # Mode d'enrichissement des actualités: disabled, title-only, smart-summary
     newsEnrichmentMode: str = "disabled"
-    # UserId anonyme (SHA256) envoyé par le frontend pour PostHog (RGPD)
     user_id: Optional[str] = None
     # Plan utilisateur (FREE, MEDIUM, PREMIUM) pour analytics
     plan: Optional[str] = "FREE"
@@ -708,8 +697,6 @@ async def clear_auth_cache():
 async def generate_comments(request: GenerateCommentsRequest, current_user: Dict[str, Any] = Depends(get_current_user)):
     """Génère N commentaires pour un post LinkedIn dans la langue spécifiée"""
 
-    # Résoudre le distinct_id pour PostHog dès le début
-    distinct_id = resolve_distinct_id(request.dict(), current_user)
     start_time = time.time()
 
     try:
@@ -902,25 +889,6 @@ Commentaire uniquement, sans préambule.
             "web_search_success": web_search_success,
         })
 
-        # Track avec PostHog (événement standardisé comment_generated)
-        posthog_service.track_comment_generated(
-            user_id=distinct_id,
-            properties={
-                "plan": request.plan or "FREE",
-                "language": request.commentLanguage,
-                "interface_lang": request.interface_lang or "fr",
-                "tone": request.tone,
-                "emotion": request.emotion,
-                "style": request.style,
-                "options_count": request.optionsCount,
-                "is_comment": request.isComment,
-                "duration_ms": processing_time_ms,
-                "success": True,
-                "status_code": 200,
-                "source": "backend"
-            }
-        )
-
         # V3 Story 5.5 — Inclure web_search_source_url dans la reponse
         return {
             "comments": comments[:request.optionsCount],
@@ -932,34 +900,12 @@ Commentaire uniquement, sans préambule.
     except Exception as exc:
         processing_time_ms = (time.time() - start_time) * 1000
         logger.error(f"❌ Erreur génération commentaires: {exc}")
-
-        # Track l'erreur avec PostHog
-        posthog_service.track_comment_generated(
-            user_id=distinct_id,
-            properties={
-                "plan": request.plan or "FREE",
-                "language": request.commentLanguage,
-                "interface_lang": request.interface_lang or "fr",
-                "tone": request.tone,
-                "emotion": request.emotion,
-                "style": request.style,
-                "options_count": request.optionsCount,
-                "is_comment": request.isComment,
-                "duration_ms": processing_time_ms,
-                "success": False,
-                "status_code": 500,
-                "error": str(exc),
-                "source": "backend"
-            }
-        )
         raise
 
 @app.post("/generate-comments-with-prompt")
 async def generate_comments_with_prompt(request: GenerateCommentsWithPromptRequest, current_user: Dict[str, Any] = Depends(get_current_user)):
     """Génère N commentaires guidés par un prompt utilisateur dans la langue spécifiée"""
 
-    # Résoudre le distinct_id pour PostHog dès le début
-    distinct_id = resolve_distinct_id(request.dict(), current_user)
     start_time = time.time()
 
     try:
@@ -1175,29 +1121,6 @@ Commentaire uniquement.
             "web_search_success": web_search_success,
         })
 
-        # Résoudre le distinct_id pour PostHog
-        distinct_id = resolve_distinct_id(request.dict(), current_user)
-
-        # Track avec PostHog (événement standardisé comment_generated)
-        posthog_service.track_comment_generated(
-            user_id=distinct_id,
-            properties={
-                "plan": request.plan or "FREE",
-                "language": request.commentLanguage,
-                "interface_lang": request.interface_lang or "fr",
-                "tone": request.tone,
-                "emotion": request.emotion,
-                "style": request.style,
-                "options_count": request.optionsCount,
-                "is_comment": request.isComment,
-                "duration_ms": processing_time_ms,
-                "success": True,
-                "status_code": 200,
-                "source": "backend",
-                "has_custom_prompt": True
-            }
-        )
-
         # V3 Story 5.5 — Inclure web_search_source_url dans la reponse
         return {
             "comments": comments[:request.optionsCount],
@@ -1209,27 +1132,6 @@ Commentaire uniquement.
     except Exception as exc:
         processing_time_ms = (time.time() - start_time) * 1000
         logger.error(f"❌ Erreur génération commentaires avec prompt: {exc}")
-
-        # Track l'erreur avec PostHog
-        posthog_service.track_comment_generated(
-            user_id=distinct_id,
-            properties={
-                "plan": request.plan or "FREE",
-                "language": request.commentLanguage,
-                "interface_lang": request.interface_lang or "fr",
-                "tone": request.tone,
-                "emotion": request.emotion,
-                "style": request.style,
-                "options_count": request.optionsCount,
-                "is_comment": request.isComment,
-                "duration_ms": processing_time_ms,
-                "success": False,
-                "status_code": 500,
-                "error": str(exc),
-                "source": "backend",
-                "has_custom_prompt": True
-            }
-        )
         raise
 
 @app.post("/refine-comment")
