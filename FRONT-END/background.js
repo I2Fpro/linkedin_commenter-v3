@@ -177,6 +177,36 @@ async function fetchAndStoreUserProfile(token) {
         }
       }
 
+      // Phase 2 — Recuperer et stocker le status trial
+      try {
+        // reutiliser jwtToken deja obtenu dans fetchAndStoreUserProfile
+        if (jwtToken) {
+          const trialResponse = await fetch(`${USER_SERVICE_URL}/api/trial/status`, {
+            method: 'GET',
+            headers: {
+              'Authorization': `Bearer ${jwtToken}`,
+              'Content-Type': 'application/json'
+            },
+            mode: 'cors'
+          });
+
+          if (trialResponse.ok) {
+            const trialStatus = await trialResponse.json();
+            await chrome.storage.local.set({
+              trial_status_cache: trialStatus,
+              trial_status_cached_at: Date.now(),
+              trial_ends_at: trialStatus.trial_ends_at || null,
+              grace_ends_at: trialStatus.grace_ends_at || null,
+              linkedin_profile_captured: trialStatus.has_linkedin_profile || false,
+              user_plan: trialStatus.role
+            });
+            console.log('[Phase2] Trial status synchronise au login:', trialStatus.role);
+          }
+        }
+      } catch (e) {
+        console.warn('[Phase2] Erreur sync trial au login:', e);
+      }
+
     }
   } catch (error) {
     console.error('❌ Erreur récupération profil utilisateur:', error);
