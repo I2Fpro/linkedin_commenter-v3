@@ -7,10 +7,6 @@ Phase 02 - Plan 02-02: Endpoints trial
 """
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-from sqlalchemy import text
-from datetime import datetime, timezone
-import uuid
-import json
 import logging
 
 from database import get_db
@@ -21,7 +17,7 @@ from schemas.trial import (
     LinkedInProfileCaptureResponse,
     TrialStatusResponse
 )
-from utils.trial_manager import TrialManager
+from utils.trial_manager import TrialManager, track_trial_event
 
 logger = logging.getLogger(__name__)
 
@@ -47,56 +43,30 @@ async def capture_linkedin_profile(
         linkedin_profile_id=request.linkedin_profile_id
     )
 
-    # Track analytics event (non-blocking)
-    try:
-        event_type = "trial_started" if result["trial_granted"] else "trial_denied"
-        properties = {
-            "reason": result.get("reason"),
-            "role": result["role"]
-        }
-        if result["trial_granted"]:
-            properties["trial_duration_days"] = 30
+    # Track analytics events (non-blocking)
+    event_type = "trial_started" if result["trial_granted"] else "trial_denied"
+    properties = {
+        "reason": result.get("reason"),
+        "role": result["role"]
+    }
+    if result["trial_granted"]:
+        properties["trial_duration_days"] = 30
 
-        db.execute(
-            text("""
-                INSERT INTO analytics.events (id, user_id, event_type, properties, timestamp)
-                VALUES (:id, :user_id, :event_type, :properties::jsonb, :timestamp)
-            """),
-            {
-                "id": str(uuid.uuid4()),
-                "user_id": str(current_user.id),
-                "event_type": event_type,
-                "properties": json.dumps(properties),
-                "timestamp": datetime.now(timezone.utc)
-            }
-        )
-        db.commit()
-    except Exception as e:
-        db.rollback()
-        logger.warning(f"Analytics tracking failed: {e}")
+    track_trial_event(
+        db=db,
+        user_id=str(current_user.id),
+        event_type=event_type,
+        properties=properties
+    )
 
     # Track linkedin_profile_captured event separement (si profil capture)
     if not result.get("already_captured") and result.get("reason") != "profile_already_used":
-        try:
-            db.execute(
-                text("""
-                    INSERT INTO analytics.events (id, user_id, event_type, properties, timestamp)
-                    VALUES (:id, :user_id, :event_type, :properties::jsonb, :timestamp)
-                """),
-                {
-                    "id": str(uuid.uuid4()),
-                    "user_id": str(current_user.id),
-                    "event_type": "linkedin_profile_captured",
-                    "properties": json.dumps({
-                        "is_first_capture": True
-                    }),
-                    "timestamp": datetime.now(timezone.utc)
-                }
-            )
-            db.commit()
-        except Exception as e:
-            db.rollback()
-            logger.warning(f"Analytics tracking (profile_captured) failed: {e}")
+        track_trial_event(
+            db=db,
+            user_id=str(current_user.id),
+            event_type="linkedin_profile_captured",
+            properties={"is_first_capture": True}
+        )
 
     return LinkedInProfileCaptureResponse(**result)
 

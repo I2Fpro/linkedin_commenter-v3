@@ -236,6 +236,29 @@ class TrialManager:
             user.grace_ends_at = grace_end
             db.commit()
 
+        # Track trial_expired event
+        track_trial_event(
+            db=db,
+            user_id=str(user.id),
+            event_type="trial_expired",
+            properties={
+                "trial_duration_days": TRIAL_DURATION_DAYS,
+                "from_role": "PREMIUM",
+                "to_role": "MEDIUM"
+            }
+        )
+
+        # Track grace_started event
+        track_trial_event(
+            db=db,
+            user_id=str(user.id),
+            event_type="grace_started",
+            properties={
+                "grace_duration_days": GRACE_DURATION_DAYS,
+                "grace_ends_at": grace_end.isoformat()
+            }
+        )
+
         logger.info(
             f"Trial expire pour user {user.id}: PREMIUM -> MEDIUM grace, "
             f"fin grace le {grace_end.isoformat()}"
@@ -281,6 +304,18 @@ class TrialManager:
             db.commit()
         except ValueError:
             db.commit()
+
+        # Track grace_expired event
+        track_trial_event(
+            db=db,
+            user_id=str(user.id),
+            event_type="grace_expired",
+            properties={
+                "grace_duration_days": GRACE_DURATION_DAYS,
+                "from_role": "MEDIUM",
+                "to_role": "FREE"
+            }
+        )
 
         logger.info(f"Grace expiree pour user {user.id}: MEDIUM -> FREE")
 
