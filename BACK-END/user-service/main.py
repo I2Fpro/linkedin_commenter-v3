@@ -10,6 +10,7 @@ from apscheduler.triggers.cron import CronTrigger
 from database import engine, Base
 from routers import users, subscriptions, permissions, auth, stripe, blacklist, admin, analytics, trial
 from utils.partition_manager import create_analytics_partitions, purge_old_analytics
+from utils.trial_manager import check_trial_expirations
 from version import VERSION
 import logging
 
@@ -43,6 +44,14 @@ async def lifespan(app: FastAPI):
         trigger=CronTrigger(day=1, hour=3, minute=0),
         id="purge_old_partitions",
         name="Purge old analytics partitions",
+        replace_existing=True
+    )
+    # Trial expiration cron job (Phase 2)
+    scheduler.add_job(
+        check_trial_expirations,
+        trigger=CronTrigger(hour=1, minute=0),
+        id="check_trial_expirations",
+        name="Check and process expired trials and grace periods",
         replace_existing=True
     )
     scheduler.start()
