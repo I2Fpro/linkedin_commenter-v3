@@ -89,17 +89,17 @@ BACKEND_EXTERNAL_URL = os.getenv("BACKEND_EXTERNAL_URL", "__AI_API_URL__")
 USER_SERVICE_EXTERNAL_URL = os.getenv("USER_SERVICE_EXTERNAL_URL", "__USERS_API_URL__")
 
 # --- Analytics Helper ---
-async def track_analytics_event(user_token: str, event_type: str, properties: dict) -> None:
+async def track_analytics_event(user_email: str, event_type: str, properties: dict) -> None:
     """Send analytics event to user-service. Fire-and-forget, never blocks response."""
     try:
         async with httpx.AsyncClient(verify=False) as client_http:
             await client_http.post(
                 f"{USER_SERVICE_URL}/api/analytics/track",
                 json={
+                    "email": user_email,
                     "event_type": event_type,
                     "properties": properties,
                 },
-                headers={"Authorization": f"Bearer {user_token}"},
                 timeout=5.0
             )
     except Exception as e:
@@ -909,7 +909,7 @@ Commentaire uniquement, sans préambule.
 
         # Track analytics event for successful generation
         try:
-            await track_analytics_event(user_token, "comment_generated", {
+            await track_analytics_event(user_email, "comment_generated", {
                 "mode": "generate",
                 "language": request.commentLanguage,
                 "role": request.plan,
@@ -923,6 +923,12 @@ Commentaire uniquement, sans préambule.
                 "model": usage_info.get("model", MODEL_NAME),
                 "duration_ms": int(processing_time_ms),
                 "success": True,
+                "news_enrichment_mode": request.newsEnrichmentMode,
+                "web_search_enabled": request.web_search_enabled,
+                "web_search_success": web_search_success,
+                "web_search_source_url": web_search_source_url,
+                "include_quote_enabled": request.include_quote,
+                "custom_prompt_used": False,
             })
         except Exception:
             pass  # Non-blocking
@@ -940,7 +946,7 @@ Commentaire uniquement, sans préambule.
         logger.error(f"❌ Erreur génération commentaires: {exc}")
         # Track failed generation
         try:
-            await track_analytics_event(user_token, "generation_failed", {
+            await track_analytics_event(user_email, "generation_failed", {
                 "mode": "generate",
                 "error": str(exc),
                 "success": False,
@@ -1171,7 +1177,7 @@ Commentaire uniquement.
 
         # Track analytics event for successful generation with prompt
         try:
-            await track_analytics_event(user_token, "comment_generated", {
+            await track_analytics_event(user_email, "comment_generated", {
                 "mode": "custom_prompt",
                 "language": request.commentLanguage,
                 "role": request.plan,
@@ -1202,7 +1208,7 @@ Commentaire uniquement.
         logger.error(f"❌ Erreur génération commentaires avec prompt: {exc}")
         # Track failed generation
         try:
-            await track_analytics_event(user_token, "generation_failed", {
+            await track_analytics_event(user_email, "generation_failed", {
                 "mode": "custom_prompt",
                 "error": str(exc),
                 "success": False,
@@ -1231,13 +1237,13 @@ async def refine_comment(request: RefineCommentRequest, req: Request, current_us
                 status_code=403,
                 detail="La fonction de raffinement n'est pas disponible pour votre plan. Veuillez upgrader."
             )
-    
-    cleaned_post = clean_post_content(request.post)
-    tone_instructions = get_tone_instructions(request.tone, request.commentLanguage)
-    language_instruction = get_language_instruction(request.commentLanguage)
-    
-    if request.commentLanguage == "en":
-        prompt = f"""Post: "{cleaned_post}"
+
+        cleaned_post = clean_post_content(request.post)
+        tone_instructions = get_tone_instructions(request.tone, request.commentLanguage)
+        language_instruction = get_language_instruction(request.commentLanguage)
+
+        if request.commentLanguage == "en":
+            prompt = f"""Post: "{cleaned_post}"
 Original comment: "{request.originalComment}"
 Instructions: "{request.refineInstructions}"
 
@@ -1249,8 +1255,8 @@ Refine the comment by:
 
 Refined comment only.
 """
-    else:
-        prompt = f"""Post: "{cleaned_post}"
+        else:
+            prompt = f"""Post: "{cleaned_post}"
 Commentaire original: "{request.originalComment}"
 Instructions: "{request.refineInstructions}"
 
@@ -1263,14 +1269,14 @@ Affinez le commentaire en:
 Commentaire affiné uniquement.
 """
 
-    # Préparer le contexte pour le debug
-    debug_context = {
-        "tone": request.tone,
-        "length": request.length,
-        "is_comment": request.isComment,
-        "original_comment_length": len(request.originalComment.split()),
-        "refine_instructions_length": len(request.refineInstructions)
-    }
+        # Préparer le contexte pour le debug
+        debug_context = {
+            "tone": request.tone,
+            "length": request.length,
+            "is_comment": request.isComment,
+            "original_comment_length": len(request.originalComment.split()),
+            "refine_instructions_length": len(request.refineInstructions)
+        }
 
         comments, usage_info = call_openai_api(prompt, "refine", 1, request.commentLanguage, context=debug_context)
 
@@ -1288,7 +1294,7 @@ Commentaire affiné uniquement.
 
         # Track analytics event for successful refine
         try:
-            await track_analytics_event(user_token, "comment_generated", {
+            await track_analytics_event(user_email, "comment_generated", {
                 "mode": "refine",
                 "language": request.commentLanguage,
                 "tone": request.tone,
@@ -1309,7 +1315,7 @@ Commentaire affiné uniquement.
         logger.error(f"❌ Erreur raffinement commentaire: {exc}")
         # Track failed generation
         try:
-            await track_analytics_event(user_token, "generation_failed", {
+            await track_analytics_event(user_email, "generation_failed", {
                 "mode": "refine",
                 "error": str(exc),
                 "success": False,
@@ -1338,20 +1344,20 @@ async def resize_comment(request: ResizeCommentRequest, req: Request, current_us
                 status_code=403,
                 detail="La fonction de redimensionnement n'est pas disponible pour votre plan. Veuillez upgrader."
             )
-    
-    cleaned_post = clean_post_content(request.post)
-    tone_instructions = get_tone_instructions(request.tone, request.commentLanguage)
-    language_instruction = get_language_instruction(request.commentLanguage)
-    
-    if request.resizeDirection == "+":
-        new_length = min(request.currentWordCount + 20, 80)
-        action = "more detailed" if request.commentLanguage == "en" else "plus détaillé"
-    else:
-        new_length = max(request.currentWordCount - 15, 15)
-        action = "more concise" if request.commentLanguage == "en" else "plus concis"
-    
-    if request.commentLanguage == "en":
-        prompt = f"""Post: "{cleaned_post}"
+
+        cleaned_post = clean_post_content(request.post)
+        tone_instructions = get_tone_instructions(request.tone, request.commentLanguage)
+        language_instruction = get_language_instruction(request.commentLanguage)
+
+        if request.resizeDirection == "+":
+            new_length = min(request.currentWordCount + 20, 80)
+            action = "more detailed" if request.commentLanguage == "en" else "plus détaillé"
+        else:
+            new_length = max(request.currentWordCount - 15, 15)
+            action = "more concise" if request.commentLanguage == "en" else "plus concis"
+
+        if request.commentLanguage == "en":
+            prompt = f"""Post: "{cleaned_post}"
 Comment ({request.currentWordCount} words): "{request.originalComment}"
 
 Rewrite the comment to make it {action}:
@@ -1361,8 +1367,8 @@ Rewrite the comment to make it {action}:
 
 Comment only.
 """
-    else:
-        prompt = f"""Post: "{cleaned_post}"
+        else:
+            prompt = f"""Post: "{cleaned_post}"
 Commentaire ({request.currentWordCount} mots): "{request.originalComment}"
 
 Réécrivez le commentaire pour le rendre {action}:
@@ -1373,13 +1379,13 @@ Réécrivez le commentaire pour le rendre {action}:
 Commentaire uniquement.
 """
 
-    # Préparer le contexte pour le debug
-    debug_context = {
-        "tone": request.tone,
-        "resize_direction": request.resizeDirection,
-        "original_word_count": request.currentWordCount,
-        "target_word_count": new_length
-    }
+        # Préparer le contexte pour le debug
+        debug_context = {
+            "tone": request.tone,
+            "resize_direction": request.resizeDirection,
+            "original_word_count": request.currentWordCount,
+            "target_word_count": new_length
+        }
 
         comments, usage_info = call_openai_api(prompt, "resize", 1, request.commentLanguage, context=debug_context)
 
@@ -1395,7 +1401,7 @@ Commentaire uniquement.
 
         # Track analytics event for successful resize
         try:
-            await track_analytics_event(user_token, "comment_generated", {
+            await track_analytics_event(user_email, "comment_generated", {
                 "mode": "resize",
                 "language": request.commentLanguage,
                 "tone": request.tone,
@@ -1416,7 +1422,7 @@ Commentaire uniquement.
         logger.error(f"❌ Erreur redimensionnement commentaire: {exc}")
         # Track failed generation
         try:
-            await track_analytics_event(user_token, "generation_failed", {
+            await track_analytics_event(user_email, "generation_failed", {
                 "mode": "resize",
                 "error": str(exc),
                 "success": False,
