@@ -1423,6 +1423,12 @@ Commentaire uniquement.
                 "model": usage_info.get("model", MODEL_NAME),
                 "duration_ms": int(processing_time_ms),
                 "success": True,
+                "news_enrichment_mode": "disabled",
+                "web_search_enabled": False,
+                "web_search_success": False,
+                "web_search_source_url": None,
+                "include_quote_enabled": False,
+                "custom_prompt_used": False,
             })
         except Exception:
             pass  # Non-blocking
