@@ -13,15 +13,17 @@ from utils.partition_manager import create_analytics_partitions, purge_old_analy
 from utils.trial_manager import check_trial_expirations
 from utils.materialized_view_refresh import refresh_admin_materialized_views
 from version import VERSION
-import logging
-
-# Configuration du logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
 
 # Charger le .env principal du projet
 load_dotenv("../.env")  # Référencer le .env principal
 load_dotenv()  # Puis le .env local si il existe
+
+# Configuration du logging structure
+from logging_config import configure_logging
+import structlog
+
+configure_logging()
+logger = structlog.get_logger(__name__)
 
 
 # APScheduler instance for analytics partition management
@@ -64,13 +66,13 @@ async def lifespan(app: FastAPI):
         replace_existing=True
     )
     scheduler.start()
-    logger.info("Analytics scheduler started")
+    logger.info("scheduler_started", service="user-service", version=VERSION)
 
     yield
 
     # Shutdown
     scheduler.shutdown()
-    logger.info("Analytics scheduler stopped")
+    logger.info("scheduler_stopped", service="user-service")
 
 app = FastAPI(
     title="LinkedIn AI Commenter - User Service",
