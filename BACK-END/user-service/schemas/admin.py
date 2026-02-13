@@ -3,7 +3,7 @@ V3 Story 3.1 - Schemas Pydantic pour les endpoints admin.
 """
 from pydantic import BaseModel
 from datetime import datetime
-from typing import List, Optional
+from typing import List, Optional, Dict
 from uuid import UUID
 
 
@@ -43,3 +43,55 @@ class TokenUsageResponse(BaseModel):
     users: List[TokenUsageDetail]
     total_users: int
     total_tokens_all: int  # Total global pour reference
+
+
+class AnalyticsSummaryResponse(BaseModel):
+    """Reponse du resume analytics global."""
+    period: str
+    users_by_role: Dict[str, int]
+    total_comments_generated: int
+    total_cost_eur: str
+    active_trials: int
+    trend_comments: Optional[float] = None
+    trend_cost: Optional[float] = None
+
+
+class UserConsumptionItem(BaseModel):
+    """Detail de consommation par utilisateur."""
+    user_id: UUID
+    email: str
+    role: str
+    generation_count: int
+    total_tokens: int
+    cost_eur: str
+    last_generation: Optional[datetime] = None
+
+    class Config:
+        from_attributes = True
+
+
+class UserConsumptionResponse(BaseModel):
+    """Reponse de la consommation par utilisateur."""
+    items: List[UserConsumptionItem]
+    total_users: int
+    period: str
+
+
+class UserGenerationItem(BaseModel):
+    """Detail d'une generation de commentaire."""
+    timestamp: datetime
+    mode: Optional[str] = None
+    language: Optional[str] = None
+    tokens_input: int
+    tokens_output: int
+    cost_eur: str
+    comment_preview: Optional[str] = None
+
+
+class UserGenerationsResponse(BaseModel):
+    """Reponse du drill-down des generations d'un utilisateur."""
+    items: List[UserGenerationItem]
+    total: int
+    skip: int
+    limit: int
+    has_more: bool
