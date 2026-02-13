@@ -2,7 +2,7 @@
 V3 Story 3.1 - Schemas Pydantic pour les endpoints admin.
 """
 from pydantic import BaseModel
-from datetime import datetime
+from datetime import datetime, date
 from typing import List, Optional, Dict
 from uuid import UUID
 
@@ -95,3 +95,59 @@ class UserGenerationsResponse(BaseModel):
     skip: int
     limit: int
     has_more: bool
+
+
+class UsageDistributionItem(BaseModel):
+    """Item de distribution des parametres d'usage."""
+    dimension: str
+    value: str
+    usage_count: int
+    percentage: float
+
+
+class UsageDistributionResponse(BaseModel):
+    """Reponse de la distribution des parametres d'usage."""
+    items: List[UsageDistributionItem]
+
+
+class UsageFeatureAdoptionItem(BaseModel):
+    """Item d'adoption des features."""
+    feature_name: str
+    generations_with_feature: int
+    total_generations: int
+    adoption_rate: float
+    success_rate: Optional[float] = None
+
+
+class UsageFeatureAdoptionResponse(BaseModel):
+    """Reponse de l'adoption des features."""
+    items: List[UsageFeatureAdoptionItem]
+
+
+class UsageByRoleItem(BaseModel):
+    """Item d'usage par role."""
+    role: str
+    metric_type: str
+    dimension: str
+    value: str
+    count: int
+
+
+class UsageByRoleResponse(BaseModel):
+    """Reponse de l'usage par role."""
+    items: List[UsageByRoleItem]
+
+
+class UsageTrendsItem(BaseModel):
+    """Item de tendances d'usage hebdomadaires."""
+    week_start_date: date
+    dimension: str
+    value: str
+    usage_count: int
+    previous_week_count: Optional[int] = None
+    growth_rate: Optional[float] = None
+
+
+class UsageTrendsResponse(BaseModel):
+    """Reponse des tendances d'usage hebdomadaires."""
+    items: List[UsageTrendsItem]
