@@ -28,6 +28,9 @@ let usersData = [];
 let sortColumn = null;
 let sortDirection = 'asc';
 let usageDataLoaded = false;
+let pieChart = null;
+let featuresChart = null;
+let distributionsData = {};
 
 // =============================================================================
 // 3. DOM Elements
@@ -1036,5 +1039,176 @@ async function loadUsageData() {
         if (error.status === 401 || error.status === 403) {
             handleApiError(error);
         }
+    }
+}
+
+// =============================================================================
+// 13. Usage Tab - Distributions Pie Chart & Features Bar Chart
+// =============================================================================
+
+function showEmptyState(chart, message) {
+    chart.setOption({
+        title: {
+            text: message,
+            left: 'center',
+            top: 'center',
+            textStyle: { color: '#9ca3af', fontSize: 14, fontWeight: 'normal' }
+        },
+        series: []
+    }, true);
+}
+
+async function initDistributionsChart() {
+    if (pieChart) return;
+
+    const container = document.getElementById('chart-distributions');
+    pieChart = echarts.init(container);
+    pieChart.showLoading();
+
+    try {
+        const response = await fetchWithAuth('/api/admin/usage/distributions');
+        pieChart.hideLoading();
+
+        // Group by dimension
+        distributionsData = {};
+        if (response.items && response.items.length > 0) {
+            response.items.forEach(item => {
+                if (!distributionsData[item.dimension]) distributionsData[item.dimension] = [];
+                distributionsData[item.dimension].push({
+                    name: item.value,
+                    value: item.usage_count
+                });
+            });
+            updateDistributionChart('tone');
+        } else {
+            showEmptyState(pieChart, 'Aucune donnee disponible');
+        }
+
+        // Selector listener
+        const selector = document.getElementById('dimension-selector');
+        if (selector) {
+            selector.addEventListener('change', (e) => {
+                updateDistributionChart(e.target.value);
+            });
+        }
+
+        // Resize handler
+        const resizeObserver = new ResizeObserver(() => pieChart.resize());
+        resizeObserver.observe(container);
+    } catch (error) {
+        pieChart.hideLoading();
+        console.error('Erreur chargement distributions:', error);
+        showEmptyState(pieChart, 'Erreur de chargement');
+    }
+}
+
+function updateDistributionChart(dimension) {
+    const data = distributionsData[dimension] || [];
+
+    if (data.length === 0) {
+        showEmptyState(pieChart, 'Aucune donnee pour ' + dimension);
+        return;
+    }
+
+    pieChart.setOption({
+        title: { text: '', show: false },
+        tooltip: { trigger: 'item', formatter: '{b}: {c} ({d}%)' },
+        legend: { orient: 'vertical', left: 'left', top: 'middle' },
+        series: [{
+            name: dimension,
+            type: 'pie',
+            radius: ['40%', '70%'],
+            center: ['60%', '50%'],
+            data: data,
+            emphasis: {
+                itemStyle: {
+                    shadowBlur: 10,
+                    shadowColor: 'rgba(0,0,0,0.5)'
+                }
+            },
+            label: { formatter: '{b}: {d}%' }
+        }]
+    }, true);
+}
+
+async function initFeaturesChart() {
+    if (featuresChart) return;
+
+    const container = document.getElementById('chart-features');
+    featuresChart = echarts.init(container);
+    featuresChart.showLoading();
+
+    try {
+        const response = await fetchWithAuth('/api/admin/usage/feature-adoption');
+        featuresChart.hideLoading();
+
+        if (!response.items || response.items.length === 0) {
+            showEmptyState(featuresChart, 'Aucune donnee disponible');
+            return;
+        }
+
+        // Map feature names to readable labels
+        const featureLabels = {
+            'web_search_enabled': 'Web Search',
+            'include_quote_enabled': 'Include Quote',
+            'custom_prompt_used': 'Custom Prompt',
+            'news_enrichment_enabled': 'News Enrichment'
+        };
+
+        const labels = [];
+        const values = [];
+
+        response.items.forEach(item => {
+            if (featureLabels[item.feature_name]) {
+                labels.push(featureLabels[item.feature_name]);
+                values.push(parseFloat(item.adoption_rate));
+            }
+        });
+
+        if (labels.length === 0) {
+            showEmptyState(featuresChart, 'Aucune donnee disponible');
+            return;
+        }
+
+        featuresChart.setOption({
+            tooltip: {
+                trigger: 'axis',
+                axisPointer: { type: 'shadow' },
+                formatter: function(params) {
+                    return params[0].name + ': ' + params[0].value + '% d\'adoption';
+                }
+            },
+            grid: { left: '30%', right: '12%', top: '5%', bottom: '5%' },
+            xAxis: {
+                type: 'value',
+                max: 100,
+                axisLabel: { formatter: '{value}%' }
+            },
+            yAxis: {
+                type: 'category',
+                data: labels,
+                axisLabel: { fontSize: 12 }
+            },
+            series: [{
+                type: 'bar',
+                data: values,
+                label: {
+                    show: true,
+                    position: 'right',
+                    formatter: '{c}%',
+                    fontSize: 12,
+                    color: '#333'
+                },
+                itemStyle: { color: '#0077B5' }
+            }]
+        });
+
+        // Resize handler
+        const resizeObserver = new ResizeObserver(() => featuresChart.resize());
+        resizeObserver.observe(container);
+    } catch (error) {
+        featuresChart.hideLoading();
+        console.error('Erreur chargement features:', error);
+        showEmptyState(featuresChart, 'Erreur de chargement');
     }
 }
