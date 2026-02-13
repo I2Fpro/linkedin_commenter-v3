@@ -156,49 +156,6 @@ class GoogleAuth {
         user_id: anonymousUserId,
         user_plan: userPlan
       });
-        try {
-
-          // Get current UI language
-          let currentUiLang = 'fr';
-          try {
-            const langStorage = await chrome.storage.sync.get(['interfaceLanguage']);
-            if (langStorage.interfaceLanguage) {
-              currentUiLang = langStorage.interfaceLanguage;
-            }
-          } catch (e) {
-            console.warn('Could not fetch UI language:', e);
-          }
-
-          // Get current anonymous ID before aliasing
-
-          // Alias the anonymous session to the user ID
-          if (currentAnon && currentAnon !== anonymousUserId) {
-            try {
-            } catch (e) {
-            }
-          }
-
-          // Identifier l'utilisateur avec le userId anonyme (PAS d'email)
-            plan: userPlan,
-            role: userRole,
-            interface_lang: currentUiLang
-          });
-
-          // Set person properties (sans email)
-            plan: userPlan,
-            role: userRole,
-            interface_lang: currentUiLang
-          });
-
-          // Capture user_login event (sans email)
-            user_id: anonymousUserId,
-            plan: userPlan,
-            auth_method: 'google_oauth2'
-          });
-
-        } catch (e) {
-        }
-      }
 
       return true;
     } catch (error) {

@@ -565,7 +565,7 @@ async def get_usage_trends(
         UsageTrendsResponse: Tendances hebdomadaires des features
     """
     trends_query = text("""
-        SELECT week_start_date, dimension, value, usage_count, previous_week_count, growth_rate
+        SELECT week_start_date, dimension, value, usage_count, growth_rate
         FROM analytics.usage_trends_weekly
         WHERE week_start_date >= (CURRENT_DATE - INTERVAL '12 weeks')
           AND dimension IN ('feature_web_search', 'feature_include_quote', 'feature_custom_prompt', 'feature_news_enrichment')
@@ -579,7 +579,6 @@ async def get_usage_trends(
             dimension=row.dimension,
             value=row.value,
             usage_count=row.usage_count,
-            previous_week_count=row.previous_week_count,
             growth_rate=float(row.growth_rate) if row.growth_rate is not None else None
         )
         for row in trends_result

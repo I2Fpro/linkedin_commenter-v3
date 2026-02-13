@@ -6,6 +6,7 @@ import json
 
 
 class AnalyticsEventCreate(BaseModel):
+    email: str = Field(..., min_length=1)
     event_type: str = Field(..., min_length=1, max_length=100)
     properties: Dict[str, Any] = Field(default_factory=dict)
     timestamp: Optional[datetime] = None

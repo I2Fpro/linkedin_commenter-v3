@@ -3,9 +3,11 @@
   'use strict';
 
   // Éviter la double-injection du script
+  if (window.__aiCommenterLoaded) {
     console.log('⚠️ Content script déjà chargé, arrêt');
     return;
   }
+  window.__aiCommenterLoaded = true;
 
   console.log('🚀 LinkedIn AI Commenter - Content script chargé');
 
@@ -296,7 +298,10 @@
   // Initialiser l'application au démarrage
   (async function boot() {
     await loadLanguageSettings();
-    )();
+
+    // Vérifier l'authentification après l'init
+    await checkAuthentication();
+  })();
 
   // ==================== Phase 2: LinkedIn Profile Capture ====================
 
@@ -420,41 +425,6 @@
       const response = await chrome.runtime.sendMessage({ action: 'checkAuthentication' });
       isAuthenticated = response && response.authenticated;
       console.log('État authentification:', isAuthenticated);
-        try {
-          // Récupérer les informations utilisateur depuis le storage
-          const userInfo = await chrome.storage.local.get(['user_id', 'user_email', 'user_name', 'user_plan']);
-
-          if (userInfo.user_id) {
-              email: userInfo.user_email,
-              name: userInfo.user_name || null,
-              plan: userInfo.user_plan || 'FREE'
-            });
-          } else if (userInfo.user_email) {
-            // Fallback sur email si user_id non disponible
-            console.warn('⚠️ user_id non disponible, utilisation de l\'email');
-              email: userInfo.user_email,
-              name: userInfo.user_name || null,
-              plan: userInfo.user_plan || 'FREE'
-            });
-          }
-
-          // Anti-duplicate session logic (Plan v3)
-          if (!window.__PH_BOOTED__) {
-            const key = 'ph_session_started';
-            if (!sessionStorage.getItem(key)) {
-              sessionStorage.setItem(key, '1');
-              console.log('📊 Session d\'utilisation démarrée');
-            } else {
-              console.log('📊 Session déjà démarrée (évite duplication)');
-            }
-
-            // Track session end events
-            document.addEventListener('visibilitychange', () => {
-            });
-          }
-        } catch (e) {
-        }
-      }
     } catch (error) {
       console.error('Erreur vérification auth:', error);
       isAuthenticated = false;
@@ -1072,10 +1042,6 @@
       // Log
       console.log('Emotion selectionnee:', emotionKey, 'Intensite:', intensityKey);
 
-      // Track
-      
-      }
-
       // Fermer la roue
       closeEmotionWheel();
     };
@@ -1532,10 +1498,6 @@
 
       // Mettre a jour le bouton
       updateButtonWithStyle(triggerButton, styleKey);
-
-      // Track
-      
-      }
 
       // Fermer la roue
       closeStyleWheel();
@@ -2015,10 +1977,6 @@
     commentBox.setAttribute('data-selected-style', style.key);
 
     console.log('Style sélectionné:', style.key);
-
-    // Track style selection
-    
-    }
   }
 
   // Fonction pour gérer le clic sur une émotion
@@ -2037,10 +1995,6 @@
     commentBox.setAttribute('data-selected-intensity', intensity);
 
     console.log('Émotion sélectionnée:', emotion.key, 'Intensité:', intensity);
-
-    // Track emotion selection
-    
-    }
   }
 
   // ================================================
@@ -3324,10 +3278,6 @@
     const selectedIntensity = commentBox.getAttribute('data-selected-intensity');
     const selectedStyle = commentBox.getAttribute('data-selected-style');
 
-     catch (e) {
-      }
-    }
-
     try {
       const postContainer = findPostContainer(commentBox);
       const postContent = extractContent(postContainer, isReplyToComment);
@@ -3421,11 +3371,6 @@
 
         if (response && response.error) {
           window.toastNotification.error(t('error') + ': ' + response.error);
-
-          // Track generation error
-           catch (e) {
-            }
-          }
         } else if (response && response.comments) {
           // V3 Story 5.5 — Passer l'URL source et le flag fallback au popup
           // Fix: passer webSearchEnabled pour n'afficher le bouton source que si la recherche etait activee
@@ -3434,11 +3379,6 @@
           // V3 Story 1.4 — Notification de fallback si recherche web echouee
           if (response.web_search_fallback) {
             window.toastNotification.warning(t('webSearchFallbackMessage'));
-          }
-
-          // Track successful generation
-           catch (e) {
-            }
           }
 
           // Story 7.14 — L'emotion et le style persistent apres generation
@@ -3460,11 +3400,6 @@
     } catch (error) {
       const generationDuration = Date.now() - generationStartTime;
       window.toastNotification.error(t('error') + ': ' + error.message);
-
-      // Track generation exception
-       catch (e) {
-        }
-      }
 
       button.disabled = false;
       button.classList.remove('loading');
@@ -3558,11 +3493,6 @@
       submitButton.onclick = () => {
         const userPrompt = textArea.value.trim();
         if (userPrompt) {
-          // Track prompt usage (Plan v3)
-           catch (e) {
-            }
-          }
-
           // Désactiver le bouton et afficher l'indicateur de chargement
           submitButton.disabled = true;
           submitButton.textContent = t('generating');
@@ -3629,10 +3559,6 @@
     const selectedEmotion = commentBox.getAttribute('data-selected-emotion');
     const selectedIntensity = commentBox.getAttribute('data-selected-intensity');
     const selectedStyle = commentBox.getAttribute('data-selected-style');
-
-     catch (e) {
-      }
-    }
 
     try {
       const postContainer = findPostContainer(commentBox);
@@ -3733,11 +3659,6 @@
 
         if (response && response.error) {
           window.toastNotification.error(t('error') + ': ' + response.error);
-
-          // Track generation error
-           catch (e) {
-            }
-          }
         } else if (response && response.comments) {
           // V3 Story 5.5 — Passer l'URL source et le flag fallback au popup
           // Fix: passer webSearchEnabled pour n'afficher le bouton source que si la recherche etait activee
@@ -3748,10 +3669,6 @@
             window.toastNotification.warning(t('webSearchFallbackMessage'));
           }
 
-          // Track successful generation
-           catch (e) {
-            }
-          }
         }
       });
 
@@ -3765,11 +3682,6 @@
         promptButton.querySelector('span').textContent = originalButtonText;
       }
       window.toastNotification.error(t('error') + ': ' + error.message);
-
-      // Track generation exception
-       catch (e) {
-        }
-      }
     }
   }
 
@@ -4116,11 +4028,6 @@
       const inputEvent = new Event('input', { bubbles: true });
       commentBox.dispatchEvent(inputEvent);
 
-      // Track comment insertion
-      // V3 Story 5.5 — Utiliser currentComment.length (peut inclure la source)
-       catch (e) {
-        }
-      }
     });
 
     // Ajouter les boutons d'action
@@ -4201,12 +4108,6 @@
 
     const resizeStartTime = Date.now();
 
-    // Track resize started
-    );
-      } catch (e) {
-      }
-    }
-
     chrome.runtime.sendMessage({
       action: 'resizeComment',
       data: {
@@ -4222,10 +4123,6 @@
       if (response.error) {
         window.toastNotification.error(t('error') + ': ' + response.error);
 
-        // Track resize error
-         catch (e) {
-          }
-        }
       } else if (response.resizedComment) {
         // Mettre à jour le texte
         const option = optionsPopup.querySelectorAll('.ai-option')[optionIndex];
@@ -4234,10 +4131,6 @@
           textElement.textContent = response.resizedComment;
         }
 
-        // Track successful resize
-         catch (e) {
-          }
-        }
       }
 
       button.textContent = originalText;
@@ -4319,11 +4212,6 @@
   function handleRefineComment(commentBox, originalComment, postContent, userPrompt, refineInstructions, optionIndex, optionsPopup, isReplyToComment) {
     const refineStartTime = Date.now();
 
-    // Track refine started
-     catch (e) {
-      }
-    }
-
     chrome.runtime.sendMessage({
       action: 'refineComment',
       data: {
@@ -4339,10 +4227,6 @@
       if (response.error) {
         window.toastNotification.error(t('error') + ': ' + response.error);
 
-        // Track refine error
-         catch (e) {
-          }
-        }
       } else if (response.refinedComment) {
         // Mettre à jour le texte
         const option = optionsPopup.querySelectorAll('.ai-option')[optionIndex];
@@ -4351,10 +4235,6 @@
           textElement.textContent = response.refinedComment;
         }
 
-        // Track successful refine
-         catch (e) {
-          }
-        }
       }
     });
   }
@@ -5073,15 +4953,6 @@
       updateAllButtons();
 
       if (isAuthenticated) {
-        // Phase 2: Tenter capture du profil LinkedIn quand l'utilisateur se connecte
-        detectAndCaptureLinkedInProfile();
-
-         catch (e) {
-              }
-            }
-          });
-        }
-
         const allCommentBoxes = document.querySelectorAll('[contenteditable="true"], [role="textbox"], .ql-editor, .tiptap, .ProseMirror');
 
         allCommentBoxes.forEach((commentBox) => {
@@ -5122,12 +4993,9 @@
             }
           }
         });
-      } else {
-        if (phClient && phClient.reset) {
-          try {
-          } catch (e) {
-          }
-        }
+
+        // Phase 2: Tenter capture du profil LinkedIn quand l'utilisateur se connecte
+        detectAndCaptureLinkedInProfile();
       }
     } else if (message.action === 'languageChanged') {
       currentInterfaceLanguage = message.interfaceLanguage;

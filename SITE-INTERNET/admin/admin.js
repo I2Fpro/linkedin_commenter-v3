@@ -8,8 +8,8 @@
 // 1. API Configuration
 // =============================================================================
 
-const USERS_API_URL = 'http://localhost:8444';
-const AI_SERVICE_URL = 'http://localhost:8443';
+const USERS_API_URL = '__USERS_API_URL__';
+const AI_SERVICE_URL = '__AI_API_URL__';
 
 // =============================================================================
 // 2. State
