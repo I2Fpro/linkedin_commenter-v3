@@ -8,8 +8,8 @@
 // 1. API Configuration
 // =============================================================================
 
-const USERS_API_URL = '__USERS_API_URL__';
-const AI_SERVICE_URL = '__AI_API_URL__';
+const USERS_API_URL = 'http://localhost:8444';
+const AI_SERVICE_URL = 'http://localhost:8443';
 
 // =============================================================================
 // 2. State
@@ -27,6 +27,7 @@ let currentExpandedUserId = null;
 let usersData = [];
 let sortColumn = null;
 let sortDirection = 'asc';
+let usageDataLoaded = false;
 
 // =============================================================================
 // 3. DOM Elements
@@ -54,6 +55,11 @@ document.addEventListener('DOMContentLoaded', init);
  */
 async function init() {
     authToken = localStorage.getItem('admin_jwt');
+
+    // Init tabs/period/sort BEFORE loading dashboard (switchTab needs tabButtons)
+    initTabs();
+    initPeriodSelector();
+    initTableSort();
 
     if (authToken) {
         await loadDashboard();
@@ -477,6 +483,12 @@ async function switchTab(tabName) {
         panel.classList.toggle('active', isActive);
     });
 
+    // Cacher le selecteur de periode pour l'onglet Usage (independant)
+    const periodSelector = document.getElementById('period-selector');
+    if (periodSelector) {
+        periodSelector.style.display = tabName === 'usage' ? 'none' : 'flex';
+    }
+
     // Load data for active tab
     try {
         showLoadingState();
@@ -485,6 +497,21 @@ async function switchTab(tabName) {
             await loadOverviewData(currentPeriod);
         } else if (tabName === 'users') {
             await loadUsersData(currentPeriod);
+        } else if (tabName === 'usage') {
+            await loadUsageData();
+            // Resize les charts ECharts apres affichage (etaient caches donc dimensions = 0)
+            if (typeof echarts !== 'undefined') {
+                setTimeout(() => {
+                    const containers = ['chart-features', 'chart-distributions', 'chart-trends', 'chart-roles'];
+                    containers.forEach(id => {
+                        const el = document.getElementById(id);
+                        if (el) {
+                            const instance = echarts.getInstanceByDom(el);
+                            if (instance) instance.resize();
+                        }
+                    });
+                }, 100);
+            }
         }
     } catch (error) {
         console.error(`Erreur chargement donnees ${tabName}:`, error);
@@ -533,6 +560,11 @@ async function setPeriod(period) {
     periodButtons.forEach(btn => {
         btn.classList.toggle('active', btn.getAttribute('data-period') === period);
     });
+
+    // Usage tab est independant du selecteur de periode
+    if (currentTab === 'usage') {
+        return;
+    }
 
     // Reload current tab
     await switchTab(currentTab);
@@ -587,7 +619,7 @@ function displayKPIs(data) {
     }
 
     // KPI 3: Cout estime
-    const costTotal = data.total_cost_eur || 0;
+    const costTotal = parseFloat(data.total_cost_eur) || 0;
     document.getElementById('kpi-cost-total').textContent = `${costTotal.toFixed(2)} EUR`;
 
     const costTrendEl = document.getElementById('kpi-cost-trend');
@@ -976,4 +1008,33 @@ function updateSortIndicators(activeHeader) {
             header.textContent = text;
         }
     });
+}
+
+// =============================================================================
+// 12. Usage Tab - Data Loading (stubs pour plans 07-03 et 07-04)
+// =============================================================================
+
+/**
+ * Charge les donnees de l'onglet Usage.
+ * Appele par switchTab('usage').
+ * Les fonctions initXxxChart() seront implementees dans les plans 07-03 et 07-04.
+ */
+async function loadUsageData() {
+    // Eviter rechargement si deja charge (donnees globales, pas de filtre temporel)
+    if (usageDataLoaded) return;
+
+    try {
+        // Les fonctions de charts seront ajoutees par les plans 07-03 et 07-04
+        if (typeof initFeaturesChart === 'function') await initFeaturesChart();
+        if (typeof initDistributionsChart === 'function') await initDistributionsChart();
+        if (typeof initTrendsChart === 'function') await initTrendsChart();
+        if (typeof initRolesChart === 'function') await initRolesChart();
+
+        usageDataLoaded = true;
+    } catch (error) {
+        console.error('Erreur chargement donnees Usage:', error);
+        if (error.status === 401 || error.status === 403) {
+            handleApiError(error);
+        }
+    }
 }
