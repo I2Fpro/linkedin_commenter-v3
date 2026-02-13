@@ -41,6 +41,7 @@ class User(Base):
     trial_started_at = Column(DateTime(timezone=True), nullable=True)
     trial_ends_at = Column(DateTime(timezone=True), nullable=True, index=True)
     grace_ends_at = Column(DateTime(timezone=True), nullable=True, index=True)
+    trial_reminder_sent_at = Column(DateTime(timezone=True), nullable=True)  # Phase 04 - Garde-fou rappel J-3
 
     subscriptions = relationship("Subscription", back_populates="user")
     usage_logs = relationship("UsageLog", back_populates="user")

@@ -11,6 +11,8 @@ avant d'accorder le trial.
 import structlog
 import hashlib
 import uuid
+import os
+import math
 from datetime import datetime, timedelta, timezone
 from typing import Optional
 from sqlalchemy.orm import Session
@@ -18,6 +20,13 @@ from sqlalchemy.exc import IntegrityError
 
 from models import User, RoleType
 from utils.role_manager import RoleManager
+from notifications.email_sender import send_trial_email
+from notifications.templates import (
+    get_trial_expiring_soon_html,
+    get_grace_started_html,
+    get_grace_expired_html,
+)
+from utils.encryption import EncryptionManager
 
 logger = structlog.get_logger(__name__)
 
@@ -276,6 +285,30 @@ class TrialManager:
             grace_duration_days=GRACE_DURATION_DAYS
         )
 
+        # Envoi email grace_started (non-bloquant)
+        try:
+            encryption_manager = EncryptionManager()
+            user_email = encryption_manager.decrypt(user.email) if user.email else None
+            user_name = encryption_manager.decrypt(user.name) if user.name else "utilisateur"
+
+            if user_email:
+                upgrade_url = os.getenv(
+                    "STRIPE_SUCCESS_URL",
+                    "https://linkedinaicommenter.com/account/subscription.html"
+                )
+                html_body = get_grace_started_html(
+                    user_name=user_name,
+                    grace_days=GRACE_DURATION_DAYS,
+                    upgrade_url=upgrade_url
+                )
+                send_trial_email(
+                    to_email=user_email,
+                    subject="Période de grâce activée - LinkedIn AI Commenter",
+                    html_body=html_body
+                )
+        except Exception as e:
+            logger.warning("email_send_error_grace_started", user_id=str(user.id), error=str(e))
+
         return True
 
     @staticmethod
@@ -339,6 +372,29 @@ class TrialManager:
             grace_duration_days=GRACE_DURATION_DAYS
         )
 
+        # Envoi email grace_expired (non-bloquant)
+        try:
+            encryption_manager = EncryptionManager()
+            user_email = encryption_manager.decrypt(user.email) if user.email else None
+            user_name = encryption_manager.decrypt(user.name) if user.name else "utilisateur"
+
+            if user_email:
+                upgrade_url = os.getenv(
+                    "STRIPE_SUCCESS_URL",
+                    "https://linkedinaicommenter.com/account/subscription.html"
+                )
+                html_body = get_grace_expired_html(
+                    user_name=user_name,
+                    upgrade_url=upgrade_url
+                )
+                send_trial_email(
+                    to_email=user_email,
+                    subject="Retour au plan FREE - LinkedIn AI Commenter",
+                    html_body=html_body
+                )
+        except Exception as e:
+            logger.warning("email_send_error_grace_expired", user_id=str(user.id), error=str(e))
+
         return True
 
     @staticmethod
@@ -381,6 +437,7 @@ class TrialManager:
         stats = {
             "trials_expired": 0,
             "graces_expired": 0,
+            "reminders_sent": 0,
             "errors": 0
         }
 
@@ -414,10 +471,65 @@ class TrialManager:
                 logger.error("expire_grace_error", user_id=str(user.id), error=str(e), exc_info=True)
                 db.rollback()
 
+        # Rappel J-3 pour les trials Premium qui expirent bientôt
+        reminder_date = now + timedelta(days=3)
+        users_expiring_soon = db.query(User).filter(
+            User.role == RoleType.PREMIUM,
+            User.trial_ends_at.isnot(None),
+            User.trial_ends_at <= reminder_date,
+            User.trial_ends_at > now,
+            User.trial_reminder_sent_at.is_(None)
+        ).all()
+
+        encryption_manager = EncryptionManager()
+        for user in users_expiring_soon:
+            try:
+                # Calcul des jours restants
+                remaining = (user.trial_ends_at - now).total_seconds()
+                days_left = math.ceil(remaining / 86400)
+
+                # Déchiffrement email/name
+                user_email = encryption_manager.decrypt(user.email) if user.email else None
+                user_name = encryption_manager.decrypt(user.name) if user.name else "utilisateur"
+
+                if user_email:
+                    upgrade_url = os.getenv(
+                        "STRIPE_SUCCESS_URL",
+                        "https://linkedinaicommenter.com/account/subscription.html"
+                    )
+                    html_body = get_trial_expiring_soon_html(
+                        user_name=user_name,
+                        days_left=days_left,
+                        upgrade_url=upgrade_url
+                    )
+                    email_sent = send_trial_email(
+                        to_email=user_email,
+                        subject=f"Votre essai Premium expire dans {days_left} jours",
+                        html_body=html_body
+                    )
+
+                    if email_sent:
+                        user.trial_reminder_sent_at = now
+                        db.commit()
+                        stats["reminders_sent"] += 1
+                        logger.info(
+                            "trial_reminder_sent",
+                            user_id=str(user.id),
+                            days_left=days_left
+                        )
+            except Exception as e:
+                stats["errors"] += 1
+                logger.error("trial_reminder_error", user_id=str(user.id), error=str(e), exc_info=True)
+                try:
+                    db.rollback()
+                except Exception:
+                    pass
+
         logger.info(
             "check_expirations_complete",
             trials_expired=stats["trials_expired"],
             graces_expired=stats["graces_expired"],
+            reminders_sent=stats["reminders_sent"],
             errors=stats["errors"]
         )
 
