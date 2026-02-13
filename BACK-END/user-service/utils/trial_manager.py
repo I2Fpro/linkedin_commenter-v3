@@ -8,7 +8,7 @@ Anti-abus: Verification du hash SHA256 du linkedin_profile_id
 avant d'accorder le trial.
 """
 
-import logging
+import structlog
 import hashlib
 import uuid
 from datetime import datetime, timedelta, timezone
@@ -19,7 +19,7 @@ from sqlalchemy.exc import IntegrityError
 from models import User, RoleType
 from utils.role_manager import RoleManager
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger(__name__)
 
 # Constantes du trial
 TRIAL_DURATION_DAYS = 30
@@ -60,7 +60,7 @@ def track_trial_event(
             db.rollback()
         except Exception:
             pass
-        logger.warning(f"Analytics tracking failed for {event_type}: {e}")
+        logger.warning("analytics_tracking_failed", event_type=event_type, error=str(e))
 
 
 class TrialManager:
@@ -81,7 +81,7 @@ class TrialManager:
 
         # Verifier si l'utilisateur a deja un trial en cours ou termine
         if user.trial_started_at is not None:
-            logger.info(f"User {user.id}: trial deja demarre, idempotence")
+            logger.info("trial_already_started", user_id=str(user.id), reason="idempotence")
             return {
                 "trial_granted": False,
                 "already_captured": True,
@@ -98,8 +98,10 @@ class TrialManager:
 
         if existing_user and existing_user.id != user.id:
             logger.warning(
-                f"Trial refuse pour user {user.id}: "
-                f"linkedin_profile_id_hash deja utilise par user {existing_user.id}"
+                "trial_refused_profile_duplicate",
+                user_id=str(user.id),
+                existing_user_id=str(existing_user.id),
+                reason="linkedin_profile_id_hash_already_used"
             )
             return {
                 "trial_granted": False,
@@ -118,15 +120,17 @@ class TrialManager:
         # Verifier si l'utilisateur peut beneficier du trial (doit etre FREE)
         if user.role != RoleType.FREE:
             logger.info(
-                f"User {user.id}: profil capture mais pas de trial "
-                f"(role actuel: {user.role.value})"
+                "profile_captured_no_trial",
+                user_id=str(user.id),
+                current_role=user.role.value,
+                reason="not_free_user"
             )
             try:
                 db.commit()
                 db.refresh(user)
             except IntegrityError:
                 db.rollback()
-                logger.warning(f"IntegrityError pour user {user.id}: hash deja existant (race condition)")
+                logger.warning("integrity_error_race_condition", user_id=str(user.id), context="profile_capture_not_free")
                 return {
                     "trial_granted": False,
                     "already_captured": False,
@@ -167,7 +171,7 @@ class TrialManager:
             db.refresh(user)
         except IntegrityError:
             db.rollback()
-            logger.warning(f"IntegrityError pour user {user.id}: hash deja existant (race condition)")
+            logger.warning("integrity_error_race_condition", user_id=str(user.id), context="trial_start")
             return {
                 "trial_granted": False,
                 "already_captured": False,
@@ -178,8 +182,10 @@ class TrialManager:
             }
 
         logger.info(
-            f"Trial Premium demarre pour user {user.id}: "
-            f"fin le {trial_end.isoformat()}"
+            "trial_premium_started",
+            user_id=str(user.id),
+            trial_ends_at=trial_end.isoformat(),
+            duration_days=TRIAL_DURATION_DAYS
         )
 
         return {
@@ -196,11 +202,11 @@ class TrialManager:
         now = datetime.now(timezone.utc)
 
         if user.role != RoleType.PREMIUM:
-            logger.warning(f"User {user.id}: expire_trial appele mais role={user.role.value}")
+            logger.warning("expire_trial_invalid_role", user_id=str(user.id), current_role=user.role.value)
             return False
 
         if user.trial_ends_at is None:
-            logger.warning(f"User {user.id}: expire_trial appele mais trial_ends_at=None")
+            logger.warning("expire_trial_missing_end_date", user_id=str(user.id))
             return False
 
         if user.trial_ends_at > now:
@@ -208,8 +214,10 @@ class TrialManager:
 
         if user.stripe_subscription_id and user.subscription_status == "active":
             logger.info(
-                f"User {user.id}: trial expire mais abonnement Stripe actif, "
-                f"pas de transition"
+                "trial_expired_but_subscribed",
+                user_id=str(user.id),
+                subscription_id=user.stripe_subscription_id,
+                action="no_transition"
             )
             user.trial_ends_at = None
             db.commit()
@@ -260,8 +268,12 @@ class TrialManager:
         )
 
         logger.info(
-            f"Trial expire pour user {user.id}: PREMIUM -> MEDIUM grace, "
-            f"fin grace le {grace_end.isoformat()}"
+            "trial_expired_grace_started",
+            user_id=str(user.id),
+            from_role="PREMIUM",
+            to_role="MEDIUM",
+            grace_ends_at=grace_end.isoformat(),
+            grace_duration_days=GRACE_DURATION_DAYS
         )
 
         return True
@@ -271,11 +283,11 @@ class TrialManager:
         now = datetime.now(timezone.utc)
 
         if user.role != RoleType.MEDIUM:
-            logger.warning(f"User {user.id}: expire_grace appele mais role={user.role.value}")
+            logger.warning("expire_grace_invalid_role", user_id=str(user.id), current_role=user.role.value)
             return False
 
         if user.grace_ends_at is None:
-            logger.warning(f"User {user.id}: expire_grace appele mais grace_ends_at=None")
+            logger.warning("expire_grace_missing_end_date", user_id=str(user.id))
             return False
 
         if user.grace_ends_at > now:
@@ -283,8 +295,10 @@ class TrialManager:
 
         if user.stripe_subscription_id and user.subscription_status == "active":
             logger.info(
-                f"User {user.id}: grace expire mais abonnement Stripe actif, "
-                f"pas de transition"
+                "grace_expired_but_subscribed",
+                user_id=str(user.id),
+                subscription_id=user.stripe_subscription_id,
+                action="no_transition"
             )
             user.grace_ends_at = None
             db.commit()
@@ -317,7 +331,13 @@ class TrialManager:
             }
         )
 
-        logger.info(f"Grace expiree pour user {user.id}: MEDIUM -> FREE")
+        logger.info(
+            "grace_expired_back_to_free",
+            user_id=str(user.id),
+            from_role="MEDIUM",
+            to_role="FREE",
+            grace_duration_days=GRACE_DURATION_DAYS
+        )
 
         return True
 
@@ -376,7 +396,7 @@ class TrialManager:
                     stats["trials_expired"] += 1
             except Exception as e:
                 stats["errors"] += 1
-                logger.error(f"Erreur expire_trial user {user.id}: {e}", exc_info=True)
+                logger.error("expire_trial_error", user_id=str(user.id), error=str(e), exc_info=True)
                 db.rollback()
 
         expired_graces = db.query(User).filter(
@@ -391,13 +411,14 @@ class TrialManager:
                     stats["graces_expired"] += 1
             except Exception as e:
                 stats["errors"] += 1
-                logger.error(f"Erreur expire_grace user {user.id}: {e}", exc_info=True)
+                logger.error("expire_grace_error", user_id=str(user.id), error=str(e), exc_info=True)
                 db.rollback()
 
         logger.info(
-            f"Check expirations: {stats['trials_expired']} trials expires, "
-            f"{stats['graces_expired']} graces expirees, "
-            f"{stats['errors']} erreurs"
+            "check_expirations_complete",
+            trials_expired=stats["trials_expired"],
+            graces_expired=stats["graces_expired"],
+            errors=stats["errors"]
         )
 
         return stats
@@ -410,14 +431,14 @@ class TrialManager:
                 and user.trial_ends_at
                 and user.trial_ends_at <= now
                 and not (user.stripe_subscription_id and user.subscription_status == "active")):
-            logger.info(f"Fallback: expire trial pour user {user.id}")
+            logger.info("fallback_expire_trial", user_id=str(user.id))
             TrialManager.expire_trial(db, user)
 
         elif (user.role == RoleType.MEDIUM
                 and user.grace_ends_at
                 and user.grace_ends_at <= now
                 and not (user.stripe_subscription_id and user.subscription_status == "active")):
-            logger.info(f"Fallback: expire grace pour user {user.id}")
+            logger.info("fallback_expire_grace", user_id=str(user.id))
             TrialManager.expire_grace(db, user)
 
 
@@ -433,7 +454,7 @@ async def check_trial_expirations():
     """
     from database import SessionLocal
 
-    logger.info("Cron trial_expirations: demarrage du scan")
+    logger.info("cron_trial_expirations_started")
 
     db = SessionLocal()
     try:
@@ -453,14 +474,14 @@ async def check_trial_expirations():
             )
 
         logger.info(
-            f"Cron trial_expirations termine: "
-            f"{stats['trials_expired']} trials, "
-            f"{stats['graces_expired']} graces, "
-            f"{stats['errors']} erreurs"
+            "cron_trial_expirations_complete",
+            trials_expired=stats["trials_expired"],
+            graces_expired=stats["graces_expired"],
+            errors=stats["errors"]
         )
 
     except Exception as e:
-        logger.error(f"Cron trial_expirations erreur: {e}", exc_info=True)
+        logger.error("cron_trial_expirations_error", error=str(e), exc_info=True)
         try:
             db.rollback()
         except Exception:

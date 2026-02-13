@@ -9,12 +9,12 @@ Scheduled via APScheduler:
 - create_analytics_partitions: Daily at 2:00 AM
 - purge_old_analytics: Monthly on the 1st at 3:00 AM
 """
-import logging
+import structlog
 from sqlalchemy import text
 from database import engine
 
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger(__name__)
 
 
 async def create_analytics_partitions():
@@ -30,9 +30,9 @@ async def create_analytics_partitions():
         async with engine.connect() as conn:
             await conn.execute(text("SELECT analytics.create_future_partitions()"))
             await conn.commit()
-            logger.info("Successfully created future analytics partitions")
+            logger.info("analytics_partitions_created", action="create_future_partitions")
     except Exception as e:
-        logger.error(f"Failed to create analytics partitions: {str(e)}", exc_info=True)
+        logger.error("analytics_partitions_creation_failed", error=str(e), exc_info=True)
 
 
 async def purge_old_analytics():
@@ -48,6 +48,6 @@ async def purge_old_analytics():
         async with engine.connect() as conn:
             await conn.execute(text("SELECT analytics.purge_old_partitions(90)"))
             await conn.commit()
-            logger.info("Successfully purged old analytics partitions")
+            logger.info("analytics_partitions_purged", retention_days=90)
     except Exception as e:
-        logger.error(f"Failed to purge old analytics partitions: {str(e)}", exc_info=True)
+        logger.error("analytics_partitions_purge_failed", error=str(e), exc_info=True)

@@ -1,11 +1,11 @@
 """
 Materialized view refresh utilities for admin analytics.
 """
-import logging
+import structlog
 from sqlalchemy import text
 from database import engine
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger(__name__)
 
 
 def refresh_admin_materialized_views():
@@ -21,18 +21,18 @@ def refresh_admin_materialized_views():
     """
     try:
         with engine.connect() as conn:
-            logger.info("Starting refresh of admin materialized views")
+            logger.info("materialized_views_refresh_started", context="admin_analytics")
 
             # Refresh daily_summary
             conn.execute(text("REFRESH MATERIALIZED VIEW CONCURRENTLY analytics.daily_summary"))
-            logger.info("Refreshed analytics.daily_summary")
+            logger.info("materialized_view_refreshed", view="analytics.daily_summary")
 
             # Refresh user_consumption
             conn.execute(text("REFRESH MATERIALIZED VIEW CONCURRENTLY analytics.user_consumption"))
-            logger.info("Refreshed analytics.user_consumption")
+            logger.info("materialized_view_refreshed", view="analytics.user_consumption")
 
             conn.commit()
-            logger.info("Admin materialized views refresh completed successfully")
+            logger.info("materialized_views_refresh_complete", views_refreshed=2)
 
     except Exception as e:
-        logger.error(f"Failed to refresh admin materialized views: {e}", exc_info=True)
+        logger.error("materialized_views_refresh_failed", error=str(e), exc_info=True)

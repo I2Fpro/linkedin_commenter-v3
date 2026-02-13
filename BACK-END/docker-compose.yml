@@ -15,6 +15,12 @@ services:
   postgres:
     image: ghcr.io/${GITHUB_OWNER}/linkedin-ai-postgres:${TAG:-preprod}
     container_name: linkedin_ai_postgres
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+        compress: "true"
     environment:
       POSTGRES_DB: linkedin_ai_db
       POSTGRES_USER: linkedin_user
@@ -33,6 +39,12 @@ services:
   redis:
     image: redis:7-alpine
     container_name: linkedin_ai_redis
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+        compress: "true"
     networks:
       - linkedin_ai_network
     restart: unless-stopped
@@ -45,6 +57,12 @@ services:
   user-service:
     image: ghcr.io/${GITHUB_OWNER}/linkedin-ai-user-service:${TAG:-preprod}
     container_name: linkedin_ai_user_service
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+        compress: "true"
     environment:
       DATABASE_URL: postgresql://linkedin_user:${POSTGRES_PASSWORD}@postgres:5432/linkedin_ai_db
       JWT_SECRET: ${JWT_SECRET}
@@ -97,6 +115,12 @@ services:
   ai-service:
     image: ghcr.io/${GITHUB_OWNER}/linkedin-ai-ai-service:${TAG:-preprod}
     container_name: linkedin_ai_service
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+        compress: "true"
     environment:
       OPENAI_API_KEY: ${OPENAI_API_KEY}
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
@@ -144,6 +168,12 @@ services:
   site-internet:
     image: ghcr.io/${GITHUB_OWNER}/linkedin-ai-website:${TAG:-preprod}
     container_name: linkedin_ai_website
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+        compress: "true"
     networks:
       - proxy
     restart: unless-stopped
