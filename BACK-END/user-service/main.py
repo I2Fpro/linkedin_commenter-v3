@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Depends, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from contextlib import asynccontextmanager
@@ -6,13 +6,16 @@ import os
 from dotenv import load_dotenv
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
+from datetime import datetime, timezone
+from sqlalchemy.orm import Session
 
-from database import engine, Base
+from database import engine, Base, get_db
 from routers import users, subscriptions, permissions, auth, stripe, blacklist, admin, analytics, trial
 from utils.partition_manager import create_analytics_partitions, purge_old_analytics
 from utils.trial_manager import check_trial_expirations
 from utils.materialized_view_refresh import refresh_admin_materialized_views
 from version import VERSION
+from health.analytics_checks import check_events_volume, check_future_partitions
 
 # Charger le .env principal du projet
 load_dotenv("../.env")  # Référencer le .env principal
@@ -107,6 +110,29 @@ app.include_router(trial.router, prefix="/api/trial", tags=["trial"])
 @app.get("/health")
 async def health_check():
     return {"status": "healthy", "service": "user-service", "version": VERSION}
+
+@app.get("/health/analytics")
+async def health_check_analytics(db: Session = Depends(get_db)):
+    checks = {
+        "events_last_24h": check_events_volume(db),
+        "future_partitions": check_future_partitions(db)
+    }
+    statuses = [c["status"] for c in checks.values()]
+    if all(s == "healthy" for s in statuses):
+        overall = "healthy"
+    elif "unhealthy" in statuses:
+        overall = "unhealthy"
+    else:
+        overall = "degraded"
+
+    response = {
+        "status": overall,
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "service": "user-service",
+        "checks": checks
+    }
+    status_code = status.HTTP_200_OK if overall == "healthy" else status.HTTP_503_SERVICE_UNAVAILABLE
+    return JSONResponse(content=response, status_code=status_code)
 
 @app.get("/")
 async def root():
