@@ -7,6 +7,7 @@ import os
 # Env vars factices requises a l'import de fastapi_backend
 os.environ.setdefault("OPENAI_API_KEY", "sk-test-fake-key")
 os.environ.setdefault("GOOGLE_CLIENT_ID", "test-client-id")
+os.environ.setdefault("GOOGLE_CLIENT_ID_WEB", "test-client-id-web")
 os.environ.setdefault("USER_SERVICE_URL", "http://test:8444")
 os.environ.setdefault("JWT_SECRET", "test-jwt-secret")
 
