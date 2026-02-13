@@ -94,7 +94,7 @@ async def login_with_google(
             db.execute(
                 text("""
                     INSERT INTO analytics.events (id, user_id, event_type, properties, timestamp)
-                    VALUES (:id, :user_id, :event_type, :properties::jsonb, :timestamp)
+                    VALUES (:id, :user_id, :event_type, CAST(:properties AS jsonb), :timestamp)
                 """),
                 {
                     "id": str(uuid.uuid4()),

@@ -81,6 +81,10 @@ document.addEventListener('DOMContentLoaded', async function() {
   const aiTrialExpiredMsg = document.getElementById('aiTrialExpiredMsg');
   const aiUpgradeFromExpired = document.getElementById('aiUpgradeFromExpired');
 
+  // Free trial CTA
+  const aiFreeTrialCta = document.getElementById('aiFreeTrialCta');
+  const aiClaimTrialBtn = document.getElementById('aiClaimTrialBtn');
+
   // ==================== VÉRIFICATION API CONFIG ====================
   if (typeof API_CONFIG === 'undefined') {
     console.warn('⚠️ API_CONFIG non disponible, utilisation de valeurs par défaut');
@@ -359,6 +363,13 @@ document.addEventListener('DOMContentLoaded', async function() {
       chrome.storage.local.set({ trial_expired_msg_shown: true });
       if (aiTrialExpiredMsg) aiTrialExpiredMsg.style.display = 'none';
       chrome.runtime.sendMessage({ action: 'openUpgradePage' });
+    });
+  }
+
+  // Free trial CTA — ouvre /in/me/ pour déclencher la capture profil + trial
+  if (aiClaimTrialBtn) {
+    aiClaimTrialBtn.addEventListener('click', () => {
+      chrome.tabs.create({ url: 'https://www.linkedin.com/in/me/' });
     });
   }
 
@@ -754,7 +765,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         ]);
         currentState.planData = planData;
         currentState.quotaData = quotaData;
-        updatePlanDisplay(planData, quotaData);
+        await updatePlanDisplay(planData, quotaData);
       } catch (error) {
         console.error('❌ Erreur lors de la récupération des données utilisateur:', error);
       }
@@ -769,7 +780,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     }
   }
 
-  function updatePlanDisplay(planData, quotaData) {
+  async function updatePlanDisplay(planData, quotaData) {
     if (!planData) {
       quotaDisplay.style.display = 'none';
       return;
@@ -805,10 +816,27 @@ document.addEventListener('DOMContentLoaded', async function() {
       }
     }
 
-    // Afficher le bouton d'upgrade si pas PREMIUM
-    if (role !== 'PREMIUM') {
+    // Afficher le CTA trial ou le bouton upgrade selon l'éligibilité
+    if (role === 'FREE') {
+      // Vérifier si l'utilisateur est éligible au trial gratuit
+      const storageData = await new Promise(resolve => {
+        chrome.storage.local.get(['linkedin_profile_captured'], resolve);
+      });
+
+      if (!storageData.linkedin_profile_captured && aiFreeTrialCta) {
+        // Éligible au trial : afficher le CTA trial, masquer upgrade
+        aiFreeTrialCta.style.display = 'block';
+        upgradeBtn.style.display = 'none';
+      } else {
+        // Trial déjà tenté : afficher le bouton upgrade classique
+        if (aiFreeTrialCta) aiFreeTrialCta.style.display = 'none';
+        upgradeBtn.style.display = 'flex';
+      }
+    } else if (role !== 'PREMIUM') {
+      if (aiFreeTrialCta) aiFreeTrialCta.style.display = 'none';
       upgradeBtn.style.display = 'flex';
     } else {
+      if (aiFreeTrialCta) aiFreeTrialCta.style.display = 'none';
       upgradeBtn.style.display = 'none';
     }
 
