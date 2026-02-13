@@ -31,6 +31,9 @@ let usageDataLoaded = false;
 let pieChart = null;
 let featuresChart = null;
 let distributionsData = {};
+let trendsChart = null;
+let rolesChart = null;
+const ROLE_COLORS = { FREE: '#9E9E9E', MEDIUM: '#2196F3', PREMIUM: '#FFC107' };
 
 // =============================================================================
 // 3. DOM Elements
@@ -1210,5 +1213,182 @@ async function initFeaturesChart() {
         featuresChart.hideLoading();
         console.error('Erreur chargement features:', error);
         showEmptyState(featuresChart, 'Erreur de chargement');
+    }
+}
+
+// =============================================================================
+// 14. Usage Tab - Trends Line Chart
+// =============================================================================
+
+async function initTrendsChart() {
+    if (trendsChart) return;
+
+    const container = document.getElementById('chart-trends');
+    trendsChart = echarts.init(container);
+    trendsChart.showLoading();
+
+    try {
+        const response = await fetchWithAuth('/api/admin/usage/trends');
+        trendsChart.hideLoading();
+
+        if (!response.items || response.items.length === 0) {
+            showEmptyState(trendsChart, 'Aucune donnee disponible');
+            return;
+        }
+
+        // Transform data: group by dimension, extract weeks
+        const seriesMap = {
+            'feature_web_search': { name: 'Web Search', data: {} },
+            'feature_include_quote': { name: 'Include Quote', data: {} },
+            'feature_custom_prompt': { name: 'Custom Prompt', data: {} },
+            'feature_news_enrichment': { name: 'News Enrichment', data: {} }
+        };
+
+        const weeks = new Set();
+
+        response.items.forEach(item => {
+            if (seriesMap[item.dimension]) {
+                weeks.add(item.week_start_date);
+                seriesMap[item.dimension].data[item.week_start_date] = item.usage_count;
+            }
+        });
+
+        const sortedWeeks = Array.from(weeks).sort();
+
+        // Format dates DD/MM
+        const xAxisLabels = sortedWeeks.map(week => {
+            const date = new Date(week);
+            return String(date.getDate()).padStart(2, '0') + '/' + String(date.getMonth() + 1).padStart(2, '0');
+        });
+
+        // Build series
+        const series = Object.values(seriesMap).map(s => ({
+            name: s.name,
+            type: 'line',
+            data: sortedWeeks.map(week => s.data[week] || 0),
+            smooth: true,
+            emphasis: { focus: 'series' }
+        }));
+
+        trendsChart.setOption({
+            tooltip: {
+                trigger: 'axis',
+                valueFormatter: (value) => value + ' generations'
+            },
+            legend: {
+                data: Object.values(seriesMap).map(s => s.name),
+                bottom: 0
+            },
+            grid: {
+                left: '3%',
+                right: '4%',
+                bottom: '15%',
+                containLabel: true
+            },
+            xAxis: {
+                type: 'category',
+                data: xAxisLabels,
+                boundaryGap: false
+            },
+            yAxis: {
+                type: 'value',
+                name: 'Generations'
+            },
+            series: series
+        });
+
+        // Resize handler
+        const resizeObserver = new ResizeObserver(() => trendsChart.resize());
+        resizeObserver.observe(container);
+    } catch (error) {
+        trendsChart.hideLoading();
+        console.error('Erreur chargement trends:', error);
+        showEmptyState(trendsChart, 'Erreur de chargement');
+    }
+}
+
+// =============================================================================
+// 15. Usage Tab - Roles Grouped Bar Chart
+// =============================================================================
+
+async function initRolesChart() {
+    if (rolesChart) return;
+
+    const container = document.getElementById('chart-roles');
+    rolesChart = echarts.init(container);
+    rolesChart.showLoading();
+
+    try {
+        const response = await fetchWithAuth('/api/admin/usage/by-role');
+        rolesChart.hideLoading();
+
+        if (!response.items || response.items.length === 0) {
+            showEmptyState(rolesChart, 'Aucune donnee disponible');
+            return;
+        }
+
+        // Build lookup: { role: { metricKey: count } }
+        const roleLookup = {};
+        response.items.forEach(item => {
+            if (!roleLookup[item.role]) roleLookup[item.role] = {};
+            const key = item.metric_type === 'total_generations' && item.dimension === 'all'
+                ? 'generations'
+                : item.metric_type === 'feature' ? item.dimension : null;
+            if (key) {
+                roleLookup[item.role][key] = item.count;
+            }
+        });
+
+        // X-axis metrics
+        const metrics = [
+            { key: 'generations', label: 'Generations' },
+            { key: 'web_search_enabled', label: 'Web Search' },
+            { key: 'include_quote_enabled', label: 'Quote' },
+            { key: 'custom_prompt_used', label: 'Custom Prompt' },
+            { key: 'news_enrichment_enabled', label: 'News' }
+        ];
+
+        const xAxisLabels = metrics.map(m => m.label);
+        const roles = ['FREE', 'MEDIUM', 'PREMIUM'];
+
+        const series = roles.map(role => ({
+            name: role,
+            type: 'bar',
+            data: metrics.map(m => (roleLookup[role] && roleLookup[role][m.key]) || 0),
+            itemStyle: { color: ROLE_COLORS[role] }
+        }));
+
+        rolesChart.setOption({
+            tooltip: {
+                trigger: 'axis',
+                axisPointer: { type: 'shadow' }
+            },
+            legend: {
+                data: roles
+            },
+            grid: {
+                left: '3%',
+                right: '4%',
+                bottom: '10%',
+                containLabel: true
+            },
+            xAxis: {
+                type: 'category',
+                data: xAxisLabels
+            },
+            yAxis: {
+                type: 'value',
+                name: 'Count'
+            },
+            series: series
+        });
+
+        // Resize handler
+        const resizeObserver = new ResizeObserver(() => rolesChart.resize());
+        resizeObserver.observe(container);
+    } catch (error) {
+        rolesChart.hideLoading();
+        console.error('Erreur chargement roles:', error);
+        showEmptyState(rolesChart, 'Erreur de chargement');
     }
 }
