@@ -11,6 +11,7 @@ from database import engine, Base
 from routers import users, subscriptions, permissions, auth, stripe, blacklist, admin, analytics, trial
 from utils.partition_manager import create_analytics_partitions, purge_old_analytics
 from utils.trial_manager import check_trial_expirations
+from utils.materialized_view_refresh import refresh_admin_materialized_views
 from version import VERSION
 import logging
 
@@ -52,6 +53,14 @@ async def lifespan(app: FastAPI):
         trigger=CronTrigger(hour=1, minute=0),
         id="check_trial_expirations",
         name="Check and process expired trials and grace periods",
+        replace_existing=True
+    )
+    # Admin materialized views refresh (Phase 3)
+    scheduler.add_job(
+        refresh_admin_materialized_views,
+        trigger=CronTrigger(minute=0),
+        id="refresh_admin_views",
+        name="Refresh admin analytics materialized views",
         replace_existing=True
     )
     scheduler.start()
