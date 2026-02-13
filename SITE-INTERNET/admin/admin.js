@@ -1,44 +1,67 @@
 /**
  * Admin Dashboard - LinkedIn AI Commenter
  * Logique JavaScript pour le dashboard d'administration
+ * Plan 03-03: Refonte complete avec 2 onglets, KPIs et drill-down
  */
 
-// Configuration API - PLACEHOLDER remplace par apply-env.sh au deploy
+// =============================================================================
+// 1. API Configuration
+// =============================================================================
+
 const USERS_API_URL = '__USERS_API_URL__';
-const AI_SERVICE_URL = '__AI_API_URL__'; // Story 4-3: Pour charger Google Client ID
+const AI_SERVICE_URL = '__AI_API_URL__';
 
-// State
+// =============================================================================
+// 2. State
+// =============================================================================
+
 let authToken = null;
-let isLoading = false; // Fix M3: Prevent spam
-let GOOGLE_CLIENT_ID = null; // Story 4-3
-let tokenClient = null; // Story 4-3: OAuth token client
+let isLoading = false;
+let GOOGLE_CLIENT_ID = null;
+let tokenClient = null;
 
-// DOM Elements
+// New state for dashboard navigation
+let currentPeriod = '30d';
+let currentTab = 'overview';
+let currentExpandedUserId = null;
+let usersData = [];
+let sortColumn = null;
+let sortDirection = 'asc';
+
+// =============================================================================
+// 3. DOM Elements
+// =============================================================================
+
 const loginSection = document.getElementById('login-section');
 const dashboardSection = document.getElementById('dashboard-section');
 const errorSection = document.getElementById('error-section');
 const authStatus = document.getElementById('auth-status');
 const logoutBtn = document.getElementById('logout-btn');
 
-// Initialize on DOM ready
+// New DOM elements for tabs and data display
+let tabButtons;
+let tabPanels;
+let periodButtons;
+
+// =============================================================================
+// 4. Init and Event Listeners
+// =============================================================================
+
 document.addEventListener('DOMContentLoaded', init);
 
 /**
  * Initialise le dashboard
  */
 async function init() {
-    // Verifier si un token est stocke (localStorage)
     authToken = localStorage.getItem('admin_jwt');
 
     if (authToken) {
         await loadDashboard();
     } else {
         showLoginSection();
-        // Story 4-3: Initialiser Google Sign-In
         initGoogleSignIn();
     }
 
-    // Event listeners
     setupEventListeners();
 }
 
@@ -46,7 +69,7 @@ async function init() {
  * Configure les event listeners
  */
 function setupEventListeners() {
-    // Story 4-3: JWT manual link (fallback)
+    // JWT manual link (fallback)
     const jwtManualLink = document.getElementById('jwt-manual-link');
     if (jwtManualLink) {
         jwtManualLink.addEventListener('click', (e) => {
@@ -60,11 +83,11 @@ function setupEventListeners() {
         logoutBtn.addEventListener('click', handleLogout);
     }
 
-    // Retry button - Fix M3: Debounce to prevent spam
+    // Retry button
     const retryBtn = document.getElementById('retry-btn');
     if (retryBtn) {
         retryBtn.addEventListener('click', () => {
-            if (isLoading) return; // Prevent spam
+            if (isLoading) return;
             if (authToken) {
                 loadDashboard();
             } else {
@@ -73,7 +96,16 @@ function setupEventListeners() {
             }
         });
     }
+
+    // Initialize tabs and period selector after dashboard is shown
+    initTabs();
+    initPeriodSelector();
+    initTableSort();
 }
+
+// =============================================================================
+// 5. Auth Functions (PRESERVED FROM ORIGINAL)
+// =============================================================================
 
 /**
  * Affiche la section login
@@ -84,7 +116,6 @@ function showLoginSection() {
     errorSection.style.display = 'none';
     authStatus.textContent = '';
     logoutBtn.style.display = 'none';
-    // Fix M4: Reset login message when showing section normally
     const loginMsg = document.getElementById('login-message');
     if (loginMsg) loginMsg.style.display = 'none';
 }
@@ -94,7 +125,7 @@ function showLoginSection() {
  */
 function showDashboard() {
     loginSection.style.display = 'none';
-    dashboardSection.style.display = 'grid';
+    dashboardSection.style.display = 'block';
     errorSection.style.display = 'none';
     authStatus.textContent = 'Connecte en tant qu\'admin';
     logoutBtn.style.display = 'inline-block';
@@ -102,7 +133,6 @@ function showDashboard() {
 
 /**
  * Affiche un message d'erreur
- * @param {string} message - Message d'erreur a afficher
  */
 function showError(message) {
     loginSection.style.display = 'none';
@@ -114,28 +144,20 @@ function showError(message) {
 
 /**
  * Charge les donnees du dashboard
- * Fix M3: Prevent concurrent calls with isLoading flag
  */
 async function loadDashboard() {
-    if (isLoading) return; // Fix M3: Prevent spam
+    if (isLoading) return;
     isLoading = true;
 
     try {
-        // Fix L2: Show loading spinner
         showLoadingState();
 
-        // Charger les deux endpoints en parallele
-        const [premiumData, tokenData] = await Promise.all([
-            fetchWithAuth('/api/admin/premium-count'),
-            fetchWithAuth('/api/admin/token-usage')
-        ]);
-
-        // Afficher les donnees
-        displayPremiumCount(premiumData);
-        displayTokenUsage(tokenData);
-        displayConversionSignals(tokenData);
-
+        // Initialize tabs and load default active tab (overview with 30d)
         showDashboard();
+
+        // Load the default tab data
+        await switchTab(currentTab);
+
     } catch (error) {
         handleApiError(error);
     } finally {
@@ -145,7 +167,7 @@ async function loadDashboard() {
 }
 
 /**
- * Fix L2: Affiche l'etat de chargement avec spinner
+ * Affiche l'etat de chargement avec spinner
  */
 function showLoadingState() {
     const spinner = document.getElementById('loading-spinner');
@@ -154,7 +176,7 @@ function showLoadingState() {
 }
 
 /**
- * Fix L2: Cache l'etat de chargement
+ * Cache l'etat de chargement
  */
 function hideLoadingState() {
     const spinner = document.getElementById('loading-spinner');
@@ -164,8 +186,6 @@ function hideLoadingState() {
 
 /**
  * Effectue une requete authentifiee
- * @param {string} endpoint - Endpoint API (ex: /api/admin/premium-count)
- * @returns {Promise<Object>} Reponse JSON
  */
 async function fetchWithAuth(endpoint) {
     const response = await fetch(`${USERS_API_URL}${endpoint}`, {
@@ -182,7 +202,6 @@ async function fetchWithAuth(endpoint) {
         throw error;
     }
 
-    // Fix L1: Handle JSON parsing errors gracefully
     try {
         return await response.json();
     } catch (parseError) {
@@ -194,18 +213,13 @@ async function fetchWithAuth(endpoint) {
 
 /**
  * Gere les erreurs API
- * Fix M4: UX coherente - pas de setTimeout confus
- * @param {Error} error - Erreur capturee
  */
 function handleApiError(error) {
     if (error.status === 401) {
-        // Token invalide ou expire (AC #3)
-        // Fix M4: Redirection immediate vers login avec message
         localStorage.removeItem('admin_jwt');
         authToken = null;
         showLoginSectionWithMessage('Session expiree. Veuillez vous reconnecter.');
     } else if (error.status === 403) {
-        // Non admin (AC #3)
         showError('Acces refuse. Vous n\'etes pas administrateur.');
     } else {
         showError(`Erreur: ${error.message}`);
@@ -213,8 +227,7 @@ function handleApiError(error) {
 }
 
 /**
- * Fix M4: Affiche la section login avec un message contextuel
- * @param {string} message - Message a afficher
+ * Affiche la section login avec un message contextuel
  */
 function showLoginSectionWithMessage(message) {
     showLoginSection();
@@ -226,154 +239,18 @@ function showLoginSectionWithMessage(message) {
 }
 
 /**
- * Affiche le nombre d'utilisateurs premium (AC #1)
- * Fix M1: Utilise DOM methods au lieu de innerHTML
- * @param {Object} data - Donnees premium-count
- */
-function displayPremiumCount(data) {
-    document.getElementById('premium-count').textContent = data.count;
-
-    const details = document.getElementById('premium-details');
-    details.innerHTML = ''; // Clear previous content
-
-    if (data.details && data.details.length > 0) {
-        const ul = document.createElement('ul');
-        data.details.forEach(u => {
-            const li = document.createElement('li');
-            const dateStr = new Date(u.created_at).toLocaleDateString('fr-FR');
-            // N'afficher que l'ID tronque (respect NFR5 donnees personnelles)
-            li.textContent = `ID: ${u.id.substring(0, 8)}... - Inscription: ${dateStr}`;
-            ul.appendChild(li);
-        });
-        details.appendChild(ul);
-    } else {
-        details.textContent = 'Aucun utilisateur premium';
-    }
-}
-
-/**
- * Affiche la consommation de tokens (AC #1)
- * Fix M1: Utilise DOM methods au lieu de innerHTML
- * @param {Object} data - Donnees token-usage
- */
-function displayTokenUsage(data) {
-    document.getElementById('total-tokens').textContent =
-        `${data.total_tokens_all.toLocaleString('fr-FR')} tokens (${data.total_users} utilisateurs)`;
-
-    const tbody = document.querySelector('#token-usage-table tbody');
-    tbody.innerHTML = '';
-
-    if (data.users && data.users.length > 0) {
-        for (const user of data.users) {
-            const row = document.createElement('tr');
-            // Afficher le nom si disponible, sinon l'ID tronque
-            const displayName = user.name || `${user.user_id.substring(0, 8)}...`;
-
-            // Fix M1: Create cells with textContent instead of innerHTML
-            const tdName = document.createElement('td');
-            tdName.textContent = displayName;
-            tdName.title = user.user_id;
-
-            const tdTokens = document.createElement('td');
-            tdTokens.textContent = user.total_tokens.toLocaleString('fr-FR');
-
-            const tdGen = document.createElement('td');
-            tdGen.textContent = user.generation_count;
-
-            const tdModels = document.createElement('td');
-            tdModels.textContent = user.models_used.join(', ') || '-';
-
-            row.appendChild(tdName);
-            row.appendChild(tdTokens);
-            row.appendChild(tdGen);
-            row.appendChild(tdModels);
-            tbody.appendChild(row);
-        }
-    } else {
-        const row = document.createElement('tr');
-        const td = document.createElement('td');
-        td.colSpan = 4;
-        td.style.textAlign = 'center';
-        td.style.color = '#6b7280';
-        td.textContent = 'Aucune donnee de consommation';
-        row.appendChild(td);
-        tbody.appendChild(row);
-    }
-}
-
-/**
- * Affiche les signaux de conversion (AC #2 - Implementation partielle)
- *
- * LIMITATION CONNUE (Code Review 3.3):
- * AC #2 demande d'afficher les users Free ayant atteint leur quota plusieurs jours consecutifs.
- * L'implementation actuelle montre le top 5 par generation_count comme proxy MVP.
- * Un endpoint backend dedie serait necessaire pour l'implementation complete.
- *
- * Fix M1: Utilise DOM methods au lieu de innerHTML
- * @param {Object} tokenData - Donnees token-usage
- */
-function displayConversionSignals(tokenData) {
-    const signalsDiv = document.getElementById('conversion-signals');
-    signalsDiv.innerHTML = ''; // Clear previous
-
-    if (!tokenData.users || tokenData.users.length === 0) {
-        const p = document.createElement('p');
-        p.textContent = 'Aucun signal de conversion disponible.';
-        signalsDiv.appendChild(p);
-        return;
-    }
-
-    // Trier par generation_count decroissant et prendre les 5 premiers
-    const topUsers = [...tokenData.users]
-        .sort((a, b) => b.generation_count - a.generation_count)
-        .slice(0, 5);
-
-    // Fix M1: Build DOM elements instead of innerHTML
-    const pTitle = document.createElement('p');
-    const strong = document.createElement('strong');
-    strong.textContent = 'Utilisateurs les plus actifs';
-    pTitle.appendChild(strong);
-    pTitle.appendChild(document.createTextNode(' (par generations):'));
-    signalsDiv.appendChild(pTitle);
-
-    const ol = document.createElement('ol');
-    topUsers.forEach(u => {
-        const li = document.createElement('li');
-        li.textContent = `ID: ${u.user_id.substring(0, 8)}... - ${u.generation_count} generations`;
-        ol.appendChild(li);
-    });
-    signalsDiv.appendChild(ol);
-
-    const note = document.createElement('p');
-    note.className = 'note';
-    const noteStrong = document.createElement('strong');
-    noteStrong.textContent = 'Note:';
-    note.appendChild(noteStrong);
-    note.appendChild(document.createTextNode(' Pour un suivi precis des quotas Free atteints plusieurs jours consecutifs, un endpoint dedie serait necessaire (evolution future).'));
-    signalsDiv.appendChild(note);
-}
-
-/**
- * Fix M2: Valide le format JWT basique (xxx.yyy.zzz)
- * @param {string} token - Token a valider
- * @returns {boolean} True si format JWT valide
+ * Valide le format JWT basique
  */
 function isValidJwtFormat(token) {
     if (!token || typeof token !== 'string') return false;
     const parts = token.split('.');
     if (parts.length !== 3) return false;
-    // Verifier que chaque partie est du base64url valide
     const base64urlRegex = /^[A-Za-z0-9_-]+$/;
     return parts.every(part => part.length > 0 && base64urlRegex.test(part));
 }
 
-// =============================================================================
-// Story 4-3: Google OAuth Functions
-// =============================================================================
-
 /**
- * Story 4-3: Charge la configuration Google OAuth depuis le backend
- * @returns {Promise<boolean>} True si config chargee avec succes
+ * Charge la configuration Google OAuth depuis le backend
  */
 async function loadGoogleConfig() {
     try {
@@ -393,7 +270,7 @@ async function loadGoogleConfig() {
 }
 
 /**
- * Story 4-3: Initialise Google Sign-In
+ * Initialise Google Sign-In
  */
 async function initGoogleSignIn() {
     const configLoaded = await loadGoogleConfig();
@@ -401,21 +278,18 @@ async function initGoogleSignIn() {
         return;
     }
 
-    // Attendre que le SDK Google soit charge
     if (typeof google === 'undefined') {
         console.log('En attente du chargement du SDK Google...');
         setTimeout(initGoogleSignIn, 100);
         return;
     }
 
-    // Initialiser le client OAuth 2.0
     tokenClient = google.accounts.oauth2.initTokenClient({
         client_id: GOOGLE_CLIENT_ID,
         scope: 'https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/userinfo.profile',
         callback: handleGoogleCallback,
     });
 
-    // Attacher le bouton Google
     const googleBtn = document.getElementById('google-signin-btn');
     if (googleBtn) {
         googleBtn.addEventListener('click', () => {
@@ -429,8 +303,7 @@ async function initGoogleSignIn() {
 }
 
 /**
- * Story 4-3: Gere la reponse de Google OAuth
- * @param {Object} response - Reponse OAuth de Google
+ * Gere la reponse de Google OAuth
  */
 async function handleGoogleCallback(response) {
     const googleBtn = document.getElementById('google-signin-btn');
@@ -440,7 +313,6 @@ async function handleGoogleCallback(response) {
             throw new Error(response.error);
         }
 
-        // Desactiver le bouton pendant le traitement
         if (googleBtn) {
             googleBtn.disabled = true;
             googleBtn.innerHTML = '<span>Connexion en cours...</span>';
@@ -449,7 +321,6 @@ async function handleGoogleCallback(response) {
         const googleAccessToken = response.access_token;
         console.log('Google access token recu');
 
-        // Echanger le token Google contre un JWT backend
         const loginResponse = await fetch(`${USERS_API_URL}/api/auth/login`, {
             method: 'POST',
             headers: {
@@ -468,19 +339,14 @@ async function handleGoogleCallback(response) {
         const data = await loginResponse.json();
 
         if (data.access_token) {
-            // Stocker temporairement le token
             const tempToken = data.access_token;
-
-            // Verifier que l'utilisateur est admin en appelant un endpoint admin
             authToken = tempToken;
             const isAdmin = await verifyAdminAccess();
 
             if (isAdmin) {
-                // Stocker definitivement le token
                 localStorage.setItem('admin_jwt', authToken);
                 await loadDashboard();
             } else {
-                // Pas admin - ne pas stocker le token
                 authToken = null;
                 showLoginSectionWithMessage('Acces refuse. Vous n\'etes pas administrateur.');
             }
@@ -493,7 +359,6 @@ async function handleGoogleCallback(response) {
         showLoginSectionWithMessage(error.message);
         authToken = null;
     } finally {
-        // Reactiver le bouton
         if (googleBtn) {
             googleBtn.disabled = false;
             googleBtn.innerHTML = `
@@ -510,8 +375,7 @@ async function handleGoogleCallback(response) {
 }
 
 /**
- * Story 4-3: Verifie que l'utilisateur a acces admin
- * @returns {Promise<boolean>} True si l'utilisateur est admin
+ * Verifie que l'utilisateur a acces admin
  */
 async function verifyAdminAccess() {
     try {
@@ -541,8 +405,7 @@ async function verifyAdminAccess() {
 }
 
 /**
- * Story 4-3: Gere le login JWT manuel (fallback)
- * Ancien handleLogin renomme
+ * Gere le login JWT manuel (fallback)
  */
 function handleManualJwtLogin() {
     const token = prompt(
@@ -556,7 +419,6 @@ function handleManualJwtLogin() {
     if (token && token.trim()) {
         const trimmedToken = token.trim();
 
-        // Fix M2: Validate JWT format
         if (!isValidJwtFormat(trimmedToken)) {
             alert('Format JWT invalide. Le token doit avoir 3 parties separees par des points (xxx.yyy.zzz).');
             return;
@@ -575,6 +437,543 @@ function handleLogout() {
     localStorage.removeItem('admin_jwt');
     authToken = null;
     showLoginSection();
-    // Story 4-3: Reinitialiser Google Sign-In apres deconnexion
     initGoogleSignIn();
+}
+
+// =============================================================================
+// 6. Tab Management
+// =============================================================================
+
+/**
+ * Initialise les onglets
+ */
+function initTabs() {
+    tabButtons = document.querySelectorAll('.tab-btn');
+    tabPanels = document.querySelectorAll('[data-tab-panel]');
+
+    tabButtons.forEach(btn => {
+        btn.addEventListener('click', () => {
+            const tabName = btn.getAttribute('data-tab');
+            switchTab(tabName);
+        });
+    });
+}
+
+/**
+ * Change d'onglet et charge les donnees correspondantes
+ */
+async function switchTab(tabName) {
+    currentTab = tabName;
+
+    // Update UI
+    tabButtons.forEach(btn => {
+        const isActive = btn.getAttribute('data-tab') === tabName;
+        btn.classList.toggle('active', isActive);
+        btn.setAttribute('aria-selected', isActive);
+    });
+
+    tabPanels.forEach(panel => {
+        const isActive = panel.getAttribute('data-tab-panel') === tabName;
+        panel.classList.toggle('active', isActive);
+    });
+
+    // Load data for active tab
+    try {
+        showLoadingState();
+
+        if (tabName === 'overview') {
+            await loadOverviewData(currentPeriod);
+        } else if (tabName === 'users') {
+            await loadUsersData(currentPeriod);
+        }
+    } catch (error) {
+        console.error(`Erreur chargement donnees ${tabName}:`, error);
+        // Show error in the relevant section instead of global error page
+        if (tabName === 'overview') {
+            document.getElementById('kpi-users-total').textContent = 'Erreur';
+        } else if (tabName === 'users') {
+            const tbody = document.querySelector('#users-consumption-table tbody');
+            tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#ef4444;">Erreur de chargement des donnees</td></tr>';
+        }
+
+        // Handle auth errors globally
+        if (error.status === 401 || error.status === 403) {
+            handleApiError(error);
+        }
+    } finally {
+        hideLoadingState();
+    }
+}
+
+// =============================================================================
+// 7. Period Selector
+// =============================================================================
+
+/**
+ * Initialise le selecteur de periode
+ */
+function initPeriodSelector() {
+    periodButtons = document.querySelectorAll('.period-btn');
+
+    periodButtons.forEach(btn => {
+        btn.addEventListener('click', () => {
+            const period = btn.getAttribute('data-period');
+            setPeriod(period);
+        });
+    });
+}
+
+/**
+ * Change la periode et recharge les donnees
+ */
+async function setPeriod(period) {
+    currentPeriod = period;
+
+    // Update active classes
+    periodButtons.forEach(btn => {
+        btn.classList.toggle('active', btn.getAttribute('data-period') === period);
+    });
+
+    // Reload current tab
+    await switchTab(currentTab);
+}
+
+// =============================================================================
+// 8. Overview Tab - KPIs
+// =============================================================================
+
+/**
+ * Charge les donnees de l'onglet Overview
+ */
+async function loadOverviewData(period) {
+    const data = await fetchWithAuth(`/api/admin/analytics/summary?period=${period}`);
+    displayKPIs(data);
+}
+
+/**
+ * Affiche les KPIs dans l'onglet Overview
+ */
+function displayKPIs(data) {
+    // KPI 1: Utilisateurs
+    const usersTotal = Object.values(data.users_by_role || {}).reduce((sum, count) => sum + count, 0);
+    document.getElementById('kpi-users-total').textContent = usersTotal.toLocaleString('fr-FR');
+
+    const usersByRole = data.users_by_role || {};
+    const roleDetail = `FREE: ${usersByRole.FREE || 0} | MEDIUM: ${usersByRole.MEDIUM || 0} | PREMIUM: ${usersByRole.PREMIUM || 0}`;
+    document.getElementById('kpi-users-detail').textContent = roleDetail;
+
+    // KPI 2: Commentaires
+    const commentsTotal = data.total_comments_generated || 0;
+    document.getElementById('kpi-comments-total').textContent = commentsTotal.toLocaleString('fr-FR');
+
+    const commentsTrendEl = document.getElementById('kpi-comments-trend');
+    commentsTrendEl.innerHTML = '';
+    if (data.trend_comments != null) {
+        const trendSpan = document.createElement('span');
+        trendSpan.className = 'kpi-trend';
+
+        if (data.trend_comments > 0) {
+            trendSpan.classList.add('up');
+            trendSpan.textContent = `\u2191 +${data.trend_comments.toFixed(1)}%`;
+        } else if (data.trend_comments < 0) {
+            trendSpan.classList.add('down');
+            trendSpan.textContent = `\u2193 ${data.trend_comments.toFixed(1)}%`;
+        } else {
+            trendSpan.classList.add('neutral');
+            trendSpan.textContent = '=';
+        }
+
+        commentsTrendEl.appendChild(trendSpan);
+    }
+
+    // KPI 3: Cout estime
+    const costTotal = data.total_cost_eur || 0;
+    document.getElementById('kpi-cost-total').textContent = `${costTotal.toFixed(2)} EUR`;
+
+    const costTrendEl = document.getElementById('kpi-cost-trend');
+    costTrendEl.innerHTML = '';
+    if (data.trend_cost != null) {
+        const trendSpan = document.createElement('span');
+        trendSpan.className = 'kpi-trend';
+
+        if (data.trend_cost > 0) {
+            trendSpan.classList.add('up');
+            trendSpan.textContent = `\u2191 +${data.trend_cost.toFixed(1)}%`;
+        } else if (data.trend_cost < 0) {
+            trendSpan.classList.add('down');
+            trendSpan.textContent = `\u2193 ${data.trend_cost.toFixed(1)}%`;
+        } else {
+            trendSpan.classList.add('neutral');
+            trendSpan.textContent = '=';
+        }
+
+        costTrendEl.appendChild(trendSpan);
+    }
+
+    // KPI 4: Trials actifs
+    const trials = data.active_trials || 0;
+    document.getElementById('kpi-trials').textContent = trials.toLocaleString('fr-FR');
+}
+
+// =============================================================================
+// 9. Users Tab - Consumption Table
+// =============================================================================
+
+/**
+ * Charge les donnees de consommation des utilisateurs
+ */
+async function loadUsersData(period) {
+    const data = await fetchWithAuth(`/api/admin/users/consumption?period=${period}`);
+    usersData = data.items || [];
+    displayUsersTable(usersData);
+}
+
+/**
+ * Affiche le tableau de consommation des utilisateurs
+ */
+function displayUsersTable(users) {
+    const tbody = document.querySelector('#users-consumption-table tbody');
+    const emptyMsg = document.getElementById('users-empty');
+
+    tbody.innerHTML = '';
+
+    if (!users || users.length === 0) {
+        emptyMsg.style.display = 'block';
+        return;
+    }
+
+    emptyMsg.style.display = 'none';
+
+    users.forEach(user => {
+        const row = document.createElement('tr');
+        row.setAttribute('data-user-id', user.user_id);
+
+        // Email
+        const tdEmail = document.createElement('td');
+        tdEmail.textContent = user.email || user.user_id.substring(0, 8) + '...';
+        row.appendChild(tdEmail);
+
+        // Role
+        const tdRole = document.createElement('td');
+        tdRole.textContent = user.role || '-';
+        row.appendChild(tdRole);
+
+        // Generations
+        const tdGen = document.createElement('td');
+        tdGen.textContent = (user.generation_count || 0).toLocaleString('fr-FR');
+        row.appendChild(tdGen);
+
+        // Tokens
+        const tdTokens = document.createElement('td');
+        tdTokens.textContent = (user.total_tokens || 0).toLocaleString('fr-FR');
+        row.appendChild(tdTokens);
+
+        // Cost EUR
+        const tdCost = document.createElement('td');
+        const cost = parseFloat(user.cost_eur) || 0;
+        tdCost.textContent = cost.toFixed(4);
+        row.appendChild(tdCost);
+
+        // Last generation
+        const tdLast = document.createElement('td');
+        if (user.last_generation) {
+            const date = new Date(user.last_generation);
+            tdLast.textContent = date.toLocaleDateString('fr-FR');
+        } else {
+            tdLast.textContent = '-';
+        }
+        row.appendChild(tdLast);
+
+        tbody.appendChild(row);
+    });
+
+    // Attach click handlers via event delegation
+    tbody.addEventListener('click', handleTableClick);
+}
+
+/**
+ * Gere les clics sur le tableau (event delegation)
+ */
+function handleTableClick(e) {
+    const row = e.target.closest('tr[data-user-id]');
+    if (!row) return;
+
+    const userId = row.getAttribute('data-user-id');
+    handleUserClick(userId, row);
+}
+
+// =============================================================================
+// 10. Users Tab - Drill-down
+// =============================================================================
+
+/**
+ * Gere le clic sur un utilisateur pour afficher/masquer le drill-down
+ */
+function handleUserClick(userId, rowElement) {
+    // Toggle: si deja ouvert, fermer
+    if (currentExpandedUserId === userId) {
+        closeDrillDown();
+        return;
+    }
+
+    // Si un autre drill-down est ouvert, le fermer d'abord
+    if (currentExpandedUserId) {
+        closeDrillDown();
+    }
+
+    // Creer la ligne de drill-down
+    const drillDownRow = document.createElement('tr');
+    drillDownRow.className = 'drill-down-row';
+    drillDownRow.setAttribute('data-drill-user-id', userId);
+
+    const td = document.createElement('td');
+    td.colSpan = 6;
+
+    const content = document.createElement('div');
+    content.className = 'drill-down-content';
+    content.id = `drill-${userId}`;
+    content.innerHTML = '<p>Chargement des generations...</p>';
+
+    td.appendChild(content);
+    drillDownRow.appendChild(td);
+
+    // Inserer apres la ligne cliquee
+    rowElement.after(drillDownRow);
+    rowElement.classList.add('expanded');
+
+    currentExpandedUserId = userId;
+
+    // Charger les generations
+    loadGenerations(userId, 0);
+}
+
+/**
+ * Charge les generations d'un utilisateur
+ */
+async function loadGenerations(userId, skip) {
+    try {
+        const data = await fetchWithAuth(`/api/admin/users/${userId}/generations?skip=${skip}&limit=20`);
+        displayGenerations(userId, data, skip);
+    } catch (error) {
+        console.error('Erreur chargement generations:', error);
+        const content = document.getElementById(`drill-${userId}`);
+        if (content) {
+            content.innerHTML = '<p style="color:#ef4444;">Erreur de chargement des generations</p>';
+        }
+    }
+}
+
+/**
+ * Affiche les generations dans le drill-down
+ */
+function displayGenerations(userId, data, skip) {
+    const content = document.getElementById(`drill-${userId}`);
+    if (!content) return;
+
+    content.innerHTML = '';
+
+    if (!data.items || data.items.length === 0) {
+        content.innerHTML = '<p>Aucune generation disponible.</p>';
+        return;
+    }
+
+    // Creer le tableau des generations
+    const table = document.createElement('table');
+    table.className = 'generations-table';
+
+    const thead = document.createElement('thead');
+    thead.innerHTML = `
+        <tr>
+            <th>Date</th>
+            <th>Mode</th>
+            <th>Langue</th>
+            <th>Tokens In</th>
+            <th>Tokens Out</th>
+            <th>Cout EUR</th>
+            <th>Apercu</th>
+        </tr>
+    `;
+    table.appendChild(thead);
+
+    const tbody = document.createElement('tbody');
+
+    data.items.forEach(gen => {
+        const row = document.createElement('tr');
+
+        // Date
+        const tdDate = document.createElement('td');
+        const date = new Date(gen.created_at);
+        tdDate.textContent = date.toLocaleString('fr-FR');
+        row.appendChild(tdDate);
+
+        // Mode
+        const tdMode = document.createElement('td');
+        tdMode.textContent = gen.mode || '-';
+        row.appendChild(tdMode);
+
+        // Langue
+        const tdLang = document.createElement('td');
+        tdLang.textContent = gen.language || '-';
+        row.appendChild(tdLang);
+
+        // Tokens In
+        const tdTokensIn = document.createElement('td');
+        tdTokensIn.textContent = (gen.tokens_used_input || 0).toLocaleString('fr-FR');
+        row.appendChild(tdTokensIn);
+
+        // Tokens Out
+        const tdTokensOut = document.createElement('td');
+        tdTokensOut.textContent = (gen.tokens_used_output || 0).toLocaleString('fr-FR');
+        row.appendChild(tdTokensOut);
+
+        // Cout EUR
+        const tdCost = document.createElement('td');
+        const cost = parseFloat(gen.cost_eur) || 0;
+        tdCost.textContent = cost.toFixed(6);
+        row.appendChild(tdCost);
+
+        // Apercu
+        const tdPreview = document.createElement('td');
+        const preview = document.createElement('div');
+        preview.className = 'comment-preview';
+        preview.textContent = gen.generated_comment || '-';
+        preview.title = gen.generated_comment || '';
+        tdPreview.appendChild(preview);
+        row.appendChild(tdPreview);
+
+        tbody.appendChild(row);
+    });
+
+    table.appendChild(tbody);
+    content.appendChild(table);
+
+    // Bouton "Voir plus" si necessaire
+    if (data.has_more) {
+        const loadMoreBtn = document.createElement('button');
+        loadMoreBtn.className = 'load-more-btn';
+        loadMoreBtn.textContent = `Voir plus (${data.remaining} restantes)`;
+        loadMoreBtn.addEventListener('click', () => {
+            loadMoreGenerations(userId, skip + 20);
+        });
+        content.appendChild(loadMoreBtn);
+    }
+}
+
+/**
+ * Charge plus de generations (remplace le contenu)
+ */
+function loadMoreGenerations(userId, skip) {
+    loadGenerations(userId, skip);
+}
+
+/**
+ * Ferme le drill-down actuel
+ */
+function closeDrillDown() {
+    if (!currentExpandedUserId) return;
+
+    // Supprimer la ligne de drill-down
+    const drillDownRow = document.querySelector(`.drill-down-row[data-drill-user-id="${currentExpandedUserId}"]`);
+    if (drillDownRow) {
+        drillDownRow.remove();
+    }
+
+    // Retirer la classe expanded de la ligne utilisateur
+    const userRow = document.querySelector(`tr[data-user-id="${currentExpandedUserId}"]`);
+    if (userRow) {
+        userRow.classList.remove('expanded');
+    }
+
+    currentExpandedUserId = null;
+}
+
+// =============================================================================
+// 11. Client-side Sort
+// =============================================================================
+
+/**
+ * Initialise le tri du tableau
+ */
+function initTableSort() {
+    const headers = document.querySelectorAll('#users-consumption-table th[data-sort]');
+
+    headers.forEach(header => {
+        header.addEventListener('click', () => {
+            const column = header.getAttribute('data-sort');
+
+            // Toggle direction if clicking same column
+            if (sortColumn === column) {
+                sortDirection = sortDirection === 'asc' ? 'desc' : 'asc';
+            } else {
+                sortColumn = column;
+                sortDirection = 'asc';
+            }
+
+            sortUsers(column, sortDirection);
+            updateSortIndicators(header);
+        });
+    });
+}
+
+/**
+ * Trie les utilisateurs par colonne
+ */
+function sortUsers(column, direction) {
+    usersData.sort((a, b) => {
+        let valA, valB;
+
+        switch (column) {
+            case 'email':
+                valA = (a.email || a.user_id).toLowerCase();
+                valB = (b.email || b.user_id).toLowerCase();
+                break;
+            case 'role':
+                valA = a.role || '';
+                valB = b.role || '';
+                break;
+            case 'generation_count':
+                valA = a.generation_count || 0;
+                valB = b.generation_count || 0;
+                break;
+            case 'total_tokens':
+                valA = a.total_tokens || 0;
+                valB = b.total_tokens || 0;
+                break;
+            case 'cost_eur':
+                valA = parseFloat(a.cost_eur) || 0;
+                valB = parseFloat(b.cost_eur) || 0;
+                break;
+            case 'last_generation':
+                valA = a.last_generation ? new Date(a.last_generation).getTime() : 0;
+                valB = b.last_generation ? new Date(b.last_generation).getTime() : 0;
+                break;
+            default:
+                return 0;
+        }
+
+        if (valA < valB) return direction === 'asc' ? -1 : 1;
+        if (valA > valB) return direction === 'asc' ? 1 : -1;
+        return 0;
+    });
+
+    displayUsersTable(usersData);
+}
+
+/**
+ * Met a jour les indicateurs de tri dans les en-tetes
+ */
+function updateSortIndicators(activeHeader) {
+    const headers = document.querySelectorAll('#users-consumption-table th[data-sort]');
+
+    headers.forEach(header => {
+        // Retirer les anciens indicateurs
+        const text = header.textContent.replace(/\s*[\u2191\u2193]/, '');
+
+        if (header === activeHeader) {
+            const arrow = sortDirection === 'asc' ? '\u2191' : '\u2193';
+            header.textContent = `${text} ${arrow}`;
+        } else {
+            header.textContent = text;
+        }
+    });
 }
