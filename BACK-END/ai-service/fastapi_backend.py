@@ -1191,6 +1191,12 @@ Commentaire uniquement.
                 "model": usage_info.get("model", MODEL_NAME),
                 "duration_ms": int(processing_time_ms),
                 "success": True,
+                "news_enrichment_mode": request.newsEnrichmentMode,
+                "web_search_enabled": request.web_search_enabled,
+                "web_search_success": web_search_success,
+                "web_search_source_url": web_search_source_url,
+                "include_quote_enabled": request.include_quote,
+                "custom_prompt_used": True,
             })
         except Exception:
             pass  # Non-blocking
