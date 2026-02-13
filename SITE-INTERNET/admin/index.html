@@ -83,119 +83,250 @@
             background-color: #005a8c;
         }
 
-        /* Dashboard Grid */
+        /* Dashboard Container */
         #dashboard-section {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
-            gap: 1.5rem;
+            display: block;
         }
 
-        /* Metric Cards */
-        .metric-card {
+        /* Tabs */
+        .tabs-container {
             background: white;
-            border-radius: 8px;
-            padding: 1.5rem;
             box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-        }
-
-        .metric-card h2 {
-            font-size: 1rem;
-            font-weight: 600;
-            color: #374151;
-            margin-bottom: 1rem;
-            padding-bottom: 0.75rem;
             border-bottom: 1px solid #e5e7eb;
         }
 
-        .metric-value {
-            font-size: 2.5rem;
-            font-weight: 700;
+        .tabs-nav {
+            display: flex;
+            gap: 0;
+        }
+
+        .tab-btn {
+            padding: 1rem 2rem;
+            background: transparent;
+            border: none;
+            border-bottom: 3px solid transparent;
+            cursor: pointer;
+            font-weight: 500;
+            color: #6b7280;
+            font-size: 1rem;
+            transition: all 0.2s;
+        }
+
+        .tab-btn.active {
             color: #0077B5;
-            margin-bottom: 1rem;
+            border-bottom-color: #0077B5;
+            font-weight: 600;
         }
 
-        .metric-detail {
+        .tab-btn:hover {
+            color: #0077B5;
+            background: rgba(0, 119, 181, 0.05);
+        }
+
+        [data-tab-panel] {
+            display: none;
+            padding: 2rem;
+        }
+
+        [data-tab-panel].active {
+            display: block;
+        }
+
+        /* Period Selector */
+        .period-selector {
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: flex-end;
+            background: white;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .period-group {
+            display: inline-flex;
+            background: #f3f4f6;
+            border-radius: 6px;
+            padding: 4px;
+        }
+
+        .period-btn {
+            background: transparent;
+            border: none;
+            padding: 0.5rem 1rem;
             font-size: 0.875rem;
+            color: #6b7280;
+            cursor: pointer;
+            border-radius: 4px;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+
+        .period-btn.active {
+            background: #0077B5;
+            color: white;
+            font-weight: 600;
+        }
+
+        .period-btn:hover:not(.active) {
+            background: rgba(0, 119, 181, 0.1);
+            color: #0077B5;
+        }
+
+        /* KPI Grid */
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .kpi-card {
+            background: white;
+            border-radius: 8px;
+            padding: 1.25rem;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        .kpi-card h3 {
+            font-size: 0.813rem;
+            color: #6b7280;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 0.5rem;
+        }
+
+        .kpi-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #1f2937;
+        }
+
+        .kpi-detail {
+            font-size: 0.813rem;
+            color: #6b7280;
+            margin-top: 0.25rem;
+        }
+
+        .kpi-trend {
+            display: inline-flex;
+            align-items: center;
+            font-size: 0.75rem;
+            font-weight: 600;
+            margin-left: 0.5rem;
+        }
+
+        .kpi-trend.up {
+            color: #10b981;
+        }
+
+        .kpi-trend.down {
+            color: #ef4444;
+        }
+
+        .kpi-trend.neutral {
             color: #6b7280;
         }
 
-        .metric-detail ul {
-            list-style: none;
-            padding: 0;
-        }
-
-        .metric-detail li {
-            padding: 0.5rem 0;
-            border-bottom: 1px solid #f3f4f6;
-        }
-
-        .metric-detail li:last-child {
-            border-bottom: none;
-        }
-
-        .card-description {
-            font-size: 0.875rem;
-            color: #6b7280;
-            margin-bottom: 1rem;
-        }
-
-        /* Token Usage Table */
-        #token-usage-table {
+        /* Users Consumption Table */
+        #users-consumption-table {
             width: 100%;
             border-collapse: collapse;
             font-size: 0.875rem;
-            margin-top: 1rem;
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
         }
 
-        #token-usage-table thead {
-            background-color: #f9fafb;
-        }
-
-        #token-usage-table th {
+        #users-consumption-table th {
             text-align: left;
             padding: 0.75rem;
             font-weight: 600;
             color: #374151;
             border-bottom: 2px solid #e5e7eb;
+            cursor: pointer;
+            background: #f9fafb;
         }
 
-        #token-usage-table td {
+        #users-consumption-table th:hover {
+            background: #f3f4f6;
+        }
+
+        #users-consumption-table td {
             padding: 0.75rem;
             border-bottom: 1px solid #e5e7eb;
         }
 
-        #token-usage-table tbody tr:nth-child(even) {
-            background-color: #f9fafb;
+        #users-consumption-table tr[data-user-id] {
+            cursor: pointer;
         }
 
-        #token-usage-table tbody tr:hover {
-            background-color: #f3f4f6;
+        #users-consumption-table tr[data-user-id]:hover {
+            background: #f3f4f6;
         }
 
-        /* Conversion Signals */
-        #conversion-signals {
-            font-size: 0.875rem;
+        #users-consumption-table tr.expanded {
+            background: #eef2ff;
         }
 
-        #conversion-signals p {
-            margin-bottom: 0.75rem;
+        .drill-down-row td {
+            padding: 0;
+            border-bottom: 1px solid #e5e7eb;
         }
 
-        #conversion-signals ol {
-            padding-left: 1.25rem;
+        .drill-down-content {
+            padding: 1rem 2rem;
+            background: #f8fafc;
         }
 
-        #conversion-signals li {
-            padding: 0.5rem 0;
-        }
-
-        #conversion-signals .note {
-            margin-top: 1rem;
-            padding: 0.75rem;
-            background-color: #fef3c7;
-            border-radius: 4px;
-            color: #92400e;
+        .generations-table {
+            width: 100%;
+            border-collapse: collapse;
             font-size: 0.813rem;
+            margin-top: 0.5rem;
+        }
+
+        .generations-table th {
+            text-align: left;
+            padding: 0.5rem;
+            font-weight: 600;
+            color: #374151;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .generations-table td {
+            padding: 0.5rem;
+            border-bottom: 1px solid #f3f4f6;
+        }
+
+        .comment-preview {
+            max-width: 200px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            font-size: 0.75rem;
+            color: #6b7280;
+        }
+
+        .load-more-btn {
+            display: block;
+            margin: 1rem auto;
+            padding: 0.5rem 1.5rem;
+            background: #f3f4f6;
+            border: 1px solid #e5e7eb;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.813rem;
+        }
+
+        .load-more-btn:hover {
+            background: #e5e7eb;
+        }
+
+        #users-empty {
+            text-align: center;
+            padding: 2rem;
+            color: #6b7280;
+            font-size: 0.875rem;
         }
 
         /* Error Section */
@@ -276,21 +407,34 @@
                 padding: 1rem;
             }
 
-            #dashboard-section {
-                grid-template-columns: 1fr;
+            .kpi-grid {
+                grid-template-columns: repeat(2, 1fr);
             }
 
-            .metric-value {
-                font-size: 2rem;
+            .tabs-nav {
+                flex-wrap: wrap;
             }
 
-            #token-usage-table {
+            .tab-btn {
+                padding: 0.75rem 1rem;
+            }
+
+            .period-selector {
+                justify-content: center;
+            }
+
+            #users-consumption-table {
                 font-size: 0.75rem;
             }
 
-            #token-usage-table th,
-            #token-usage-table td {
+            #users-consumption-table th,
+            #users-consumption-table td {
                 padding: 0.5rem;
+            }
+
+            /* Table scrolling wrapper */
+            [data-tab-panel="users"] {
+                overflow-x: auto;
             }
         }
 
@@ -392,35 +536,72 @@
 
         <!-- Section Dashboard (si authentifie admin) -->
         <section id="dashboard-section" style="display: none;">
-            <!-- Card: Premium Count -->
-            <div class="metric-card" id="premium-card">
-                <h2>Utilisateurs Premium Actifs</h2>
-                <div class="metric-value" id="premium-count">-</div>
-                <div class="metric-detail" id="premium-details"></div>
+            <!-- Tabs Navigation -->
+            <div class="tabs-container" id="admin-tabs">
+                <div class="tabs-nav" role="tablist">
+                    <button class="tab-btn active" data-tab="overview" role="tab" aria-selected="true">Overview</button>
+                    <button class="tab-btn" data-tab="users" role="tab" aria-selected="false">Utilisateurs</button>
+                </div>
             </div>
 
-            <!-- Card: Token Usage -->
-            <div class="metric-card" id="token-card">
-                <h2>Consommation de Tokens</h2>
-                <div class="metric-value" id="total-tokens">-</div>
-                <table id="token-usage-table">
+            <!-- Period Selector (global) -->
+            <div class="period-selector" id="period-selector">
+                <div class="period-group" role="group" aria-label="Selecteur de periode">
+                    <button class="period-btn" data-period="7d">7 jours</button>
+                    <button class="period-btn active" data-period="30d">30 jours</button>
+                    <button class="period-btn" data-period="90d">90 jours</button>
+                </div>
+            </div>
+
+            <!-- Overview Tab -->
+            <div data-tab-panel="overview" class="active">
+                <div class="kpi-grid" id="kpi-grid">
+                    <!-- KPI Card 1: Utilisateurs -->
+                    <div class="kpi-card">
+                        <h3>Utilisateurs</h3>
+                        <div class="kpi-value" id="kpi-users-total">-</div>
+                        <div class="kpi-detail" id="kpi-users-detail">-</div>
+                    </div>
+
+                    <!-- KPI Card 2: Commentaires -->
+                    <div class="kpi-card">
+                        <h3>Commentaires</h3>
+                        <div class="kpi-value" id="kpi-comments-total">-</div>
+                        <div class="kpi-detail" id="kpi-comments-trend"></div>
+                    </div>
+
+                    <!-- KPI Card 3: Cout estime -->
+                    <div class="kpi-card">
+                        <h3>Cout estime</h3>
+                        <div class="kpi-value" id="kpi-cost-total">-</div>
+                        <div class="kpi-detail" id="kpi-cost-trend"></div>
+                    </div>
+
+                    <!-- KPI Card 4: Trials actifs -->
+                    <div class="kpi-card">
+                        <h3>Trials actifs</h3>
+                        <div class="kpi-value" id="kpi-trials">-</div>
+                        <div class="kpi-detail">Utilisateurs en periode d'essai</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Users Tab -->
+            <div data-tab-panel="users">
+                <table id="users-consumption-table">
                     <thead>
                         <tr>
-                            <th>Utilisateur</th>
-                            <th>Tokens Total</th>
-                            <th>Generations</th>
-                            <th>Modeles</th>
+                            <th data-sort="email">Email</th>
+                            <th data-sort="role">Role</th>
+                            <th data-sort="generation_count">Generations</th>
+                            <th data-sort="total_tokens">Tokens</th>
+                            <th data-sort="cost_eur">Cout EUR</th>
+                            <th data-sort="last_generation">Dernier usage</th>
                         </tr>
                     </thead>
                     <tbody></tbody>
                 </table>
-            </div>
-
-            <!-- Card: Signaux de Conversion (AC #2) -->
-            <div class="metric-card" id="conversion-card">
-                <h2>Signaux de Conversion</h2>
-                <p class="card-description">Utilisateurs Free les plus actifs (quota atteint)</p>
-                <div id="conversion-signals"></div>
+                <div id="users-empty" style="display:none;">Aucun utilisateur avec des generations sur cette periode.</div>
             </div>
         </section>
 
