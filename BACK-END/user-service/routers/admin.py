@@ -13,7 +13,11 @@ from models import User, RoleType, UsageLog
 from schemas.admin import (
     PremiumCountResponse, PremiumUserDetail, TokenUsageResponse, TokenUsageDetail,
     AnalyticsSummaryResponse, UserConsumptionItem, UserConsumptionResponse,
-    UserGenerationItem, UserGenerationsResponse
+    UserGenerationItem, UserGenerationsResponse,
+    UsageDistributionItem, UsageDistributionResponse,
+    UsageFeatureAdoptionItem, UsageFeatureAdoptionResponse,
+    UsageByRoleItem, UsageByRoleResponse,
+    UsageTrendsItem, UsageTrendsResponse
 )
 from utils.admin_auth import require_admin
 from utils.cost_calculator import calculate_cost_eur
@@ -226,20 +230,29 @@ async def get_analytics_summary(
     trend_comments = None
     trend_cost = None
 
-    # Recuperer les totaux de la periode precedente
+    # Recuperer les totaux de la periode precedente via daily_summary (event_count par event_type)
     previous_totals_query = text("""
         SELECT
-            COALESCE(SUM(daily_generations), 0) AS prev_generations,
-            COALESCE(SUM(daily_tokens_input), 0) AS prev_input,
-            COALESCE(SUM(daily_tokens_output), 0) AS prev_output
+            COALESCE(SUM(CASE WHEN event_type = 'comment_generated' THEN event_count ELSE 0 END), 0) AS prev_generations
         FROM analytics.daily_summary
         WHERE date BETWEEN (CURRENT_DATE - 2 * :days * INTERVAL '1 day')
           AND (CURRENT_DATE - :days * INTERVAL '1 day')
     """)
     previous_result = db.execute(previous_totals_query, {"days": days}).fetchone()
     prev_generations = int(previous_result.prev_generations)
-    prev_input = int(previous_result.prev_input)
-    prev_output = int(previous_result.prev_output)
+    # Tokens pour la periode precedente : requete directe sur events
+    prev_tokens_query = text("""
+        SELECT
+            COALESCE(SUM(CAST(properties->>'tokens_input' AS INTEGER)), 0) AS prev_input,
+            COALESCE(SUM(CAST(properties->>'tokens_output' AS INTEGER)), 0) AS prev_output
+        FROM analytics.events
+        WHERE event_type = 'comment_generated'
+          AND created_at BETWEEN (CURRENT_TIMESTAMP - 2 * :days * INTERVAL '1 day')
+          AND (CURRENT_TIMESTAMP - :days * INTERVAL '1 day')
+    """)
+    prev_tokens_result = db.execute(prev_tokens_query, {"days": days}).fetchone()
+    prev_input = int(prev_tokens_result.prev_input)
+    prev_output = int(prev_tokens_result.prev_output)
 
     # Trend comments
     if prev_generations > 0:
@@ -421,3 +434,157 @@ async def get_user_generations(
         limit=limit,
         has_more=has_more
     )
+
+
+@router.get("/usage/distributions", response_model=UsageDistributionResponse)
+async def get_usage_distributions(
+    current_user: User = Depends(require_admin),
+    db: Session = Depends(get_db)
+):
+    """
+    Retourne la distribution des parametres d'usage (mode, language, etc.).
+
+    Requiert:
+    - Authentification JWT valide (401 si absent)
+    - Email dans ADMIN_EMAILS (403 si non admin)
+
+    Returns:
+        UsageDistributionResponse: Distribution des parametres d'usage
+    """
+    distributions_query = text("""
+        SELECT dimension, value, usage_count, percentage
+        FROM analytics.usage_parameter_distribution
+        ORDER BY dimension, usage_count DESC
+    """)
+    distributions_result = db.execute(distributions_query).fetchall()
+
+    items = [
+        UsageDistributionItem(
+            dimension=row.dimension,
+            value=row.value,
+            usage_count=row.usage_count,
+            percentage=float(row.percentage)
+        )
+        for row in distributions_result
+    ]
+
+    logger.info(f"Admin {current_user.id} consulte usage/distributions: {len(items)} items")
+
+    return UsageDistributionResponse(items=items)
+
+
+@router.get("/usage/feature-adoption", response_model=UsageFeatureAdoptionResponse)
+async def get_usage_feature_adoption(
+    current_user: User = Depends(require_admin),
+    db: Session = Depends(get_db)
+):
+    """
+    Retourne l'adoption des features (web search, quote, custom prompt, news).
+
+    Requiert:
+    - Authentification JWT valide (401 si absent)
+    - Email dans ADMIN_EMAILS (403 si non admin)
+
+    Returns:
+        UsageFeatureAdoptionResponse: Taux d'adoption des features
+    """
+    adoption_query = text("""
+        SELECT feature_name, generations_with_feature, total_generations, adoption_rate, success_rate
+        FROM analytics.usage_feature_adoption
+        ORDER BY adoption_rate DESC
+    """)
+    adoption_result = db.execute(adoption_query).fetchall()
+
+    items = [
+        UsageFeatureAdoptionItem(
+            feature_name=row.feature_name,
+            generations_with_feature=row.generations_with_feature,
+            total_generations=row.total_generations,
+            adoption_rate=float(row.adoption_rate),
+            success_rate=float(row.success_rate) if row.success_rate is not None else None
+        )
+        for row in adoption_result
+    ]
+
+    logger.info(f"Admin {current_user.id} consulte usage/feature-adoption: {len(items)} items")
+
+    return UsageFeatureAdoptionResponse(items=items)
+
+
+@router.get("/usage/by-role", response_model=UsageByRoleResponse)
+async def get_usage_by_role(
+    current_user: User = Depends(require_admin),
+    db: Session = Depends(get_db)
+):
+    """
+    Retourne l'usage par role (FREE vs PREMIUM).
+
+    Requiert:
+    - Authentification JWT valide (401 si absent)
+    - Email dans ADMIN_EMAILS (403 si non admin)
+
+    Returns:
+        UsageByRoleResponse: Metriques d'usage par role
+    """
+    by_role_query = text("""
+        SELECT role, metric_type, dimension, value, count
+        FROM analytics.usage_by_role
+        ORDER BY role, metric_type, dimension
+    """)
+    by_role_result = db.execute(by_role_query).fetchall()
+
+    items = [
+        UsageByRoleItem(
+            role=row.role,
+            metric_type=row.metric_type,
+            dimension=row.dimension,
+            value=row.value,
+            count=row.count
+        )
+        for row in by_role_result
+    ]
+
+    logger.info(f"Admin {current_user.id} consulte usage/by-role: {len(items)} items")
+
+    return UsageByRoleResponse(items=items)
+
+
+@router.get("/usage/trends", response_model=UsageTrendsResponse)
+async def get_usage_trends(
+    current_user: User = Depends(require_admin),
+    db: Session = Depends(get_db)
+):
+    """
+    Retourne les tendances d'usage hebdomadaires (12 dernieres semaines).
+
+    Requiert:
+    - Authentification JWT valide (401 si absent)
+    - Email dans ADMIN_EMAILS (403 si non admin)
+
+    Returns:
+        UsageTrendsResponse: Tendances hebdomadaires des features
+    """
+    trends_query = text("""
+        SELECT week_start_date, dimension, value, usage_count, previous_week_count, growth_rate
+        FROM analytics.usage_trends_weekly
+        WHERE week_start_date >= (CURRENT_DATE - INTERVAL '12 weeks')
+          AND dimension IN ('feature_web_search', 'feature_include_quote', 'feature_custom_prompt', 'feature_news_enrichment')
+        ORDER BY dimension, week_start_date ASC
+    """)
+    trends_result = db.execute(trends_query).fetchall()
+
+    items = [
+        UsageTrendsItem(
+            week_start_date=row.week_start_date,
+            dimension=row.dimension,
+            value=row.value,
+            usage_count=row.usage_count,
+            previous_week_count=row.previous_week_count,
+            growth_rate=float(row.growth_rate) if row.growth_rate is not None else None
+        )
+        for row in trends_result
+    ]
+
+    logger.info(f"Admin {current_user.id} consulte usage/trends: {len(items)} items")
+
+    return UsageTrendsResponse(items=items)
