@@ -722,6 +722,18 @@ function displayUsersTable(users) {
         }
         row.appendChild(tdLast);
 
+        // Actions
+        const tdActions = document.createElement('td');
+        const editBtn = document.createElement('button');
+        editBtn.className = 'edit-user-btn';
+        editBtn.textContent = 'Editer';
+        editBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            openUserModal(user.user_id);
+        });
+        tdActions.appendChild(editBtn);
+        row.appendChild(tdActions);
+
         tbody.appendChild(row);
     });
 
@@ -1392,3 +1404,179 @@ async function initRolesChart() {
         showEmptyState(rolesChart, 'Erreur de chargement');
     }
 }
+
+
+// ==================== USER DETAIL MODAL (CRUD) ====================
+
+let currentModalUserId = null;
+
+/**
+ * Ouvre le modal de detail/edition d'un utilisateur
+ */
+async function openUserModal(userId) {
+    const overlay = document.getElementById('user-modal-overlay');
+    currentModalUserId = userId;
+
+    try {
+        const data = await fetchWithAuth(`/api/admin/users/${userId}`);
+
+        // Remplir les champs du modal
+        document.getElementById('modal-user-title').textContent = data.name || data.email || 'Utilisateur';
+        document.getElementById('modal-email').textContent = data.email || '-';
+        document.getElementById('modal-created').textContent = data.created_at
+            ? new Date(data.created_at).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+            : '-';
+        document.getElementById('modal-linkedin').textContent = data.linkedin_profile_captured ? 'Capture' : 'Non capture';
+
+        // Toggle actif
+        const toggleBtn = document.getElementById('modal-is-active');
+        toggleBtn.classList.toggle('on', data.is_active);
+        toggleBtn.onclick = () => toggleBtn.classList.toggle('on');
+
+        // Role
+        document.getElementById('modal-role').value = data.role;
+
+        // Subscription status
+        document.getElementById('modal-subscription-status').textContent = data.subscription_status || 'Aucun';
+
+        // Trial dates
+        const trialEndsInput = document.getElementById('modal-trial-ends');
+        if (data.trial_ends_at) {
+            trialEndsInput.value = new Date(data.trial_ends_at).toISOString().slice(0, 16);
+        } else {
+            trialEndsInput.value = '';
+        }
+
+        const trialRemaining = document.getElementById('modal-trial-remaining');
+        if (data.trial_days_remaining !== null && data.trial_days_remaining !== undefined) {
+            trialRemaining.textContent = `${data.trial_days_remaining}j restants`;
+            trialRemaining.className = 'days-remaining';
+        } else if (data.trial_ends_at && new Date(data.trial_ends_at) < new Date()) {
+            trialRemaining.textContent = 'Expire';
+            trialRemaining.className = 'days-remaining expired';
+        } else {
+            trialRemaining.textContent = '';
+        }
+
+        document.getElementById('modal-trial-started').textContent = data.trial_started_at
+            ? new Date(data.trial_started_at).toLocaleDateString('fr-FR')
+            : 'Jamais';
+
+        // Grace dates
+        const graceEndsInput = document.getElementById('modal-grace-ends');
+        if (data.grace_ends_at) {
+            graceEndsInput.value = new Date(data.grace_ends_at).toISOString().slice(0, 16);
+        } else {
+            graceEndsInput.value = '';
+        }
+
+        const graceRemaining = document.getElementById('modal-grace-remaining');
+        if (data.grace_days_remaining !== null && data.grace_days_remaining !== undefined) {
+            graceRemaining.textContent = `${data.grace_days_remaining}j restants`;
+            graceRemaining.className = 'days-remaining';
+        } else {
+            graceRemaining.textContent = '';
+        }
+
+        // Historique des roles
+        const historyTbody = document.querySelector('#modal-role-history tbody');
+        historyTbody.innerHTML = '';
+
+        if (data.role_history && data.role_history.length > 0) {
+            data.role_history.forEach(entry => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${new Date(entry.changed_at).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' })}</td>
+                    <td>${entry.old_role ? `<span class="role-badge-modal ${entry.old_role}">${entry.old_role}</span> → ` : ''}<span class="role-badge-modal ${entry.new_role}">${entry.new_role}</span></td>
+                    <td>${entry.changed_by || 'system'}</td>
+                    <td>${entry.reason || '-'}</td>
+                `;
+                historyTbody.appendChild(tr);
+            });
+        } else {
+            historyTbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:#9ca3af;">Aucun historique</td></tr>';
+        }
+
+        overlay.classList.add('active');
+
+    } catch (error) {
+        console.error('Erreur chargement detail utilisateur:', error);
+        alert('Erreur lors du chargement des details: ' + error.message);
+    }
+}
+
+/**
+ * Ferme le modal
+ */
+function closeUserModal() {
+    document.getElementById('user-modal-overlay').classList.remove('active');
+    currentModalUserId = null;
+}
+
+/**
+ * Sauvegarde les modifications de l'utilisateur
+ */
+async function saveUserChanges() {
+    if (!currentModalUserId) return;
+
+    const saveBtn = document.getElementById('modal-save-btn');
+    saveBtn.disabled = true;
+    saveBtn.textContent = 'Sauvegarde...';
+
+    try {
+        const payload = {};
+
+        // Role
+        const roleSelect = document.getElementById('modal-role');
+        payload.role = roleSelect.value;
+
+        // Trial ends
+        const trialEndsVal = document.getElementById('modal-trial-ends').value;
+        if (trialEndsVal) {
+            payload.trial_ends_at = new Date(trialEndsVal).toISOString();
+        }
+
+        // Grace ends
+        const graceEndsVal = document.getElementById('modal-grace-ends').value;
+        if (graceEndsVal) {
+            payload.grace_ends_at = new Date(graceEndsVal).toISOString();
+        }
+
+        // Is active
+        const isActive = document.getElementById('modal-is-active').classList.contains('on');
+        payload.is_active = isActive;
+
+        const response = await fetch(`${USERS_API_URL}/api/admin/users/${currentModalUserId}`, {
+            method: 'PATCH',
+            headers: {
+                'Authorization': `Bearer ${authToken}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(payload)
+        });
+
+        if (!response.ok) {
+            const errData = await response.json().catch(() => ({}));
+            throw new Error(errData.detail || `Erreur ${response.status}`);
+        }
+
+        // Refresh le tableau
+        await loadUsersData(currentPeriod);
+
+        closeUserModal();
+    } catch (error) {
+        console.error('Erreur sauvegarde utilisateur:', error);
+        alert('Erreur: ' + error.message);
+    } finally {
+        saveBtn.disabled = false;
+        saveBtn.textContent = 'Sauvegarder';
+    }
+}
+
+// Event listeners pour le modal
+document.getElementById('modal-close-btn').addEventListener('click', closeUserModal);
+document.getElementById('modal-cancel-btn').addEventListener('click', closeUserModal);
+document.getElementById('modal-save-btn').addEventListener('click', saveUserChanges);
+document.getElementById('user-modal-overlay').addEventListener('click', (e) => {
+    if (e.target === e.currentTarget) closeUserModal();
+});

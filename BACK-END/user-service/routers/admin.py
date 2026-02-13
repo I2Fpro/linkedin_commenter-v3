@@ -3,7 +3,9 @@ V3 Story 3.1 - Router admin pour le monitoring.
 Endpoints proteges par require_admin (whitelist ADMIN_EMAILS).
 """
 import logging
-from fastapi import APIRouter, Depends, Query
+import math
+from datetime import datetime, timezone
+from fastapi import APIRouter, Depends, Query, HTTPException
 from sqlalchemy.orm import Session
 from sqlalchemy import text
 from decimal import Decimal
@@ -17,9 +19,11 @@ from schemas.admin import (
     UsageDistributionItem, UsageDistributionResponse,
     UsageFeatureAdoptionItem, UsageFeatureAdoptionResponse,
     UsageByRoleItem, UsageByRoleResponse,
-    UsageTrendsItem, UsageTrendsResponse
+    UsageTrendsItem, UsageTrendsResponse,
+    UserDetailResponse, UserUpdateRequest, RoleHistoryItem
 )
 from utils.admin_auth import require_admin
+from utils.role_manager import RoleManager
 from utils.cost_calculator import calculate_cost_eur
 
 logger = logging.getLogger(__name__)
@@ -587,3 +591,119 @@ async def get_usage_trends(
     logger.info(f"Admin {current_user.id} consulte usage/trends: {len(items)} items")
 
     return UsageTrendsResponse(items=items)
+
+
+# --- CRUD Utilisateurs ---
+
+@router.get("/users/{user_id}", response_model=UserDetailResponse)
+async def get_user_detail(
+    user_id: str,
+    current_user: User = Depends(require_admin),
+    db: Session = Depends(get_db)
+):
+    """Retourne le detail complet d'un utilisateur pour l'admin."""
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="Utilisateur non trouve")
+
+    now = datetime.now(timezone.utc)
+
+    # Calculer jours restants trial/grace
+    trial_days_remaining = None
+    if user.trial_ends_at and user.trial_ends_at > now and user.role == RoleType.PREMIUM:
+        trial_days_remaining = math.ceil((user.trial_ends_at - now).total_seconds() / 86400)
+
+    grace_days_remaining = None
+    if user.grace_ends_at and user.grace_ends_at > now and user.role == RoleType.MEDIUM:
+        grace_days_remaining = math.ceil((user.grace_ends_at - now).total_seconds() / 86400)
+
+    # Historique des roles
+    role_history_entries = RoleManager.get_user_role_history(db, user.id, limit=20)
+    role_history = [
+        RoleHistoryItem(
+            changed_at=entry.changed_at,
+            old_role=entry.old_role.value if entry.old_role else None,
+            new_role=entry.new_role.value,
+            changed_by=entry.changed_by,
+            reason=entry.reason
+        )
+        for entry in role_history_entries
+    ]
+
+    logger.info(f"Admin {current_user.id} consulte detail user {user_id}")
+
+    return UserDetailResponse(
+        id=user.id,
+        email=user.email,
+        name=user.name,
+        role=user.role.value,
+        is_active=user.is_active,
+        subscription_status=user.subscription_status,
+        stripe_customer_id=user.stripe_customer_id,
+        stripe_subscription_id=user.stripe_subscription_id,
+        trial_started_at=user.trial_started_at,
+        trial_ends_at=user.trial_ends_at,
+        grace_ends_at=user.grace_ends_at,
+        trial_days_remaining=trial_days_remaining,
+        grace_days_remaining=grace_days_remaining,
+        linkedin_profile_captured=user.linkedin_profile_captured_at is not None,
+        created_at=user.created_at,
+        updated_at=user.updated_at,
+        role_history=role_history
+    )
+
+
+@router.patch("/users/{user_id}", response_model=UserDetailResponse)
+async def update_user(
+    user_id: str,
+    update: UserUpdateRequest,
+    current_user: User = Depends(require_admin),
+    db: Session = Depends(get_db)
+):
+    """Modifie un utilisateur (role, trial, grace, is_active)."""
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="Utilisateur non trouve")
+
+    admin_email = current_user.email
+    changes = []
+
+    # Changement de role
+    if update.role is not None and update.role != user.role.value:
+        new_role = RoleType(update.role)
+        RoleManager.change_user_role(
+            db=db,
+            user=user,
+            new_role=new_role,
+            changed_by=admin_email,
+            reason=f"Changement manuel par admin",
+            meta_data={"source": "admin_crud"}
+        )
+        changes.append(f"role: {user.role.value} -> {update.role}")
+
+    # Modification trial_ends_at
+    if update.trial_ends_at is not None:
+        old_val = user.trial_ends_at
+        user.trial_ends_at = update.trial_ends_at
+        changes.append(f"trial_ends_at: {old_val} -> {update.trial_ends_at}")
+
+    # Modification grace_ends_at
+    if update.grace_ends_at is not None:
+        old_val = user.grace_ends_at
+        user.grace_ends_at = update.grace_ends_at
+        changes.append(f"grace_ends_at: {old_val} -> {update.grace_ends_at}")
+
+    # Modification is_active
+    if update.is_active is not None and update.is_active != user.is_active:
+        user.is_active = update.is_active
+        changes.append(f"is_active: {not update.is_active} -> {update.is_active}")
+
+    if changes:
+        db.commit()
+        db.refresh(user)
+        logger.info(f"Admin {current_user.id} a modifie user {user_id}: {', '.join(changes)}")
+    else:
+        logger.info(f"Admin {current_user.id} PATCH user {user_id}: aucun changement")
+
+    # Retourner le detail mis a jour (reutilise la logique de get_user_detail)
+    return await get_user_detail(user_id, current_user, db)

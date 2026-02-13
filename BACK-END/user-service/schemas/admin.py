@@ -151,3 +151,46 @@ class UsageTrendsItem(BaseModel):
 class UsageTrendsResponse(BaseModel):
     """Reponse des tendances d'usage hebdomadaires."""
     items: List[UsageTrendsItem]
+
+
+# --- CRUD Utilisateurs ---
+
+class RoleHistoryItem(BaseModel):
+    """Entree dans l'historique des changements de role."""
+    changed_at: datetime
+    old_role: Optional[str] = None
+    new_role: str
+    changed_by: Optional[str] = None
+    reason: Optional[str] = None
+
+
+class UserDetailResponse(BaseModel):
+    """Detail complet d'un utilisateur pour l'admin."""
+    id: UUID
+    email: str
+    name: Optional[str] = None
+    role: str
+    is_active: bool
+    subscription_status: Optional[str] = None
+    stripe_customer_id: Optional[str] = None
+    stripe_subscription_id: Optional[str] = None
+    trial_started_at: Optional[datetime] = None
+    trial_ends_at: Optional[datetime] = None
+    grace_ends_at: Optional[datetime] = None
+    trial_days_remaining: Optional[int] = None
+    grace_days_remaining: Optional[int] = None
+    linkedin_profile_captured: bool = False
+    created_at: datetime
+    updated_at: Optional[datetime] = None
+    role_history: List[RoleHistoryItem] = []
+
+    class Config:
+        from_attributes = True
+
+
+class UserUpdateRequest(BaseModel):
+    """Requete de modification d'un utilisateur par l'admin."""
+    role: Optional[str] = None
+    trial_ends_at: Optional[datetime] = None
+    grace_ends_at: Optional[datetime] = None
+    is_active: Optional[bool] = None

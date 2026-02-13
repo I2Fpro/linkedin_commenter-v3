@@ -547,6 +547,253 @@
             border-color: #0077B5;
             box-shadow: 0 0 0 2px rgba(0, 119, 181, 0.2);
         }
+
+        /* User Detail Modal */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 2000;
+            justify-content: center;
+            align-items: flex-start;
+            padding-top: 5vh;
+            overflow-y: auto;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal {
+            background: white;
+            border-radius: 12px;
+            width: 560px;
+            max-width: 95vw;
+            max-height: 85vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            animation: modalIn 0.2s ease;
+        }
+
+        @keyframes modalIn {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .modal-header {
+            padding: 1.25rem 1.5rem;
+            border-bottom: 1px solid #e5e7eb;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-header h2 {
+            font-size: 1.125rem;
+            font-weight: 600;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: #6b7280;
+            padding: 4px 8px;
+            border-radius: 4px;
+        }
+
+        .modal-close:hover {
+            background: #f3f4f6;
+            color: #1f2937;
+        }
+
+        .modal-body {
+            padding: 1.5rem;
+        }
+
+        .modal-section {
+            margin-bottom: 1.25rem;
+        }
+
+        .modal-section h3 {
+            font-size: 0.813rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #6b7280;
+            margin-bottom: 0.75rem;
+            border-bottom: 1px solid #f3f4f6;
+            padding-bottom: 0.5rem;
+        }
+
+        .modal-field {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.5rem 0;
+        }
+
+        .modal-field label {
+            font-size: 0.875rem;
+            color: #374151;
+            font-weight: 500;
+        }
+
+        .modal-field .value {
+            font-size: 0.875rem;
+            color: #1f2937;
+        }
+
+        .modal-field select,
+        .modal-field input[type="datetime-local"] {
+            padding: 0.375rem 0.5rem;
+            border: 1px solid #d1d5db;
+            border-radius: 4px;
+            font-size: 0.875rem;
+            color: #1f2937;
+        }
+
+        .modal-field select:focus,
+        .modal-field input:focus {
+            outline: none;
+            border-color: #0077B5;
+            box-shadow: 0 0 0 2px rgba(0, 119, 181, 0.2);
+        }
+
+        .role-badge-modal {
+            display: inline-block;
+            padding: 2px 10px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: white;
+        }
+
+        .role-badge-modal.FREE { background: #6b7280; }
+        .role-badge-modal.MEDIUM { background: #3b82f6; }
+        .role-badge-modal.PREMIUM { background: #10b981; }
+
+        .days-remaining {
+            font-size: 0.75rem;
+            color: #10b981;
+            font-weight: 600;
+            margin-left: 8px;
+        }
+
+        .days-remaining.expired {
+            color: #ef4444;
+        }
+
+        .history-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.75rem;
+        }
+
+        .history-table th {
+            text-align: left;
+            padding: 0.375rem 0.5rem;
+            color: #6b7280;
+            font-weight: 600;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .history-table td {
+            padding: 0.375rem 0.5rem;
+            border-bottom: 1px solid #f3f4f6;
+        }
+
+        .modal-footer {
+            padding: 1rem 1.5rem;
+            border-top: 1px solid #e5e7eb;
+            display: flex;
+            justify-content: flex-end;
+            gap: 0.75rem;
+        }
+
+        .modal-btn {
+            padding: 0.5rem 1.25rem;
+            border-radius: 6px;
+            font-size: 0.875rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .modal-btn-cancel {
+            background: #f3f4f6;
+            border: 1px solid #d1d5db;
+            color: #374151;
+        }
+
+        .modal-btn-cancel:hover {
+            background: #e5e7eb;
+        }
+
+        .modal-btn-save {
+            background: #0077B5;
+            border: none;
+            color: white;
+        }
+
+        .modal-btn-save:hover {
+            background: #005a8c;
+        }
+
+        .modal-btn-save:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .toggle-active {
+            position: relative;
+            width: 44px;
+            height: 24px;
+            background: #d1d5db;
+            border-radius: 12px;
+            border: none;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .toggle-active.on {
+            background: #10b981;
+        }
+
+        .toggle-active::after {
+            content: '';
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            width: 20px;
+            height: 20px;
+            background: white;
+            border-radius: 50%;
+            transition: transform 0.2s;
+        }
+
+        .toggle-active.on::after {
+            transform: translateX(20px);
+        }
+
+        /* Edit action button in table */
+        .edit-user-btn {
+            background: none;
+            border: 1px solid #d1d5db;
+            border-radius: 4px;
+            padding: 4px 10px;
+            font-size: 0.75rem;
+            cursor: pointer;
+            color: #0077B5;
+            transition: all 0.2s;
+        }
+
+        .edit-user-btn:hover {
+            background: #0077B5;
+            color: white;
+            border-color: #0077B5;
+        }
     </style>
 </head>
 <body>
@@ -652,6 +899,7 @@
                             <th data-sort="total_tokens">Tokens</th>
                             <th data-sort="cost_eur">Cout EUR</th>
                             <th data-sort="last_generation">Dernier usage</th>
+                            <th>Actions</th>
                         </tr>
                     </thead>
                     <tbody></tbody>
@@ -714,6 +962,98 @@
             <button id="retry-btn" style="margin-top: 1rem; padding: 0.5rem 1rem; cursor: pointer;">Reessayer</button>
         </section>
     </main>
+
+    <!-- Modal Detail/Edit Utilisateur -->
+    <div class="modal-overlay" id="user-modal-overlay">
+        <div class="modal">
+            <div class="modal-header">
+                <h2 id="modal-user-title">Utilisateur</h2>
+                <button class="modal-close" id="modal-close-btn">&times;</button>
+            </div>
+            <div class="modal-body">
+                <!-- Info generales -->
+                <div class="modal-section">
+                    <h3>Informations</h3>
+                    <div class="modal-field">
+                        <label>Email</label>
+                        <span class="value" id="modal-email">-</span>
+                    </div>
+                    <div class="modal-field">
+                        <label>Inscrit le</label>
+                        <span class="value" id="modal-created">-</span>
+                    </div>
+                    <div class="modal-field">
+                        <label>Profil LinkedIn</label>
+                        <span class="value" id="modal-linkedin">-</span>
+                    </div>
+                    <div class="modal-field">
+                        <label>Actif</label>
+                        <button class="toggle-active on" id="modal-is-active" type="button"></button>
+                    </div>
+                </div>
+
+                <!-- Role & Abonnement -->
+                <div class="modal-section">
+                    <h3>Role & Abonnement</h3>
+                    <div class="modal-field">
+                        <label>Role</label>
+                        <select id="modal-role">
+                            <option value="FREE">FREE</option>
+                            <option value="MEDIUM">MEDIUM</option>
+                            <option value="PREMIUM">PREMIUM</option>
+                        </select>
+                    </div>
+                    <div class="modal-field">
+                        <label>Statut Stripe</label>
+                        <span class="value" id="modal-subscription-status">-</span>
+                    </div>
+                </div>
+
+                <!-- Trial & Grace -->
+                <div class="modal-section">
+                    <h3>Trial & Grace</h3>
+                    <div class="modal-field">
+                        <label>Trial demarre le</label>
+                        <span class="value" id="modal-trial-started">-</span>
+                    </div>
+                    <div class="modal-field">
+                        <label>Trial expire le</label>
+                        <div>
+                            <input type="datetime-local" id="modal-trial-ends" />
+                            <span class="days-remaining" id="modal-trial-remaining"></span>
+                        </div>
+                    </div>
+                    <div class="modal-field">
+                        <label>Grace expire le</label>
+                        <div>
+                            <input type="datetime-local" id="modal-grace-ends" />
+                            <span class="days-remaining" id="modal-grace-remaining"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Historique des roles -->
+                <div class="modal-section">
+                    <h3>Historique des roles</h3>
+                    <table class="history-table" id="modal-role-history">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Changement</th>
+                                <th>Par</th>
+                                <th>Raison</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="modal-btn modal-btn-cancel" id="modal-cancel-btn">Annuler</button>
+                <button class="modal-btn modal-btn-save" id="modal-save-btn">Sauvegarder</button>
+            </div>
+        </div>
+    </div>
 
     <!-- Google Identity Services (OAuth 2.0) -->
     <script src="https://accounts.google.com/gsi/client" async defer></script>
