@@ -652,14 +652,14 @@ document.addEventListener('DOMContentLoaded', async function() {
             aiTrialDays.textContent = 'Expiration en cours...';
           }
           if (aiTrialProgressFill) {
-            aiTrialProgressFill.style.width = '100%';
+            aiTrialProgressFill.style.width = '0%';
             aiTrialProgressFill.className = 'ai-trial-progress-fill ai-progress-low';
           }
           return; // Ne pas continuer avec le calcul normal
         }
         const totalDays = 30;
-        const elapsed = totalDays - days;
-        const percent = Math.min(100, Math.max(0, (elapsed / totalDays) * 100));
+        // Barre qui se vide : 100% = plein (30j), 0% = vide (0j)
+        const percent = Math.min(100, Math.max(0, (days / totalDays) * 100));
 
         if (aiTrialCountdown) {
           aiTrialCountdown.style.display = 'block';
@@ -686,8 +686,8 @@ document.addEventListener('DOMContentLoaded', async function() {
       else if (trialStatus.grace_active && trialStatus.grace_days_remaining !== null) {
         const days = trialStatus.grace_days_remaining;
         const totalDays = 3;
-        const elapsed = totalDays - days;
-        const percent = Math.min(100, Math.max(0, (elapsed / totalDays) * 100));
+        // Barre qui se vide : 100% = plein (3j), 0% = vide (0j)
+        const percent = Math.min(100, Math.max(0, (days / totalDays) * 100));
 
         if (aiTrialCountdown) {
           aiTrialCountdown.style.display = 'block';
