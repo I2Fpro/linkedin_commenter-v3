@@ -2419,9 +2419,38 @@
       'blacklistUpgradeRequired'
     );
 
+    // === BOUTON COLLAPSE/EXPAND OPTIONS ===
+    const collapseChip = document.createElement('button');
+    collapseChip.type = 'button';
+    collapseChip.className = 'ai-chip ai-chip--collapse';
+    collapseChip.setAttribute('aria-label', 'Replier/Deplier les options');
+    collapseChip.setAttribute('aria-expanded', 'true');
+    collapseChip.innerHTML = '<span class="ai-chip__icon">▲</span>';
+    collapseChip.onclick = (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const isCollapsed = container.classList.toggle('ai-controls--collapsed');
+      collapseChip.innerHTML = isCollapsed
+        ? '<span class="ai-chip__icon">▼</span>'
+        : '<span class="ai-chip__icon">▲</span>';
+      collapseChip.setAttribute('aria-expanded', String(!isCollapsed));
+      chrome.storage.local.set({ ai_options_collapsed: isCollapsed });
+    };
+
+    // Restaurer l'etat collapse sauvegarde
+    chrome.storage.local.get(['ai_options_collapsed'], (data) => {
+      if (data.ai_options_collapsed) {
+        container.classList.add('ai-controls--collapsed');
+        collapseChip.innerHTML = '<span class="ai-chip__icon">▼</span>';
+        collapseChip.setAttribute('aria-expanded', 'false');
+      }
+    });
+
     // === ASSEMBLER LES CHIPS ===
-    // Actions principales
+    // Collapse toggle + Generate en premier
+    container.appendChild(collapseChip);
     container.appendChild(generateChip);
+    // Options (masquees quand collapsed)
     container.appendChild(promptChip);
     container.appendChild(randomChip);
     container.appendChild(emotionChip);
