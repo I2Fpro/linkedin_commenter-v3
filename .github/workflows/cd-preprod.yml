@@ -149,6 +149,9 @@ jobs:
             SITE_HOST=ai-linkedin.iry-entreprise.fr
 
 
+            # === Admin ===
+            ADMIN_EMAILS=${{ secrets.ADMIN_EMAILS }}
+
             # === Environment ===
             ENVIRONMENT=preprod
             ENVEOF
