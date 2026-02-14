@@ -97,6 +97,7 @@ async function fetchAndStoreUserProfile(token) {
 
       // Récupérer le plan utilisateur depuis le user-service
       let userPlan = 'FREE';
+      let jwtToken = null;
       try {
         // D'abord, vérifier/créer l'utilisateur et obtenir le JWT
         console.log('🔐 Vérification utilisateur Google...');
@@ -129,7 +130,7 @@ async function fetchAndStoreUserProfile(token) {
         }
 
         const authData = await authResponse.json();
-        const jwtToken = authData.access_token;
+        jwtToken = authData.access_token;
         console.log('✅ JWT obtenu');
 
         // Maintenant, récupérer le quota avec le JWT

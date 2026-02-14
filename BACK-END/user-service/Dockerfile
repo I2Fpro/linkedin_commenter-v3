@@ -22,6 +22,9 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copier le code de l'application
 COPY . .
 
+# Rendre l'entrypoint executable
+RUN chmod +x entrypoint.sh
+
 # Créer un utilisateur non-root pour la sécurité
 RUN adduser --disabled-password --gecos '' appuser && chown -R appuser:appuser /app
 USER appuser
@@ -33,5 +36,5 @@ EXPOSE 8444
 ENV PYTHONPATH=/app
 ENV PYTHONUNBUFFERED=1
 
-# Commande de démarrage
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8444"]
+# Entrypoint: migrations Alembic puis uvicorn
+ENTRYPOINT ["./entrypoint.sh"]
