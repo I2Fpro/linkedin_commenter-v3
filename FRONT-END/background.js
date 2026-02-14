@@ -1125,6 +1125,9 @@ async function handleCaptureLinkedInProfile(data, sendResponse) {
         linkedin_profile_captured: true
       });
 
+      // Purger le cache trial pour forcer un refresh au prochain getTrialStatus
+      await chrome.storage.local.remove(['trial_status_cache', 'trial_status_cached_at']);
+
       console.log('[Phase2] Trial accorde, plan mis a jour:', result.role);
 
       chrome.tabs.query({ url: "*://*.linkedin.com/*" }, function(tabs) {

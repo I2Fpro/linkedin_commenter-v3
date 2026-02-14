@@ -308,13 +308,14 @@
   async function detectAndCaptureLinkedInProfile() {
     try {
       const currentPath = window.location.pathname;
-      const isMyProfile = /\/in\/me\/?(\?.*)?$/.test(currentPath);
+      const isMyProfile = /\/in\/me\/?(\?.*)?$/.test(currentPath) ||
+                          window.location.search.includes('isSelfProfile=true');
 
       if (!isMyProfile) {
         return;
       }
 
-      console.log('[Phase2] Page /in/me/ detectee, tentative de capture profil');
+      console.log('[Phase2] Page profil personnel detectee, tentative de capture profil');
 
       const storage = await new Promise(resolve => {
         chrome.storage.local.get(['linkedin_profile_captured', 'user_plan'], resolve);
