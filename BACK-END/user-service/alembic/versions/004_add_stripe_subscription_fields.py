@@ -1,7 +1,7 @@
 """Add stripe subscription fields and events table
 
 Revision ID: 004_add_stripe_subscription_fields
-Revises: 003_add_stripe_customer_id
+Revises: 003_role_history
 Create Date: 2025-01-19 15:00:00.000000
 
 """
@@ -11,7 +11,7 @@ import sqlalchemy as sa
 
 # revision identifiers, used by Alembic.
 revision = '004_add_stripe_subscription_fields'
-down_revision = '003_add_stripe_customer_id'
+down_revision = '003_role_history'
 branch_labels = None
 depends_on = None
 

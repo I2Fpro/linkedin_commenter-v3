@@ -1,7 +1,7 @@
 """Add role change history table
 
 Revision ID: 003_role_history
-Revises: 002_add_encryption
+Revises: 003_add_stripe_customer_id
 Create Date: 2025-11-16 15:30:00.000000
 
 Cette migration crée une table d'audit pour suivre l'historique des changements de rôle des utilisateurs.
@@ -15,7 +15,7 @@ from sqlalchemy.dialects.postgresql import UUID, ENUM
 
 # revision identifiers, used by Alembic.
 revision = '003_role_history'
-down_revision = '002_add_encryption'
+down_revision = '003_add_stripe_customer_id'
 branch_labels = None
 depends_on = None
 
