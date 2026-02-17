@@ -28,6 +28,7 @@ PLACEHOLDERS=(
   "__USERS_API_URL__"
   "__AI_API_URL__"
   "__SITE_URL__"
+  "__SUPPORT_EMAIL__"
 )
 
 DEV_VALUES=(
@@ -35,6 +36,7 @@ DEV_VALUES=(
   "http://localhost:8444"
   "http://localhost:8443"
   "http://localhost:8080"
+  "support@linkedinaicommenter.com"
 )
 
 # ---------------------------------------------------------------------------
@@ -50,6 +52,7 @@ FILES=(
   "$FRONTEND_DIR/auth.js"
   "$FRONTEND_DIR/background.js"
   "$FRONTEND_DIR/popup.js"
+  "$FRONTEND_DIR/popup.html"
   "$FRONTEND_DIR/test-connection.html"
   "$SITE_DIR/admin/admin.js"
   "$SITE_DIR/account/login.html"

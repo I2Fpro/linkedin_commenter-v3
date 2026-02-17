@@ -375,10 +375,15 @@ document.addEventListener('DOMContentLoaded', async function() {
 
   // ==================== FONCTIONS D'AFFICHAGE ====================
 
+  // Noms natifs des langues (toujours lisibles quelle que soit la langue d'interface)
+  const LANGUAGE_NATIVE_NAMES = {
+    fr: '\u{1F1EB}\u{1F1F7} Fran\u00e7ais',
+    en: '\u{1F1EC}\u{1F1E7} English'
+  };
+
   function updateLanguageDisplay() {
-    // Utiliser les traductions i18n pour afficher les noms de langues
-    interfaceLangValue.textContent = window.i18n.t(currentState.interfaceLanguage === 'fr' ? 'french' : 'english');
-    commentLangValue.textContent = window.i18n.t(currentState.commentLanguage === 'fr' ? 'french' : 'english');
+    interfaceLangValue.textContent = LANGUAGE_NATIVE_NAMES[currentState.interfaceLanguage] || currentState.interfaceLanguage;
+    commentLangValue.textContent = LANGUAGE_NATIVE_NAMES[currentState.commentLanguage] || currentState.commentLanguage;
   }
 
   function updateGenerationsDisplay() {
